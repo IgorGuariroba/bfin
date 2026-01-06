@@ -39,14 +39,14 @@ app.get('/api/v1', (_req, res) => {
   });
 });
 
-// Importar rotas (quando estiverem prontas)
-// import authRoutes from './routes/auth.routes';
-// import accountRoutes from './routes/accounts.routes';
+// Importar rotas
+import authRoutes from './routes/auth.routes';
+import accountRoutes from './routes/accounts.routes';
 // import transactionRoutes from './routes/transactions.routes';
 // import suggestionRoutes from './routes/suggestions.routes';
 
-// app.use('/api/v1/auth', authRoutes);
-// app.use('/api/v1/accounts', accountRoutes);
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/accounts', accountRoutes);
 // app.use('/api/v1/transactions', transactionRoutes);
 // app.use('/api/v1/suggestions', suggestionRoutes);
 
