@@ -136,7 +136,11 @@ export class TransactionService {
       throw new ValidationError('Amount must be positive');
     }
 
-    if (data.dueDate < new Date()) {
+    // Validate due date is not in the past (allow today)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Start of today
+
+    if (data.dueDate < today) {
       throw new ValidationError('Due date cannot be in the past');
     }
 
