@@ -88,59 +88,6 @@ export function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Ações Rápidas */}
-        {!loadingAccounts && accounts && accounts.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {/* Botão Nova Receita */}
-            <button
-              onClick={() => setIncomeDialogOpen(true)}
-              className="bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg p-6 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
-            >
-              <div className="flex flex-col items-center gap-3">
-                <div className="bg-white/20 p-3 rounded-full">
-                  <TrendingUp className="h-8 w-8" />
-                </div>
-                <div className="text-center">
-                  <h3 className="text-lg font-bold">Nova Receita</h3>
-                  <p className="text-sm text-green-100 mt-1">Registrar entrada</p>
-                </div>
-              </div>
-            </button>
-
-            {/* Botão Despesa Fixa */}
-            <button
-              onClick={() => setFixedExpenseDialogOpen(true)}
-              className="bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg p-6 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
-            >
-              <div className="flex flex-col items-center gap-3">
-                <div className="bg-white/20 p-3 rounded-full">
-                  <Calendar className="h-8 w-8" />
-                </div>
-                <div className="text-center">
-                  <h3 className="text-lg font-bold">Despesa Fixa</h3>
-                  <p className="text-sm text-orange-100 mt-1">Conta recorrente</p>
-                </div>
-              </div>
-            </button>
-
-            {/* Botão Despesa Variável */}
-            <button
-              onClick={() => setVariableExpenseDialogOpen(true)}
-              className="bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg p-6 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
-            >
-              <div className="flex flex-col items-center gap-3">
-                <div className="bg-white/20 p-3 rounded-full">
-                  <ShoppingCart className="h-8 w-8" />
-                </div>
-                <div className="text-center">
-                  <h3 className="text-lg font-bold">Despesa Variável</h3>
-                  <p className="text-sm text-red-100 mt-1">Gasto do dia</p>
-                </div>
-              </div>
-            </button>
-          </div>
-        )}
-
         {/* Alerta Limite Diário */}
         {!loadingDailyLimit && !loadingAccounts && dailyLimit && dailyLimit.totalDailyLimit > 0 && (
           <div
@@ -193,6 +140,59 @@ export function Dashboard() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Ações Rápidas */}
+        {!loadingAccounts && accounts && accounts.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {/* Botão Nova Receita */}
+            <button
+              onClick={() => setIncomeDialogOpen(true)}
+              className="bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg p-6 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+            >
+              <div className="flex flex-col items-center gap-3">
+                <div className="bg-white/20 p-3 rounded-full">
+                  <TrendingUp className="h-8 w-8" />
+                </div>
+                <div className="text-center">
+                  <h3 className="text-lg font-bold">Nova Receita</h3>
+                  <p className="text-sm text-green-100 mt-1">Registrar entrada</p>
+                </div>
+              </div>
+            </button>
+
+            {/* Botão Despesa Fixa */}
+            <button
+              onClick={() => setFixedExpenseDialogOpen(true)}
+              className="bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg p-6 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+            >
+              <div className="flex flex-col items-center gap-3">
+                <div className="bg-white/20 p-3 rounded-full">
+                  <Calendar className="h-8 w-8" />
+                </div>
+                <div className="text-center">
+                  <h3 className="text-lg font-bold">Despesa Fixa</h3>
+                  <p className="text-sm text-orange-100 mt-1">Conta recorrente</p>
+                </div>
+              </div>
+            </button>
+
+            {/* Botão Despesa Variável */}
+            <button
+              onClick={() => setVariableExpenseDialogOpen(true)}
+              className="bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg p-6 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+            >
+              <div className="flex flex-col items-center gap-3">
+                <div className="bg-white/20 p-3 rounded-full">
+                  <ShoppingCart className="h-8 w-8" />
+                </div>
+                <div className="text-center">
+                  <h3 className="text-lg font-bold">Despesa Variável</h3>
+                  <p className="text-sm text-red-100 mt-1">Gasto do dia</p>
+                </div>
+              </div>
+            </button>
           </div>
         )}
 
