@@ -4,6 +4,8 @@ import { Button } from '../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '../components/ui/Dialog';
 import { IncomeForm } from '../components/transactions/IncomeForm';
+import { FixedExpenseForm } from '../components/transactions/FixedExpenseForm';
+import { VariableExpenseForm } from '../components/transactions/VariableExpenseForm';
 import { CreateAccountForm } from '../components/accounts/CreateAccountForm';
 import { useAccounts } from '../hooks/useAccounts';
 
@@ -11,6 +13,8 @@ export function Dashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [incomeDialogOpen, setIncomeDialogOpen] = useState(false);
+  const [fixedExpenseDialogOpen, setFixedExpenseDialogOpen] = useState(false);
+  const [variableExpenseDialogOpen, setVariableExpenseDialogOpen] = useState(false);
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
   const { data: accounts, isLoading: loadingAccounts } = useAccounts();
 
@@ -142,12 +146,17 @@ export function Dashboard() {
           ) : (
             <>
               <p className="text-blue-700 mb-4">
-                Registre sua primeira receita para começar a gerenciar suas finanças
+                Registre suas receitas e despesas para gerenciar suas finanças
                 automaticamente.
               </p>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-3">
                 <Button onClick={() => setIncomeDialogOpen(true)}>+ Nova Receita</Button>
-                <Button variant="outline">+ Nova Despesa</Button>
+                <Button variant="outline" onClick={() => setFixedExpenseDialogOpen(true)}>
+                  + Despesa Fixa
+                </Button>
+                <Button variant="outline" onClick={() => setVariableExpenseDialogOpen(true)}>
+                  + Despesa Variável
+                </Button>
               </div>
             </>
           )}
@@ -166,6 +175,38 @@ export function Dashboard() {
               setIncomeDialogOpen(false);
             }}
             onCancel={() => setIncomeDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Fixed Expense Dialog */}
+      <Dialog open={fixedExpenseDialogOpen} onOpenChange={setFixedExpenseDialogOpen}>
+        <DialogContent className="relative">
+          <DialogClose onClose={() => setFixedExpenseDialogOpen(false)} />
+          <DialogHeader>
+            <DialogTitle>Nova Despesa Fixa</DialogTitle>
+          </DialogHeader>
+          <FixedExpenseForm
+            onSuccess={() => {
+              setFixedExpenseDialogOpen(false);
+            }}
+            onCancel={() => setFixedExpenseDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Variable Expense Dialog */}
+      <Dialog open={variableExpenseDialogOpen} onOpenChange={setVariableExpenseDialogOpen}>
+        <DialogContent className="relative">
+          <DialogClose onClose={() => setVariableExpenseDialogOpen(false)} />
+          <DialogHeader>
+            <DialogTitle>Nova Despesa Variável</DialogTitle>
+          </DialogHeader>
+          <VariableExpenseForm
+            onSuccess={() => {
+              setVariableExpenseDialogOpen(false);
+            }}
+            onCancel={() => setVariableExpenseDialogOpen(false)}
           />
         </DialogContent>
       </Dialog>
