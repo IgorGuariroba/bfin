@@ -528,6 +528,10 @@ export class TransactionService {
     const transaction = await this.getById(userId, transactionId);
 
     // Preparar dados para nova transação
+    if (!transaction.category_id) {
+      throw new ValidationError('Cannot duplicate transaction without a category');
+    }
+
     const duplicateData = {
       accountId: transaction.account_id,
       categoryId: transaction.category_id,
@@ -535,7 +539,7 @@ export class TransactionService {
       description: `${transaction.description} (cópia)`,
       dueDate: new Date(),
       isRecurring: transaction.is_recurring,
-      recurrencePattern: transaction.recurrence_pattern,
+      recurrencePattern: transaction.recurrence_pattern ?? undefined,
     };
 
     // Criar nova transação baseada no tipo original

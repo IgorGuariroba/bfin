@@ -7,11 +7,14 @@ import { IncomeForm } from '../components/transactions/IncomeForm';
 import { FixedExpenseForm } from '../components/transactions/FixedExpenseForm';
 import { VariableExpenseForm } from '../components/transactions/VariableExpenseForm';
 import { CreateAccountForm } from '../components/accounts/CreateAccountForm';
+import { AccountsDialog } from '../components/accounts/AccountsDialog';
+import { InvitationsDialog } from '../components/invitations/InvitationsDialog';
 import { TransactionList } from '../components/transactions/TransactionList';
 import { useAccounts } from '../hooks/useAccounts';
 import { useTotalDailyLimit } from '../hooks/useDailyLimit';
 import { useUpcomingFixedExpenses, useMarkAsPaid } from '../hooks/useTransactions';
-import { Shield, TrendingUp, Calendar, ShoppingCart } from 'lucide-react';
+import { useMyInvitations } from '../hooks/useAccountMembers';
+import { Shield, TrendingUp, Calendar, ShoppingCart, Wallet, Mail } from 'lucide-react';
 
 export function Dashboard() {
   const { user, signOut } = useAuth();
@@ -20,9 +23,12 @@ export function Dashboard() {
   const [fixedExpenseDialogOpen, setFixedExpenseDialogOpen] = useState(false);
   const [variableExpenseDialogOpen, setVariableExpenseDialogOpen] = useState(false);
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
+  const [manageAccountsDialogOpen, setManageAccountsDialogOpen] = useState(false);
   const [transactionsDialogOpen, setTransactionsDialogOpen] = useState(false);
   const [emergencyReserveDialogOpen, setEmergencyReserveDialogOpen] = useState(false);
+  const [invitationsDialogOpen, setInvitationsDialogOpen] = useState(false);
   const { data: accounts, isLoading: loadingAccounts } = useAccounts();
+  const { data: invitations = [] } = useMyInvitations();
 
   // Buscar limite diário de todas as contas
   const accountIds = accounts?.map((acc) => acc.id) || [];
@@ -78,6 +84,27 @@ export function Dashboard() {
             </div>
             <div className="flex items-center gap-4">
               <span className="text-gray-700">Olá, {user?.full_name}</span>
+              <Button
+                variant="outline"
+                onClick={() => setInvitationsDialogOpen(true)}
+                className="flex items-center gap-2 relative"
+              >
+                <Mail className="h-4 w-4" />
+                Convites
+                {invitations.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {invitations.length}
+                  </span>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setManageAccountsDialogOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Wallet className="h-4 w-4" />
+                Gerenciar Contas
+              </Button>
               <Button variant="outline" onClick={handleSignOut}>
                 Sair
               </Button>
@@ -353,6 +380,12 @@ export function Dashboard() {
         </DialogContent>
       </Dialog>
 
+      {/* Manage Accounts Dialog */}
+      <AccountsDialog
+        isOpen={manageAccountsDialogOpen}
+        onClose={() => setManageAccountsDialogOpen(false)}
+      />
+
       {/* Transactions Dialog */}
       <Dialog open={transactionsDialogOpen} onOpenChange={setTransactionsDialogOpen}>
         <DialogContent className="relative max-w-4xl">
@@ -369,9 +402,11 @@ export function Dashboard() {
         <DialogContent className="relative">
           <DialogClose onClose={() => setEmergencyReserveDialogOpen(false)} />
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-blue-600" />
-              Reserva de Emergência
+            <DialogTitle>
+              <div className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-blue-600" />
+                <span>Reserva de Emergência</span>
+              </div>
             </DialogTitle>
           </DialogHeader>
 
@@ -403,6 +438,12 @@ export function Dashboard() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Invitations Dialog */}
+      <InvitationsDialog
+        isOpen={invitationsDialogOpen}
+        onClose={() => setInvitationsDialogOpen(false)}
+      />
     </div>
   );
 }

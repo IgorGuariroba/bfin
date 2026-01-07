@@ -26,8 +26,10 @@ model User {
   email_verified Boolean   @default(false)
 
   // Relacionamentos
-  accounts      Account[]
-  notifications Notification[]
+  accounts            Account[]
+  account_members     AccountMember[]
+  account_invitations AccountInvitation[]
+  notifications       Notification[]
 
   @@map("users")
 }
@@ -63,10 +65,56 @@ model Account {
   financial_rules      FinancialRule[]
   balance_history      BalanceHistory[]
   spending_suggestions SpendingSuggestion[]
+  members              AccountMember[]
+  invitations          AccountInvitation[]
 
   @@index([user_id])
   @@index([user_id, is_default])
   @@map("accounts")
+}
+
+// ====================================
+// MEMBROS DE CONTAS (Multi-usuário)
+// ====================================
+
+model AccountMember {
+  id         String   @id @default(uuid())
+  account_id String
+  account    Account  @relation(fields: [account_id], references: [id], onDelete: Cascade)
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  role       String   @default("member") // owner, member, viewer
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([account_id, user_id])
+  @@index([user_id])
+  @@index([account_id])
+  @@map("account_members")
+}
+
+// ====================================
+// CONVITES DE CONTAS
+// ====================================
+
+model AccountInvitation {
+  id            String    @id @default(uuid())
+  account_id    String
+  account       Account   @relation(fields: [account_id], references: [id], onDelete: Cascade)
+  invited_email String
+  invited_by    String
+  inviter       User      @relation(fields: [invited_by], references: [id], onDelete: Cascade)
+  role          String    @default("member") // owner, member, viewer
+  status        String    @default("pending") // pending, accepted, rejected
+  token         String    @unique @default(uuid())
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  expires_at    DateTime
+
+  @@unique([account_id, invited_email, status])
+  @@index([invited_email, status])
+  @@index([token])
+  @@map("account_invitations")
 }
 
 // ====================================

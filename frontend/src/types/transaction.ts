@@ -20,6 +20,22 @@ export interface Account {
   emergency_reserve: number;
   currency: string;
   is_default: boolean;
+  user_role?: 'owner' | 'member';
+  is_shared?: boolean;
+}
+
+export interface AccountMember {
+  id: string;
+  account_id: string;
+  user_id: string;
+  role: 'owner' | 'member' | 'viewer';
+  created_at: string;
+  updated_at: string;
+  user: {
+    id: string;
+    email: string;
+    full_name: string;
+  };
 }
 
 export interface Transaction {

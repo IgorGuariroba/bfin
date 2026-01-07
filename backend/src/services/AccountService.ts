@@ -1,36 +1,74 @@
 import { PrismaClient } from '@prisma/client';
 import { ValidationError, ForbiddenError, NotFoundError } from '../middlewares/errorHandler';
 import { CreateAccountDTO, UpdateAccountDTO } from '../types';
+import { AccountMemberService } from './AccountMemberService';
 
 const prisma = new PrismaClient();
+const accountMemberService = new AccountMemberService();
 
 export class AccountService {
   /**
-   * Lista todas as contas de um usuário
+   * Lista todas as contas de um usuário (próprias + compartilhadas)
    */
   async listByUser(userId: string) {
+    // Buscar todas as contas onde o usuário é membro (incluindo owner)
     const accounts = await prisma.account.findMany({
-      where: { user_id: userId },
+      where: {
+        OR: [
+          { user_id: userId }, // Contas próprias
+          {
+            members: {
+              some: {
+                user_id: userId,
+              },
+            },
+          }, // Contas compartilhadas
+        ],
+      },
+      include: {
+        members: true, // Incluir TODOS os membros para verificar se é compartilhada
+      },
       orderBy: [
         { is_default: 'desc' },
         { created_at: 'asc' },
       ],
-      select: {
-        id: true,
-        account_name: true,
-        account_type: true,
-        total_balance: true,
-        available_balance: true,
-        locked_balance: true,
-        emergency_reserve: true,
-        currency: true,
-        is_default: true,
-        created_at: true,
-        updated_at: true,
-      },
     });
 
-    return accounts;
+    // Mapear para adicionar informações de role
+    const accountsWithRole = accounts.map((account) => {
+      // Se é o dono original da conta
+      const isOwner = account.user_id === userId;
+
+      // Verificar role em account_members
+      const userMembership = account.members.find(m => m.user_id === userId);
+      const membershipRole = userMembership?.role;
+
+      // Determinar role e se é compartilhada
+      const user_role = isOwner ? 'owner' : (membershipRole || 'member');
+
+      // Conta é compartilhada se:
+      // 1. Usuário não é o dono original (está como membro de outra pessoa), OU
+      // 2. Tem outros membros além do próprio dono
+      const is_shared = !isOwner || account.members.length > 1;
+
+      return {
+        id: account.id,
+        account_name: account.account_name,
+        account_type: account.account_type,
+        total_balance: account.total_balance,
+        available_balance: account.available_balance,
+        locked_balance: account.locked_balance,
+        emergency_reserve: account.emergency_reserve,
+        currency: account.currency,
+        is_default: account.is_default,
+        created_at: account.created_at,
+        updated_at: account.updated_at,
+        user_role: user_role as 'owner' | 'member',
+        is_shared: is_shared,
+      };
+    });
+
+    return accountsWithRole;
   }
 
   /**
@@ -51,8 +89,9 @@ export class AccountService {
       throw new NotFoundError('Account not found');
     }
 
-    // Verificar se a conta pertence ao usuário
-    if (account.user_id !== userId) {
+    // Verificar se a conta pertence ao usuário ou se ele é membro
+    const access = await accountMemberService.checkAccess(accountId, userId);
+    if (!access.hasAccess) {
       throw new ForbiddenError('Access denied to this account');
     }
 
@@ -99,6 +138,15 @@ export class AccountService {
         },
       });
 
+      // Adicionar criador como owner em account_members
+      await tx.accountMember.create({
+        data: {
+          account_id: account.id,
+          user_id: userId,
+          role: 'owner',
+        },
+      });
+
       return account;
     });
 
@@ -109,8 +157,9 @@ export class AccountService {
    * Atualiza uma conta
    */
   async update(accountId: string, userId: string, data: UpdateAccountDTO) {
-    // Verificar se conta existe e pertence ao usuário
+    // Verificar se conta existe e usuário tem permissão de owner
     await this.getById(accountId, userId);
+    await accountMemberService.checkOwnerPermission(accountId, userId);
 
     // Se está definindo como padrão, remover padrão das outras
     if (data.is_default) {
@@ -136,8 +185,9 @@ export class AccountService {
    * Deleta uma conta (apenas se não tiver transações)
    */
   async delete(accountId: string, userId: string) {
-    // Verificar se conta existe e pertence ao usuário
+    // Verificar se conta existe e usuário tem permissão de owner
     const account = await this.getById(accountId, userId);
+    await accountMemberService.checkOwnerPermission(accountId, userId);
 
     // Verificar se tem transações
     const transactionCount = await prisma.transaction.count({

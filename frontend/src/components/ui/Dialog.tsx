@@ -52,7 +52,7 @@ export function DialogContent({ children, className = '' }: DialogContentProps) 
 }
 
 export function DialogHeader({ children }: DialogHeaderProps) {
-  return <div className="mb-4">{children}</div>;
+  return <div className="mb-4 pr-12">{children}</div>;
 }
 
 export function DialogTitle({ children }: DialogTitleProps) {
@@ -67,7 +67,6 @@ export function DialogClose({ onClose }: { onClose: () => void }) {
   return (
     <Button
       variant="outline"
-      size="sm"
       onClick={onClose}
       className="absolute top-4 right-4 p-1"
     >
