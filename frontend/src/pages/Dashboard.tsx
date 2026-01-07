@@ -92,7 +92,7 @@ export function Dashboard() {
         {!loadingDailyLimit && !loadingAccounts && dailyLimit && dailyLimit.totalDailyLimit > 0 && (
           <div className="mb-6 flex justify-end">
             <div
-              className={`rounded-lg p-4 border max-w-md ${
+              className={`rounded-lg p-4 border w-full md:w-2/5 ${
                 dailyLimit.exceeded
                   ? 'bg-red-50 border-red-200'
                   : dailyLimit.percentageUsed > 80
