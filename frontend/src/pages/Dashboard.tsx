@@ -10,7 +10,7 @@ import { CreateAccountForm } from '../components/accounts/CreateAccountForm';
 import { TransactionList } from '../components/transactions/TransactionList';
 import { useAccounts } from '../hooks/useAccounts';
 import { useTotalDailyLimit } from '../hooks/useDailyLimit';
-import { useUpcomingFixedExpenses } from '../hooks/useTransactions';
+import { useUpcomingFixedExpenses, useMarkAsPaid } from '../hooks/useTransactions';
 
 export function Dashboard() {
   const { user, signOut } = useAuth();
@@ -28,10 +28,21 @@ export function Dashboard() {
 
   // Buscar próximas despesas fixas
   const { data: upcomingExpenses, isLoading: loadingUpcomingExpenses } = useUpcomingFixedExpenses();
+  const markAsPaid = useMarkAsPaid();
 
   function handleSignOut() {
     signOut();
     navigate('/login');
+  }
+
+  async function handleMarkAsPaid(id: string, description: string) {
+    if (window.confirm(`Deseja marcar "${description}" como paga?`)) {
+      try {
+        await markAsPaid.mutateAsync(id);
+      } catch (error: any) {
+        alert(error.response?.data?.error || 'Erro ao marcar como paga');
+      }
+    }
   }
 
   // Calculate totals from accounts
@@ -193,7 +204,7 @@ export function Dashboard() {
                       <p className="text-sm text-gray-500 mt-1">{expense.category.name}</p>
                     )}
                   </div>
-                  <div className="text-right">
+                  <div className="text-right ml-4">
                     <p className="font-bold text-red-600">{formatCurrency(expense.amount)}</p>
                     <p className="text-sm text-gray-500 mt-1">
                       {new Date(expense.due_date).toLocaleDateString('pt-BR', {
@@ -202,6 +213,13 @@ export function Dashboard() {
                         year: 'numeric',
                       })}
                     </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleMarkAsPaid(expense.id, expense.description)}
+                      className="mt-2 text-xs py-1 px-2 bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
+                    >
+                      Marcar como Paga
+                    </Button>
                   </div>
                 </div>
               ))}
