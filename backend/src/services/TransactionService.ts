@@ -433,7 +433,7 @@ export class TransactionService {
   }
 
   /**
-   * Atualiza uma transação (apenas se pending ou locked)
+   * Atualiza uma transação (permite atualizar qualquer transação, revertendo se necessário)
    */
   async update(
     userId: string,
@@ -447,25 +447,51 @@ export class TransactionService {
   ) {
     const transaction = await this.getById(userId, transactionId);
 
-    // Só permite atualizar se não foi executada
-    if (transaction.status === 'executed') {
-      throw new ValidationError('Cannot update executed transaction');
-    }
-
     return await prisma.$transaction(async (tx) => {
       const oldAmount = Number(transaction.amount);
       const newAmount = data.amount ?? oldAmount;
       const amountDiff = newAmount - oldAmount;
 
-      // Se o valor mudou e a transação está locked, ajustar saldos
-      if (amountDiff !== 0 && transaction.status === 'locked') {
-        await tx.account.update({
-          where: { id: transaction.account_id },
-          data: {
-            available_balance: { decrement: amountDiff },
-            locked_balance: { increment: amountDiff },
-          },
-        });
+      // Se o valor mudou, ajustar saldos conforme o tipo e status
+      if (amountDiff !== 0) {
+        if (transaction.status === 'locked') {
+          // Despesa fixa bloqueada: ajustar bloqueio
+          await tx.account.update({
+            where: { id: transaction.account_id },
+            data: {
+              available_balance: { decrement: amountDiff },
+              locked_balance: { increment: amountDiff },
+            },
+          });
+        } else if (transaction.status === 'executed') {
+          // Transação executada: ajustar conforme o tipo
+          if (transaction.type === 'income') {
+            // Receita: recalcular divisão 30/70
+            const emergencyPercentage = 30;
+            const oldReserve = oldAmount * (emergencyPercentage / 100);
+            const oldAvailable = oldAmount - oldReserve;
+            const newReserve = newAmount * (emergencyPercentage / 100);
+            const newAvailable = newAmount - newReserve;
+
+            await tx.account.update({
+              where: { id: transaction.account_id },
+              data: {
+                total_balance: { increment: amountDiff },
+                emergency_reserve: { increment: newReserve - oldReserve },
+                available_balance: { increment: newAvailable - oldAvailable },
+              },
+            });
+          } else {
+            // Despesa variável: ajustar saldo total e disponível
+            await tx.account.update({
+              where: { id: transaction.account_id },
+              data: {
+                total_balance: { decrement: amountDiff },
+                available_balance: { decrement: amountDiff },
+              },
+            });
+          }
+        }
       }
 
       // Atualizar transação
@@ -496,26 +522,49 @@ export class TransactionService {
   }
 
   /**
-   * Deleta uma transação (apenas se pending ou locked)
+   * Deleta uma transação (permite deletar qualquer transação, revertendo os efeitos)
    */
   async delete(userId: string, transactionId: string) {
     const transaction = await this.getById(userId, transactionId);
-
-    // Só permite deletar se não foi executada
-    if (transaction.status === 'executed') {
-      throw new ValidationError('Cannot delete executed transaction');
-    }
+    const amount = Number(transaction.amount);
 
     return await prisma.$transaction(async (tx) => {
-      // Se estava bloqueada, liberar o saldo
+      // Reverter efeitos nos saldos conforme o tipo e status
       if (transaction.status === 'locked') {
+        // Despesa fixa bloqueada: liberar o bloqueio
         await tx.account.update({
           where: { id: transaction.account_id },
           data: {
-            available_balance: { increment: Number(transaction.amount) },
-            locked_balance: { decrement: Number(transaction.amount) },
+            available_balance: { increment: amount },
+            locked_balance: { decrement: amount },
           },
         });
+      } else if (transaction.status === 'executed') {
+        // Transação executada: reverter conforme o tipo
+        if (transaction.type === 'income') {
+          // Receita: reverter divisão 30/70
+          const emergencyPercentage = 30;
+          const reserveAmount = amount * (emergencyPercentage / 100);
+          const availableAmount = amount - reserveAmount;
+
+          await tx.account.update({
+            where: { id: transaction.account_id },
+            data: {
+              total_balance: { decrement: amount },
+              emergency_reserve: { decrement: reserveAmount },
+              available_balance: { decrement: availableAmount },
+            },
+          });
+        } else {
+          // Despesa variável: devolver o valor
+          await tx.account.update({
+            where: { id: transaction.account_id },
+            data: {
+              total_balance: { increment: amount },
+              available_balance: { increment: amount },
+            },
+          });
+        }
       }
 
       // Deletar transação

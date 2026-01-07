@@ -218,25 +218,23 @@ export function TransactionList({ accountId }: TransactionListProps) {
                   {formatCurrency(Number(transaction.amount))}
                 </p>
 
-                {/* Action Buttons - Only for non-executed transactions */}
-                {transaction.status !== 'executed' && (
-                  <div className="flex gap-2 mt-2 justify-end">
-                    <button
-                      onClick={() => handleEdit(transaction)}
-                      className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                      title="Editar"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(transaction.id)}
-                      className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                      title="Excluir"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
+                {/* Action Buttons - Available for all transactions */}
+                <div className="flex gap-2 mt-2 justify-end">
+                  <button
+                    onClick={() => handleEdit(transaction)}
+                    className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    title="Editar"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(transaction.id)}
+                    className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                    title="Excluir"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
