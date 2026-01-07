@@ -88,9 +88,9 @@ export function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Alerta Limite Diário - Compacto no lado esquerdo */}
+        {/* Alerta Limite Diário - Compacto no lado direito */}
         {!loadingDailyLimit && !loadingAccounts && dailyLimit && dailyLimit.totalDailyLimit > 0 && (
-          <div className="mb-6">
+          <div className="mb-6 flex justify-end">
             <div
               className={`rounded-lg p-4 border max-w-md ${
                 dailyLimit.exceeded
