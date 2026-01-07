@@ -13,7 +13,13 @@ const incomeSchema = z.object({
   amount: z.number().positive('Valor deve ser positivo'),
   description: z.string().min(1, 'Descrição é obrigatória'),
   categoryId: z.string().min(1, 'Categoria é obrigatória'),
-  dueDate: z.string().optional(),
+  dueDate: z.string()
+    .optional()
+    .transform((val) => {
+      if (!val || val === '') return undefined;
+      // Convert datetime-local format to ISO string
+      return new Date(val).toISOString();
+    }),
   isRecurring: z.boolean().optional(),
   recurrencePattern: z.enum(['monthly', 'weekly', 'yearly']).optional(),
 });
