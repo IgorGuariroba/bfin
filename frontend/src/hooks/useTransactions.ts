@@ -67,6 +67,29 @@ export function useCreateVariableExpense() {
   });
 }
 
+export function useUpdateTransaction() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: {
+      id: string;
+      data: {
+        amount?: number;
+        description?: string;
+        categoryId?: string;
+        dueDate?: string;
+      }
+    }) => transactionService.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-limit'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-limit-status'] });
+      queryClient.invalidateQueries({ queryKey: ['total-daily-limit'] });
+    },
+  });
+}
+
 export function useDeleteTransaction() {
   const queryClient = useQueryClient();
 

@@ -51,6 +51,22 @@ export const transactionService = {
   },
 
   /**
+   * Update transaction
+   */
+  async update(
+    id: string,
+    data: {
+      amount?: number;
+      description?: string;
+      categoryId?: string;
+      dueDate?: string;
+    }
+  ): Promise<{ transaction: Transaction; message: string }> {
+    const response = await api.put(`/transactions/${id}`, data);
+    return response.data;
+  },
+
+  /**
    * Delete transaction
    */
   async delete(id: string): Promise<{ message: string }> {

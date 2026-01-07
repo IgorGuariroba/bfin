@@ -44,6 +44,13 @@ const listTransactionsSchema = z.object({
   limit: z.string().optional().transform(val => val ? parseInt(val, 10) : 50),
 });
 
+const updateTransactionSchema = z.object({
+  amount: z.number().positive('Amount must be positive').optional(),
+  description: z.string().min(1, 'Description is required').optional(),
+  categoryId: z.string().uuid('Invalid category ID').optional(),
+  dueDate: z.string().datetime().optional().transform(val => val ? new Date(val) : undefined),
+});
+
 export class TransactionController {
   /**
    * POST /api/v1/transactions/income
@@ -123,6 +130,23 @@ export class TransactionController {
     const transaction = await transactionService.getById(req.user.userId, id);
 
     res.json(transaction);
+  }
+
+  /**
+   * PUT /api/v1/transactions/:id
+   * Atualiza uma transação (apenas se pending ou locked)
+   */
+  async update(req: AuthRequest, res: Response): Promise<void> {
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const { id } = req.params;
+    const data = updateTransactionSchema.parse(req.body);
+    const result = await transactionService.update(req.user.userId, id, data);
+
+    res.json(result);
   }
 
   /**

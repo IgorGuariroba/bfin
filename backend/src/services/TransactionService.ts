@@ -433,6 +433,69 @@ export class TransactionService {
   }
 
   /**
+   * Atualiza uma transação (apenas se pending ou locked)
+   */
+  async update(
+    userId: string,
+    transactionId: string,
+    data: {
+      amount?: number;
+      description?: string;
+      categoryId?: string;
+      dueDate?: Date;
+    }
+  ) {
+    const transaction = await this.getById(userId, transactionId);
+
+    // Só permite atualizar se não foi executada
+    if (transaction.status === 'executed') {
+      throw new ValidationError('Cannot update executed transaction');
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      const oldAmount = Number(transaction.amount);
+      const newAmount = data.amount ?? oldAmount;
+      const amountDiff = newAmount - oldAmount;
+
+      // Se o valor mudou e a transação está locked, ajustar saldos
+      if (amountDiff !== 0 && transaction.status === 'locked') {
+        await tx.account.update({
+          where: { id: transaction.account_id },
+          data: {
+            available_balance: { decrement: amountDiff },
+            locked_balance: { increment: amountDiff },
+          },
+        });
+      }
+
+      // Atualizar transação
+      const updatedTransaction = await tx.transaction.update({
+        where: { id: transactionId },
+        data: {
+          amount: data.amount,
+          description: data.description,
+          category_id: data.categoryId,
+          due_date: data.dueDate,
+        },
+        include: {
+          category: true,
+          account: true,
+        },
+      });
+
+      // Invalidar cache de sugestões se o valor mudou
+      if (amountDiff !== 0) {
+        await SuggestionEngine.invalidateCache(transaction.account_id);
+      }
+
+      return {
+        transaction: updatedTransaction,
+        message: 'Transaction updated successfully',
+      };
+    });
+  }
+
+  /**
    * Deleta uma transação (apenas se pending ou locked)
    */
   async delete(userId: string, transactionId: string) {
@@ -459,6 +522,9 @@ export class TransactionService {
       await tx.transaction.delete({
         where: { id: transactionId },
       });
+
+      // Invalidar cache de sugestões
+      await SuggestionEngine.invalidateCache(transaction.account_id);
 
       return { message: 'Transaction deleted successfully' };
     });
