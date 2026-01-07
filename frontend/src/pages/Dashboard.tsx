@@ -11,6 +11,7 @@ import { TransactionList } from '../components/transactions/TransactionList';
 import { useAccounts } from '../hooks/useAccounts';
 import { useTotalDailyLimit } from '../hooks/useDailyLimit';
 import { useUpcomingFixedExpenses, useMarkAsPaid } from '../hooks/useTransactions';
+import { Shield } from 'lucide-react';
 
 export function Dashboard() {
   const { user, signOut } = useAuth();
@@ -20,6 +21,7 @@ export function Dashboard() {
   const [variableExpenseDialogOpen, setVariableExpenseDialogOpen] = useState(false);
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
   const [transactionsDialogOpen, setTransactionsDialogOpen] = useState(false);
+  const [emergencyReserveDialogOpen, setEmergencyReserveDialogOpen] = useState(false);
   const { data: accounts, isLoading: loadingAccounts } = useAccounts();
 
   // Buscar limite diário de todas as contas
@@ -87,15 +89,29 @@ export function Dashboard() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Card Disponível */}
-        <div
-          className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow mb-8"
-          onClick={() => setTransactionsDialogOpen(true)}
-        >
-          <h3 className="text-sm font-medium text-gray-500">Saldo Disponível</h3>
-          <p className="mt-2 text-4xl font-bold text-green-600">
-            {loadingAccounts ? 'Carregando...' : formatCurrency(totals.availableBalance)}
-          </p>
-          <p className="mt-1 text-sm text-gray-500">Para gastos · Clique para ver todas as transações</p>
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-gray-500">Saldo Disponível</h3>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setEmergencyReserveDialogOpen(true);
+              }}
+              className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+              title="Ver Reserva de Emergência"
+            >
+              <Shield className="h-5 w-5" />
+            </button>
+          </div>
+          <div
+            className="cursor-pointer"
+            onClick={() => setTransactionsDialogOpen(true)}
+          >
+            <p className="mt-2 text-4xl font-bold text-green-600">
+              {loadingAccounts ? 'Carregando...' : formatCurrency(totals.availableBalance)}
+            </p>
+            <p className="mt-1 text-sm text-gray-500">Para gastos · Clique para ver todas as transações</p>
+          </div>
         </div>
 
         {/* Limite Diário */}
@@ -314,6 +330,46 @@ export function Dashboard() {
             <DialogTitle>Todas as Transações</DialogTitle>
           </DialogHeader>
           <TransactionList />
+        </DialogContent>
+      </Dialog>
+
+      {/* Emergency Reserve Dialog */}
+      <Dialog open={emergencyReserveDialogOpen} onOpenChange={setEmergencyReserveDialogOpen}>
+        <DialogContent className="relative">
+          <DialogClose onClose={() => setEmergencyReserveDialogOpen(false)} />
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-blue-600" />
+              Reserva de Emergência
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-800 mb-2">
+                Sua reserva de emergência é calculada automaticamente como 30% de todas as receitas recebidas.
+              </p>
+              <p className="text-3xl font-bold text-blue-600">
+                {loadingAccounts ? 'Carregando...' : formatCurrency(totals.emergencyReserve)}
+              </p>
+            </div>
+
+            <div className="space-y-2 text-sm text-gray-600">
+              <h4 className="font-semibold text-gray-900">Para que serve?</h4>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li>Proteção financeira para imprevistos</li>
+                <li>Cobertura para emergências médicas</li>
+                <li>Segurança em caso de perda de renda</li>
+                <li>Reparos urgentes em casa ou veículo</li>
+              </ul>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4 text-xs text-gray-500">
+              <p className="font-medium text-gray-700 mb-1">Como funciona:</p>
+              <p>A cada receita recebida, 30% é automaticamente separado para sua reserva de emergência.
+              Os 70% restantes ficam disponíveis para seus gastos do dia a dia.</p>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
