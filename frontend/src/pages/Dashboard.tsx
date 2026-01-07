@@ -86,19 +86,7 @@ export function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Card Saldo Total */}
-          <div
-            className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={() => setTransactionsDialogOpen(true)}
-          >
-            <h3 className="text-sm font-medium text-gray-500">Saldo Total</h3>
-            <p className="mt-2 text-3xl font-bold text-gray-900">
-              {loadingAccounts ? 'Carregando...' : formatCurrency(totals.totalBalance)}
-            </p>
-            <p className="mt-1 text-sm text-gray-500">Todas as contas · Clique para ver transações</p>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Card Disponível */}
           <div
             className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow"
