@@ -44,13 +44,13 @@ import authRoutes from './routes/auth.routes';
 import accountRoutes from './routes/accounts.routes';
 import transactionRoutes from './routes/transactions.routes';
 import categoryRoutes from './routes/categories.routes';
-// import suggestionRoutes from './routes/suggestions.routes';
+import suggestionRoutes from './routes/suggestions.routes';
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/accounts', accountRoutes);
 app.use('/api/v1/transactions', transactionRoutes);
 app.use('/api/v1/categories', categoryRoutes);
-// app.use('/api/v1/suggestions', suggestionRoutes);
+app.use('/api/v1/suggestions', suggestionRoutes);
 
 // 404 Handler
 app.use((_req, res) => {

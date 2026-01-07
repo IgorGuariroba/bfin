@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { ValidationError, InsufficientBalanceError, NotFoundError, ForbiddenError } from '../middlewares/errorHandler';
+import { SuggestionEngine } from './SuggestionEngine';
 
 const prisma = new PrismaClient();
 
@@ -110,6 +111,9 @@ export class TransactionService {
         },
       });
 
+      // 7. Invalidar cache de sugestão
+      await SuggestionEngine.invalidateCache(data.accountId);
+
       return {
         transaction,
         breakdown: {
@@ -203,6 +207,9 @@ export class TransactionService {
         },
       });
 
+      // 6. Invalidar cache de sugestão
+      await SuggestionEngine.invalidateCache(data.accountId);
+
       return {
         transaction,
         account_balances: {
@@ -280,6 +287,9 @@ export class TransactionService {
           change_reason: 'expense_paid',
         },
       });
+
+      // 6. Invalidar cache de sugestão
+      await SuggestionEngine.invalidateCache(data.accountId);
 
       return {
         transaction,
