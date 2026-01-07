@@ -522,6 +522,40 @@ export class TransactionService {
   }
 
   /**
+   * Duplica uma transação (cria uma nova com os mesmos dados)
+   */
+  async duplicate(userId: string, transactionId: string) {
+    const transaction = await this.getById(userId, transactionId);
+
+    // Preparar dados para nova transação
+    const duplicateData = {
+      accountId: transaction.account_id,
+      categoryId: transaction.category_id,
+      amount: Number(transaction.amount),
+      description: `${transaction.description} (cópia)`,
+      dueDate: new Date(),
+      isRecurring: transaction.is_recurring,
+      recurrencePattern: transaction.recurrence_pattern,
+    };
+
+    // Criar nova transação baseada no tipo original
+    if (transaction.type === 'income') {
+      return this.processIncome(userId, duplicateData);
+    } else if (transaction.type === 'fixed_expense') {
+      return this.createFixedExpense(userId, duplicateData);
+    } else if (transaction.type === 'variable_expense') {
+      return this.createVariableExpense(userId, {
+        accountId: duplicateData.accountId,
+        categoryId: duplicateData.categoryId,
+        amount: duplicateData.amount,
+        description: duplicateData.description,
+      });
+    }
+
+    throw new ValidationError('Invalid transaction type');
+  }
+
+  /**
    * Marca uma despesa fixa como paga (executa o pagamento)
    */
   async markFixedExpenseAsPaid(userId: string, transactionId: string) {

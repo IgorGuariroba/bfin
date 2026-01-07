@@ -75,6 +75,14 @@ export const transactionService = {
   },
 
   /**
+   * Duplicate transaction
+   */
+  async duplicate(id: string): Promise<any> {
+    const response = await api.post(`/transactions/${id}/duplicate`);
+    return response.data;
+  },
+
+  /**
    * Delete transaction
    */
   async delete(id: string): Promise<{ message: string }> {

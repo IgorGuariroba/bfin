@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useTransactions, useDeleteTransaction, useUpdateTransaction, useMarkAsPaid } from '../../hooks/useTransactions';
+import { useTransactions, useDeleteTransaction, useUpdateTransaction, useMarkAsPaid, useDuplicateTransaction } from '../../hooks/useTransactions';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowUpCircle, ArrowDownCircle, Lock, Pencil, Trash2, CheckCircle } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, Lock, Pencil, Trash2, CheckCircle, Copy } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '../ui/Dialog';
 import { useCategories } from '../../hooks/useCategories';
@@ -16,6 +16,7 @@ export function TransactionList({ accountId }: TransactionListProps) {
   const deleteTransaction = useDeleteTransaction();
   const updateTransaction = useUpdateTransaction();
   const markAsPaid = useMarkAsPaid();
+  const duplicateTransaction = useDuplicateTransaction();
   const { data: categoriesData } = useCategories();
 
   const [editingTransaction, setEditingTransaction] = useState<any>(null);
@@ -120,6 +121,16 @@ export function TransactionList({ accountId }: TransactionListProps) {
         await markAsPaid.mutateAsync(id);
       } catch (error: any) {
         alert(error.response?.data?.error || 'Erro ao marcar como paga');
+      }
+    }
+  };
+
+  const handleDuplicate = async (id: string, description: string) => {
+    if (window.confirm(`Deseja duplicar "${description}"?`)) {
+      try {
+        await duplicateTransaction.mutateAsync(id);
+      } catch (error: any) {
+        alert(error.response?.data?.error || 'Erro ao duplicar transação');
       }
     }
   };
@@ -245,6 +256,13 @@ export function TransactionList({ accountId }: TransactionListProps) {
 
                 {/* Action Buttons - Available for all transactions */}
                 <div className="flex gap-2 mt-2 justify-end">
+                  <button
+                    onClick={() => handleDuplicate(transaction.id, transaction.description)}
+                    className="p-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                    title="Duplicar"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
                   <button
                     onClick={() => handleEdit(transaction)}
                     className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"

@@ -35,6 +35,11 @@ router.post('/:id/mark-as-paid', (req, res, next) => {
   transactionController.markAsPaid(req, res).catch(next);
 });
 
+// Duplicar transação
+router.post('/:id/duplicate', (req, res, next) => {
+  transactionController.duplicate(req, res).catch(next);
+});
+
 // Atualizar transação
 router.put('/:id', (req, res, next) => {
   transactionController.update(req, res).catch(next);

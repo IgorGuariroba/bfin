@@ -166,6 +166,22 @@ export class TransactionController {
   }
 
   /**
+   * POST /api/v1/transactions/:id/duplicate
+   * Duplica uma transação
+   */
+  async duplicate(req: AuthRequest, res: Response): Promise<void> {
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const { id } = req.params;
+    const result = await transactionService.duplicate(req.user.userId, id);
+
+    res.status(201).json(result);
+  }
+
+  /**
    * DELETE /api/v1/transactions/:id
    * Deleta uma transação (apenas se pending ou locked)
    */
