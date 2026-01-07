@@ -4,11 +4,15 @@ import { Button } from '../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '../components/ui/Dialog';
 import { IncomeForm } from '../components/transactions/IncomeForm';
+import { CreateAccountForm } from '../components/accounts/CreateAccountForm';
+import { useAccounts } from '../hooks/useAccounts';
 
 export function Dashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [incomeDialogOpen, setIncomeDialogOpen] = useState(false);
+  const [accountDialogOpen, setAccountDialogOpen] = useState(false);
+  const { data: accounts, isLoading: loadingAccounts } = useAccounts();
 
   function handleSignOut() {
     signOut();
@@ -101,14 +105,27 @@ export function Dashboard() {
           <h3 className="text-lg font-semibold text-blue-900 mb-2">
             Comece a usar o BFIN!
           </h3>
-          <p className="text-blue-700 mb-4">
-            Registre sua primeira receita para começar a gerenciar suas finanças
-            automaticamente.
-          </p>
-          <div className="flex gap-4">
-            <Button onClick={() => setIncomeDialogOpen(true)}>+ Nova Receita</Button>
-            <Button variant="outline">+ Nova Despesa</Button>
-          </div>
+          {loadingAccounts ? (
+            <p className="text-blue-700">Carregando...</p>
+          ) : !accounts || accounts.length === 0 ? (
+            <>
+              <p className="text-blue-700 mb-4">
+                Você precisa criar uma conta bancária antes de registrar transações.
+              </p>
+              <Button onClick={() => setAccountDialogOpen(true)}>+ Criar Conta</Button>
+            </>
+          ) : (
+            <>
+              <p className="text-blue-700 mb-4">
+                Registre sua primeira receita para começar a gerenciar suas finanças
+                automaticamente.
+              </p>
+              <div className="flex gap-4">
+                <Button onClick={() => setIncomeDialogOpen(true)}>+ Nova Receita</Button>
+                <Button variant="outline">+ Nova Despesa</Button>
+              </div>
+            </>
+          )}
         </div>
       </main>
 
@@ -122,9 +139,24 @@ export function Dashboard() {
           <IncomeForm
             onSuccess={() => {
               setIncomeDialogOpen(false);
-              // Optionally show success message or refresh data
             }}
             onCancel={() => setIncomeDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Account Dialog */}
+      <Dialog open={accountDialogOpen} onOpenChange={setAccountDialogOpen}>
+        <DialogContent className="relative">
+          <DialogClose onClose={() => setAccountDialogOpen(false)} />
+          <DialogHeader>
+            <DialogTitle>Criar Conta Bancária</DialogTitle>
+          </DialogHeader>
+          <CreateAccountForm
+            onSuccess={() => {
+              setAccountDialogOpen(false);
+            }}
+            onCancel={() => setAccountDialogOpen(false)}
           />
         </DialogContent>
       </Dialog>
