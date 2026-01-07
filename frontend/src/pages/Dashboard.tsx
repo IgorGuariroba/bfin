@@ -7,6 +7,7 @@ import { IncomeForm } from '../components/transactions/IncomeForm';
 import { FixedExpenseForm } from '../components/transactions/FixedExpenseForm';
 import { VariableExpenseForm } from '../components/transactions/VariableExpenseForm';
 import { CreateAccountForm } from '../components/accounts/CreateAccountForm';
+import { TransactionList } from '../components/transactions/TransactionList';
 import { useAccounts } from '../hooks/useAccounts';
 import { useTotalDailyLimit } from '../hooks/useDailyLimit';
 
@@ -17,6 +18,7 @@ export function Dashboard() {
   const [fixedExpenseDialogOpen, setFixedExpenseDialogOpen] = useState(false);
   const [variableExpenseDialogOpen, setVariableExpenseDialogOpen] = useState(false);
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
+  const [transactionsDialogOpen, setTransactionsDialogOpen] = useState(false);
   const { data: accounts, isLoading: loadingAccounts } = useAccounts();
 
   // Buscar limite diário de todas as contas
@@ -71,32 +73,41 @@ export function Dashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Card Saldo Total */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div
+            className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => setTransactionsDialogOpen(true)}
+          >
             <h3 className="text-sm font-medium text-gray-500">Saldo Total</h3>
             <p className="mt-2 text-3xl font-bold text-gray-900">
               {loadingAccounts ? 'Carregando...' : formatCurrency(totals.totalBalance)}
             </p>
-            <p className="mt-1 text-sm text-gray-500">Todas as contas</p>
+            <p className="mt-1 text-sm text-gray-500">Todas as contas · Clique para ver transações</p>
           </div>
 
           {/* Card Disponível */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div
+            className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => setTransactionsDialogOpen(true)}
+          >
             <h3 className="text-sm font-medium text-gray-500">Disponível</h3>
             <p className="mt-2 text-3xl font-bold text-green-600">
               {loadingAccounts ? 'Carregando...' : formatCurrency(totals.availableBalance)}
             </p>
-            <p className="mt-1 text-sm text-gray-500">Para gastos</p>
+            <p className="mt-1 text-sm text-gray-500">Para gastos · Clique para ver transações</p>
           </div>
 
           {/* Card Reserva */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div
+            className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => setTransactionsDialogOpen(true)}
+          >
             <h3 className="text-sm font-medium text-gray-500">
               Reserva de Emergência
             </h3>
             <p className="mt-2 text-3xl font-bold text-blue-600">
               {loadingAccounts ? 'Carregando...' : formatCurrency(totals.emergencyReserve)}
             </p>
-            <p className="mt-1 text-sm text-gray-500">30% das receitas</p>
+            <p className="mt-1 text-sm text-gray-500">30% das receitas · Clique para ver transações</p>
           </div>
         </div>
 
@@ -259,6 +270,17 @@ export function Dashboard() {
             }}
             onCancel={() => setAccountDialogOpen(false)}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Transactions Dialog */}
+      <Dialog open={transactionsDialogOpen} onOpenChange={setTransactionsDialogOpen}>
+        <DialogContent className="relative max-w-4xl">
+          <DialogClose onClose={() => setTransactionsDialogOpen(false)} />
+          <DialogHeader>
+            <DialogTitle>Todas as Transações</DialogTitle>
+          </DialogHeader>
+          <TransactionList />
         </DialogContent>
       </Dialog>
     </div>
