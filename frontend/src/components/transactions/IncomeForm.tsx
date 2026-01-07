@@ -87,7 +87,7 @@ export function IncomeForm({ onSuccess, onCancel }: IncomeFormProps) {
           <option value="">Selecione uma conta</option>
           {accounts.map((account) => (
             <option key={account.id} value={account.id}>
-              {account.account_name} - R$ {account.available_balance.toFixed(2)}
+              {account.account_name} - R$ {Number(account.available_balance).toFixed(2)}
             </option>
           ))}
         </select>
