@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '../components/ui/Dialog';
+import { IncomeForm } from '../components/transactions/IncomeForm';
 
 export function Dashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [incomeDialogOpen, setIncomeDialogOpen] = useState(false);
 
   function handleSignOut() {
     signOut();
@@ -102,11 +106,28 @@ export function Dashboard() {
             automaticamente.
           </p>
           <div className="flex gap-4">
-            <Button>+ Nova Receita</Button>
+            <Button onClick={() => setIncomeDialogOpen(true)}>+ Nova Receita</Button>
             <Button variant="outline">+ Nova Despesa</Button>
           </div>
         </div>
       </main>
+
+      {/* Income Dialog */}
+      <Dialog open={incomeDialogOpen} onOpenChange={setIncomeDialogOpen}>
+        <DialogContent className="relative">
+          <DialogClose onClose={() => setIncomeDialogOpen(false)} />
+          <DialogHeader>
+            <DialogTitle>Nova Receita</DialogTitle>
+          </DialogHeader>
+          <IncomeForm
+            onSuccess={() => {
+              setIncomeDialogOpen(false);
+              // Optionally show success message or refresh data
+            }}
+            onCancel={() => setIncomeDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
