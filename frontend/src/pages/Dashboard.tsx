@@ -8,6 +8,7 @@ import { FixedExpenseForm } from '../components/transactions/FixedExpenseForm';
 import { VariableExpenseForm } from '../components/transactions/VariableExpenseForm';
 import { CreateAccountForm } from '../components/accounts/CreateAccountForm';
 import { useAccounts } from '../hooks/useAccounts';
+import { useTotalDailyLimit } from '../hooks/useDailyLimit';
 
 export function Dashboard() {
   const { user, signOut } = useAuth();
@@ -17,6 +18,10 @@ export function Dashboard() {
   const [variableExpenseDialogOpen, setVariableExpenseDialogOpen] = useState(false);
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
   const { data: accounts, isLoading: loadingAccounts } = useAccounts();
+
+  // Buscar limite diário de todas as contas
+  const accountIds = accounts?.map((acc) => acc.id) || [];
+  const { data: dailyLimit, isLoading: loadingDailyLimit } = useTotalDailyLimit(accountIds);
 
   function handleSignOut() {
     signOut();
@@ -100,23 +105,53 @@ export function Dashboard() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Limite Diário Sugerido
           </h2>
-          <div className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">Gasto hoje</span>
-                <span className="text-sm font-medium">R$ 0,00 / R$ 0,00</span>
+          {loadingDailyLimit || loadingAccounts ? (
+            <p className="text-gray-500">Carregando...</p>
+          ) : !dailyLimit || dailyLimit.totalDailyLimit === 0 ? (
+            <p className="text-gray-500">
+              Registre uma receita para ver sua sugestão de limite diário
+            </p>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-600">Gasto hoje</span>
+                  <span className="text-sm font-medium">
+                    {formatCurrency(dailyLimit.totalSpentToday)} / {formatCurrency(dailyLimit.totalDailyLimit)}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full ${
+                      dailyLimit.exceeded ? 'bg-red-500' : 'bg-blue-600'
+                    }`}
+                    style={{ width: `${Math.min(100, dailyLimit.percentageUsed)}%` }}
+                  ></div>
+                </div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-blue-600 h-2 rounded-full"
-                  style={{ width: '0%' }}
-                ></div>
+              <p className="text-sm text-gray-500">
+                {dailyLimit.exceeded ? (
+                  <>
+                    Você <strong className="text-red-600">excedeu</strong> o limite em{' '}
+                    <strong className="text-red-600">
+                      {formatCurrency(dailyLimit.totalSpentToday - dailyLimit.totalDailyLimit)}
+                    </strong>
+                  </>
+                ) : (
+                  <>
+                    Você ainda pode gastar{' '}
+                    <strong className="text-green-600">
+                      {formatCurrency(dailyLimit.totalRemaining)}
+                    </strong>{' '}
+                    hoje
+                  </>
+                )}
+              </p>
+              <div className="text-xs text-gray-400 mt-2">
+                Cálculo: Saldo disponível ÷ 30 dias
               </div>
             </div>
-            <p className="text-sm text-gray-500">
-              Você ainda pode gastar <strong>R$ 0,00</strong> hoje
-            </p>
-          </div>
+          )}
         </div>
 
         {/* Próximas Despesas */}
