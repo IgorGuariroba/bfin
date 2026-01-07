@@ -88,45 +88,31 @@ export function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Alerta Limite Diário */}
+        {/* Alerta Limite Diário - Compacto no lado esquerdo */}
         {!loadingDailyLimit && !loadingAccounts && dailyLimit && dailyLimit.totalDailyLimit > 0 && (
-          <div
-            className={`rounded-lg p-4 mb-6 border ${
-              dailyLimit.exceeded
-                ? 'bg-red-50 border-red-200'
-                : dailyLimit.percentageUsed > 80
-                ? 'bg-yellow-50 border-yellow-200'
-                : 'bg-blue-50 border-blue-200'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-sm font-semibold text-gray-900">
+          <div className="mb-6">
+            <div
+              className={`rounded-lg p-4 border max-w-md ${
+                dailyLimit.exceeded
+                  ? 'bg-red-50 border-red-200'
+                  : dailyLimit.percentageUsed > 80
+                  ? 'bg-yellow-50 border-yellow-200'
+                  : 'bg-blue-50 border-blue-200'
+              }`}
+            >
+              <div className="space-y-2">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">
                     Limite Diário Sugerido
                   </h3>
-                  <span className="text-xs text-gray-500">
-                    ({formatCurrency(dailyLimit.totalSpentToday)} / {formatCurrency(dailyLimit.totalDailyLimit)})
-                  </span>
+                  <div className="flex items-center justify-between text-xs text-gray-600">
+                    <span>Gasto hoje</span>
+                    <span className="font-medium">
+                      {formatCurrency(dailyLimit.totalSpentToday)} / {formatCurrency(dailyLimit.totalDailyLimit)}
+                    </span>
+                  </div>
                 </div>
-                <p className="text-sm">
-                  {dailyLimit.exceeded ? (
-                    <>
-                      <span className="text-red-700 font-medium">
-                        Limite excedido em {formatCurrency(dailyLimit.totalSpentToday - dailyLimit.totalDailyLimit)}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span className={dailyLimit.percentageUsed > 80 ? 'text-yellow-700' : 'text-green-700'}>
-                        Você ainda pode gastar {formatCurrency(dailyLimit.totalRemaining)} hoje
-                      </span>
-                    </>
-                  )}
-                </p>
-              </div>
-              <div className="ml-4">
-                <div className="w-24 bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
                     className={`h-2 rounded-full ${
                       dailyLimit.exceeded
@@ -138,6 +124,17 @@ export function Dashboard() {
                     style={{ width: `${Math.min(100, dailyLimit.percentageUsed)}%` }}
                   ></div>
                 </div>
+                <p className="text-xs">
+                  {dailyLimit.exceeded ? (
+                    <span className="text-red-700 font-medium">
+                      Excedido em {formatCurrency(dailyLimit.totalSpentToday - dailyLimit.totalDailyLimit)}
+                    </span>
+                  ) : (
+                    <span className={dailyLimit.percentageUsed > 80 ? 'text-yellow-700' : 'text-green-700'}>
+                      Restam {formatCurrency(dailyLimit.totalRemaining)} hoje
+                    </span>
+                  )}
+                </p>
               </div>
             </div>
           </div>
