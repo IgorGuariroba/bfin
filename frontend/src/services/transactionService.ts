@@ -67,6 +67,14 @@ export const transactionService = {
   },
 
   /**
+   * Mark fixed expense as paid
+   */
+  async markAsPaid(id: string): Promise<{ transaction: Transaction; message: string }> {
+    const response = await api.post(`/transactions/${id}/mark-as-paid`);
+    return response.data;
+  },
+
+  /**
    * Delete transaction
    */
   async delete(id: string): Promise<{ message: string }> {

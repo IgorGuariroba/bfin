@@ -150,6 +150,22 @@ export class TransactionController {
   }
 
   /**
+   * POST /api/v1/transactions/:id/mark-as-paid
+   * Marca uma despesa fixa como paga
+   */
+  async markAsPaid(req: AuthRequest, res: Response): Promise<void> {
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const { id } = req.params;
+    const result = await transactionService.markFixedExpenseAsPaid(req.user.userId, id);
+
+    res.json(result);
+  }
+
+  /**
    * DELETE /api/v1/transactions/:id
    * Deleta uma transação (apenas se pending ou locked)
    */

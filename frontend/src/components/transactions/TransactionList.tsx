@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useTransactions, useDeleteTransaction, useUpdateTransaction } from '../../hooks/useTransactions';
+import { useTransactions, useDeleteTransaction, useUpdateTransaction, useMarkAsPaid } from '../../hooks/useTransactions';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowUpCircle, ArrowDownCircle, Lock, Pencil, Trash2 } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, Lock, Pencil, Trash2, CheckCircle } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '../ui/Dialog';
 import { useCategories } from '../../hooks/useCategories';
@@ -15,6 +15,7 @@ export function TransactionList({ accountId }: TransactionListProps) {
   const { data, isLoading, isError } = useTransactions({ accountId });
   const deleteTransaction = useDeleteTransaction();
   const updateTransaction = useUpdateTransaction();
+  const markAsPaid = useMarkAsPaid();
   const { data: categoriesData } = useCategories();
 
   const [editingTransaction, setEditingTransaction] = useState<any>(null);
@@ -110,6 +111,16 @@ export function TransactionList({ accountId }: TransactionListProps) {
       setEditingTransaction(null);
     } catch (error: any) {
       alert(error.response?.data?.error || 'Erro ao atualizar transação');
+    }
+  };
+
+  const handleMarkAsPaid = async (id: string) => {
+    if (window.confirm('Deseja marcar esta despesa fixa como paga?')) {
+      try {
+        await markAsPaid.mutateAsync(id);
+      } catch (error: any) {
+        alert(error.response?.data?.error || 'Erro ao marcar como paga');
+      }
     }
   };
 
@@ -217,6 +228,20 @@ export function TransactionList({ accountId }: TransactionListProps) {
                   {transaction.type === 'income' ? '+' : '-'}{' '}
                   {formatCurrency(Number(transaction.amount))}
                 </p>
+
+                {/* Mark as Paid Button - Only for locked fixed expenses */}
+                {transaction.type === 'fixed_expense' && transaction.status === 'locked' && (
+                  <div className="mt-2">
+                    <button
+                      onClick={() => handleMarkAsPaid(transaction.id)}
+                      className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center gap-1 ml-auto"
+                      title="Marcar como Paga"
+                    >
+                      <CheckCircle className="h-3 w-3" />
+                      Marcar como Paga
+                    </button>
+                  </div>
+                )}
 
                 {/* Action Buttons - Available for all transactions */}
                 <div className="flex gap-2 mt-2 justify-end">

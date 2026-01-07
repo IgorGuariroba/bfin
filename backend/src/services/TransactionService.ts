@@ -522,6 +522,80 @@ export class TransactionService {
   }
 
   /**
+   * Marca uma despesa fixa como paga (executa o pagamento)
+   */
+  async markFixedExpenseAsPaid(userId: string, transactionId: string) {
+    const transaction = await this.getById(userId, transactionId);
+
+    // Só permite marcar como paga se for despesa fixa e estiver bloqueada
+    if (transaction.type !== 'fixed_expense') {
+      throw new ValidationError('Only fixed expenses can be marked as paid');
+    }
+
+    if (transaction.status !== 'locked') {
+      throw new ValidationError('Transaction is not locked');
+    }
+
+    const amount = Number(transaction.amount);
+
+    return await prisma.$transaction(async (tx) => {
+      // Transferir do bloqueado para débito efetivo
+      await tx.account.update({
+        where: { id: transaction.account_id },
+        data: {
+          total_balance: { decrement: amount },
+          locked_balance: { decrement: amount },
+        },
+      });
+
+      // Atualizar transação como executada
+      const updatedTransaction = await tx.transaction.update({
+        where: { id: transactionId },
+        data: {
+          status: 'executed',
+          executed_date: new Date(),
+        },
+        include: {
+          category: true,
+          account: true,
+        },
+      });
+
+      // Buscar saldos atualizados da conta
+      const updatedAccount = await tx.account.findUnique({
+        where: { id: transaction.account_id },
+        select: {
+          total_balance: true,
+          available_balance: true,
+          locked_balance: true,
+          emergency_reserve: true,
+        },
+      });
+
+      // Criar snapshot de histórico
+      await tx.balanceHistory.create({
+        data: {
+          account_id: transaction.account_id,
+          transaction_id: transactionId,
+          total_balance: updatedAccount!.total_balance,
+          available_balance: updatedAccount!.available_balance,
+          locked_balance: updatedAccount!.locked_balance,
+          emergency_reserve: updatedAccount!.emergency_reserve,
+          change_reason: 'fixed_expense_paid',
+        },
+      });
+
+      // Invalidar cache de sugestões
+      await SuggestionEngine.invalidateCache(transaction.account_id);
+
+      return {
+        transaction: updatedTransaction,
+        message: 'Fixed expense marked as paid successfully',
+      };
+    });
+  }
+
+  /**
    * Deleta uma transação (permite deletar qualquer transação, revertendo os efeitos)
    */
   async delete(userId: string, transactionId: string) {

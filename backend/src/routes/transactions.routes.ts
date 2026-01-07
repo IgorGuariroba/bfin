@@ -30,6 +30,11 @@ router.get('/:id', (req, res, next) => {
   transactionController.getById(req, res).catch(next);
 });
 
+// Marcar despesa fixa como paga
+router.post('/:id/mark-as-paid', (req, res, next) => {
+  transactionController.markAsPaid(req, res).catch(next);
+});
+
 // Atualizar transação
 router.put('/:id', (req, res, next) => {
   transactionController.update(req, res).catch(next);
