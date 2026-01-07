@@ -21,9 +21,10 @@ export class AccountController {
   /**
    * GET /api/v1/accounts
    */
-  async list(req: AuthRequest, res: Response) {
+  async list(req: AuthRequest, res: Response): Promise<void> {
     if (!req.user) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
     }
 
     const accounts = await accountService.listByUser(req.user.userId);
@@ -34,9 +35,10 @@ export class AccountController {
   /**
    * GET /api/v1/accounts/:id
    */
-  async getById(req: AuthRequest, res: Response) {
+  async getById(req: AuthRequest, res: Response): Promise<void> {
     if (!req.user) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
     }
 
     const { id } = req.params;
@@ -48,9 +50,10 @@ export class AccountController {
   /**
    * POST /api/v1/accounts
    */
-  async create(req: AuthRequest, res: Response) {
+  async create(req: AuthRequest, res: Response): Promise<void> {
     if (!req.user) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
     }
 
     // Validar dados
@@ -64,9 +67,10 @@ export class AccountController {
   /**
    * PATCH /api/v1/accounts/:id
    */
-  async update(req: AuthRequest, res: Response) {
+  async update(req: AuthRequest, res: Response): Promise<void> {
     if (!req.user) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
     }
 
     const { id } = req.params;
@@ -80,9 +84,10 @@ export class AccountController {
   /**
    * DELETE /api/v1/accounts/:id
    */
-  async delete(req: AuthRequest, res: Response) {
+  async delete(req: AuthRequest, res: Response): Promise<void> {
     if (!req.user) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
     }
 
     const { id } = req.params;

@@ -1,0 +1,38 @@
+import { Router } from 'express';
+import { TransactionController } from '../controllers/TransactionController';
+import { authenticate } from '../middlewares/auth';
+
+const router = Router();
+const transactionController = new TransactionController();
+
+// Todas as rotas de transações requerem autenticação
+router.use(authenticate);
+
+// Criar transações por tipo
+router.post('/income', (req, res, next) => {
+  transactionController.createIncome(req, res).catch(next);
+});
+
+router.post('/fixed-expense', (req, res, next) => {
+  transactionController.createFixedExpense(req, res).catch(next);
+});
+
+router.post('/variable-expense', (req, res, next) => {
+  transactionController.createVariableExpense(req, res).catch(next);
+});
+
+// Listar e buscar transações
+router.get('/', (req, res, next) => {
+  transactionController.list(req, res).catch(next);
+});
+
+router.get('/:id', (req, res, next) => {
+  transactionController.getById(req, res).catch(next);
+});
+
+// Deletar transação
+router.delete('/:id', (req, res, next) => {
+  transactionController.delete(req, res).catch(next);
+});
+
+export default router;

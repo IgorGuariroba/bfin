@@ -65,9 +65,10 @@ export class AuthController {
    * GET /api/v1/auth/me
    * Requer autenticação
    */
-  async me(req: AuthRequest, res: Response) {
+  async me(req: AuthRequest, res: Response): Promise<void> {
     if (!req.user) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
     }
 
     const user = await authService.me(req.user.userId);

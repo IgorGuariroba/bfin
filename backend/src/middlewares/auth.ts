@@ -9,7 +9,7 @@ const authService = new AuthService();
  * Middleware de autenticação JWT
  * Valida o token e adiciona user ao request
  */
-export function authenticate(req: AuthRequest, res: Response, next: NextFunction) {
+export function authenticate(req: AuthRequest, _res: Response, next: NextFunction) {
   try {
     // Buscar token do header Authorization
     const authHeader = req.headers.authorization;
@@ -47,7 +47,7 @@ export function authenticate(req: AuthRequest, res: Response, next: NextFunction
  * Middleware opcional de autenticação
  * Adiciona user ao request se houver token válido, mas não rejeita se não houver
  */
-export function optionalAuthenticate(req: AuthRequest, res: Response, next: NextFunction) {
+export function optionalAuthenticate(req: AuthRequest, _res: Response, next: NextFunction) {
   try {
     const authHeader = req.headers.authorization;
 

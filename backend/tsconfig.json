@@ -21,6 +21,6 @@
     "noFallthroughCasesInSwitch": true,
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src/**/*", "tests/**/*", "prisma/**/*"],
+  "include": ["src/**/*", "tests/**/*"],
   "exclude": ["node_modules", "dist"]
 }

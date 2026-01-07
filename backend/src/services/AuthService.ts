@@ -1,16 +1,23 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { Secret, SignOptions } from 'jsonwebtoken';
 import { ValidationError, UnauthorizedError } from '../middlewares/errorHandler';
 import { RegisterDTO, LoginDTO, AuthResponse, JWTPayload } from '../types';
 
 const prisma = new PrismaClient();
 
 export class AuthService {
-  private readonly JWT_SECRET = process.env.JWT_SECRET!;
-  private readonly JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
-  private readonly JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
-  private readonly JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+  private readonly JWT_SECRET: string;
+  private readonly JWT_REFRESH_SECRET: string;
+  private readonly JWT_EXPIRES_IN: string;
+  private readonly JWT_REFRESH_EXPIRES_IN: string;
+
+  constructor() {
+    this.JWT_SECRET = process.env.JWT_SECRET!;
+    this.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
+    this.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
+    this.JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+  }
 
   /**
    * Registra um novo usuário
@@ -222,13 +229,17 @@ export class AuthService {
    * Gera access token e refresh token
    */
   private generateTokens(payload: JWTPayload) {
-    const access_token = jwt.sign(payload, this.JWT_SECRET, {
-      expiresIn: this.JWT_EXPIRES_IN,
-    });
+    const access_token = jwt.sign(
+      payload,
+      this.JWT_SECRET as Secret,
+      { expiresIn: this.JWT_EXPIRES_IN } as SignOptions
+    );
 
-    const refresh_token = jwt.sign(payload, this.JWT_REFRESH_SECRET, {
-      expiresIn: this.JWT_REFRESH_EXPIRES_IN,
-    });
+    const refresh_token = jwt.sign(
+      payload,
+      this.JWT_REFRESH_SECRET as Secret,
+      { expiresIn: this.JWT_REFRESH_EXPIRES_IN } as SignOptions
+    );
 
     // Calcular expires_in em segundos
     const expires_in = this.parseExpiration(this.JWT_EXPIRES_IN);
