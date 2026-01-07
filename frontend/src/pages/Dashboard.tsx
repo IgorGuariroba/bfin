@@ -88,6 +88,61 @@ export function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Alerta Limite Diário */}
+        {!loadingDailyLimit && !loadingAccounts && dailyLimit && dailyLimit.totalDailyLimit > 0 && (
+          <div
+            className={`rounded-lg p-4 mb-6 border ${
+              dailyLimit.exceeded
+                ? 'bg-red-50 border-red-200'
+                : dailyLimit.percentageUsed > 80
+                ? 'bg-yellow-50 border-yellow-200'
+                : 'bg-blue-50 border-blue-200'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    Limite Diário Sugerido
+                  </h3>
+                  <span className="text-xs text-gray-500">
+                    ({formatCurrency(dailyLimit.totalSpentToday)} / {formatCurrency(dailyLimit.totalDailyLimit)})
+                  </span>
+                </div>
+                <p className="text-sm">
+                  {dailyLimit.exceeded ? (
+                    <>
+                      <span className="text-red-700 font-medium">
+                        Limite excedido em {formatCurrency(dailyLimit.totalSpentToday - dailyLimit.totalDailyLimit)}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className={dailyLimit.percentageUsed > 80 ? 'text-yellow-700' : 'text-green-700'}>
+                        Você ainda pode gastar {formatCurrency(dailyLimit.totalRemaining)} hoje
+                      </span>
+                    </>
+                  )}
+                </p>
+              </div>
+              <div className="ml-4">
+                <div className="w-24 bg-gray-200 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full ${
+                      dailyLimit.exceeded
+                        ? 'bg-red-500'
+                        : dailyLimit.percentageUsed > 80
+                        ? 'bg-yellow-500'
+                        : 'bg-blue-600'
+                    }`}
+                    style={{ width: `${Math.min(100, dailyLimit.percentageUsed)}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Card Disponível */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
           <div className="flex items-center justify-between mb-2">
@@ -112,60 +167,6 @@ export function Dashboard() {
             </p>
             <p className="mt-1 text-sm text-gray-500">Para gastos · Clique para ver todas as transações</p>
           </div>
-        </div>
-
-        {/* Limite Diário */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Limite Diário Sugerido
-          </h2>
-          {loadingDailyLimit || loadingAccounts ? (
-            <p className="text-gray-500">Carregando...</p>
-          ) : !dailyLimit || dailyLimit.totalDailyLimit === 0 ? (
-            <p className="text-gray-500">
-              Registre uma receita para ver sua sugestão de limite diário
-            </p>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">Gasto hoje</span>
-                  <span className="text-sm font-medium">
-                    {formatCurrency(dailyLimit.totalSpentToday)} / {formatCurrency(dailyLimit.totalDailyLimit)}
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full ${
-                      dailyLimit.exceeded ? 'bg-red-500' : 'bg-blue-600'
-                    }`}
-                    style={{ width: `${Math.min(100, dailyLimit.percentageUsed)}%` }}
-                  ></div>
-                </div>
-              </div>
-              <p className="text-sm text-gray-500">
-                {dailyLimit.exceeded ? (
-                  <>
-                    Você <strong className="text-red-600">excedeu</strong> o limite em{' '}
-                    <strong className="text-red-600">
-                      {formatCurrency(dailyLimit.totalSpentToday - dailyLimit.totalDailyLimit)}
-                    </strong>
-                  </>
-                ) : (
-                  <>
-                    Você ainda pode gastar{' '}
-                    <strong className="text-green-600">
-                      {formatCurrency(dailyLimit.totalRemaining)}
-                    </strong>{' '}
-                    hoje
-                  </>
-                )}
-              </p>
-              <div className="text-xs text-gray-400 mt-2">
-                Cálculo: Saldo disponível ÷ 30 dias
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Próximas Despesas */}
