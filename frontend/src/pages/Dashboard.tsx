@@ -10,6 +10,7 @@ import { CreateAccountForm } from '../components/accounts/CreateAccountForm';
 import { TransactionList } from '../components/transactions/TransactionList';
 import { useAccounts } from '../hooks/useAccounts';
 import { useTotalDailyLimit } from '../hooks/useDailyLimit';
+import { useUpcomingFixedExpenses } from '../hooks/useTransactions';
 
 export function Dashboard() {
   const { user, signOut } = useAuth();
@@ -24,6 +25,9 @@ export function Dashboard() {
   // Buscar limite diário de todas as contas
   const accountIds = accounts?.map((acc) => acc.id) || [];
   const { data: dailyLimit, isLoading: loadingDailyLimit } = useTotalDailyLimit(accountIds);
+
+  // Buscar próximas despesas fixas
+  const { data: upcomingExpenses, isLoading: loadingUpcomingExpenses } = useUpcomingFixedExpenses();
 
   function handleSignOut() {
     signOut();
@@ -170,9 +174,39 @@ export function Dashboard() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Próximas Despesas Fixas
           </h2>
-          <div className="text-center py-8 text-gray-500">
-            Nenhuma despesa agendada
-          </div>
+          {loadingUpcomingExpenses ? (
+            <p className="text-gray-500">Carregando...</p>
+          ) : !upcomingExpenses?.transactions || upcomingExpenses.transactions.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              Nenhuma despesa agendada
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {upcomingExpenses.transactions.map((expense) => (
+                <div
+                  key={expense.id}
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">{expense.description}</p>
+                    {expense.category && (
+                      <p className="text-sm text-gray-500 mt-1">{expense.category.name}</p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-red-600">{formatCurrency(expense.amount)}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {new Date(expense.due_date).toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Call to Action */}

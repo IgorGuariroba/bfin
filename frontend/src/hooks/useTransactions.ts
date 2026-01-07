@@ -81,3 +81,14 @@ export function useDeleteTransaction() {
     },
   });
 }
+
+export function useUpcomingFixedExpenses() {
+  return useQuery({
+    queryKey: ['transactions', { type: 'fixed_expense', status: 'locked' }],
+    queryFn: () => transactionService.list({
+      type: 'fixed_expense',
+      status: 'locked',
+      limit: 10
+    }),
+  });
+}
