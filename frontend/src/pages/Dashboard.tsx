@@ -193,36 +193,45 @@ export function Dashboard() {
             </div>
           ) : (
             <div className="space-y-3">
-              {upcomingExpenses.transactions.map((expense) => (
-                <div
-                  key={expense.id}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">{expense.description}</p>
-                    {expense.category && (
-                      <p className="text-sm text-gray-500 mt-1">{expense.category.name}</p>
-                    )}
+              {upcomingExpenses.transactions.map((expense) => {
+                const dueDate = new Date(expense.due_date);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                dueDate.setHours(0, 0, 0, 0);
+                const isOverdue = dueDate < today;
+
+                return (
+                  <div
+                    key={expense.id}
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{expense.description}</p>
+                      {expense.category && (
+                        <p className="text-sm text-gray-500 mt-1">{expense.category.name}</p>
+                      )}
+                    </div>
+                    <div className="text-right ml-4">
+                      <p className="font-bold text-red-600">{formatCurrency(expense.amount)}</p>
+                      <p className={`text-sm mt-1 ${isOverdue ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                        {isOverdue ? 'Vencida: ' : 'Vencimento: '}
+                        {new Date(expense.due_date).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </p>
+                      <Button
+                        variant="outline"
+                        onClick={() => handleMarkAsPaid(expense.id, expense.description)}
+                        className="mt-2 text-xs py-1 px-2 bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
+                      >
+                        Marcar como Paga
+                      </Button>
+                    </div>
                   </div>
-                  <div className="text-right ml-4">
-                    <p className="font-bold text-red-600">{formatCurrency(expense.amount)}</p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {new Date(expense.due_date).toLocaleDateString('pt-BR', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </p>
-                    <Button
-                      variant="outline"
-                      onClick={() => handleMarkAsPaid(expense.id, expense.description)}
-                      className="mt-2 text-xs py-1 px-2 bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
-                    >
-                      Marcar como Paga
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
