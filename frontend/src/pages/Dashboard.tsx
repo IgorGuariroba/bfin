@@ -19,6 +19,25 @@ export function Dashboard() {
     navigate('/login');
   }
 
+  // Calculate totals from accounts
+  const totals = accounts?.reduce(
+    (acc, account) => ({
+      totalBalance: acc.totalBalance + Number(account.total_balance),
+      availableBalance: acc.availableBalance + Number(account.available_balance),
+      lockedBalance: acc.lockedBalance + Number(account.locked_balance),
+      emergencyReserve: acc.emergencyReserve + Number(account.emergency_reserve),
+    }),
+    { totalBalance: 0, availableBalance: 0, lockedBalance: 0, emergencyReserve: 0 }
+  ) || { totalBalance: 0, availableBalance: 0, lockedBalance: 0, emergencyReserve: 0 };
+
+  // Format currency
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -45,14 +64,18 @@ export function Dashboard() {
           {/* Card Saldo Total */}
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-sm font-medium text-gray-500">Saldo Total</h3>
-            <p className="mt-2 text-3xl font-bold text-gray-900">R$ 0,00</p>
+            <p className="mt-2 text-3xl font-bold text-gray-900">
+              {loadingAccounts ? 'Carregando...' : formatCurrency(totals.totalBalance)}
+            </p>
             <p className="mt-1 text-sm text-gray-500">Todas as contas</p>
           </div>
 
           {/* Card Disponível */}
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-sm font-medium text-gray-500">Disponível</h3>
-            <p className="mt-2 text-3xl font-bold text-green-600">R$ 0,00</p>
+            <p className="mt-2 text-3xl font-bold text-green-600">
+              {loadingAccounts ? 'Carregando...' : formatCurrency(totals.availableBalance)}
+            </p>
             <p className="mt-1 text-sm text-gray-500">Para gastos</p>
           </div>
 
@@ -61,7 +84,9 @@ export function Dashboard() {
             <h3 className="text-sm font-medium text-gray-500">
               Reserva de Emergência
             </h3>
-            <p className="mt-2 text-3xl font-bold text-blue-600">R$ 0,00</p>
+            <p className="mt-2 text-3xl font-bold text-blue-600">
+              {loadingAccounts ? 'Carregando...' : formatCurrency(totals.emergencyReserve)}
+            </p>
             <p className="mt-1 text-sm text-gray-500">30% das receitas</p>
           </div>
         </div>
