@@ -157,13 +157,66 @@ bfin/
 - PostgreSQL 15+ (ou via Docker)
 - Redis 7+ (ou via Docker)
 
-### 1. Clonar repositório
+### Modo Simplificado (Recomendado)
+
+#### Opção 1: Usando NPM (Mais simples)
+
+**Primeira vez (setup completo):**
+```bash
+git clone https://github.com/seu-usuario/bfin.git
+cd bfin
+npm install
+npm start
+```
+
+**Dias seguintes (rápido):**
+```bash
+npm run dev
+```
+
+**Parar serviços:**
+```bash
+npm stop
+```
+
+#### Opção 2: Usando scripts shell
+
+**Primeira vez (setup completo):**
+```bash
+./start.sh
+```
+
+**Dias seguintes (rápido):**
+```bash
+./dev.sh
+```
+
+**Parar serviços:**
+```bash
+./stop.sh
+```
+
+### Serviços disponíveis após inicialização
+- 📊 **Frontend:** http://localhost:5173
+- 🔧 **Backend:** http://localhost:3000
+- 🗄️ **Adminer:** http://localhost:8080
+  - Sistema: PostgreSQL
+  - Servidor: postgres
+  - Usuário: bfin_user
+  - Senha: bfin_pass
+  - Base: bfin_dev
+
+---
+
+### Modo Manual (Passo a Passo)
+
+#### 1. Clonar repositório
 ```bash
 git clone https://github.com/seu-usuario/bfin.git
 cd bfin
 ```
 
-### 2. Subir infraestrutura com Docker
+#### 2. Subir infraestrutura com Docker
 ```bash
 docker-compose up -d
 ```
@@ -173,7 +226,7 @@ Isso inicia:
 - Redis na porta 6379
 - Adminer (UI para PostgreSQL) na porta 8080
 
-### 3. Configurar Backend
+#### 3. Configurar Backend
 ```bash
 cd backend
 npm install
@@ -195,7 +248,7 @@ npm run dev
 
 API estará disponível em `http://localhost:3000`
 
-### 4. Configurar Frontend
+#### 4. Configurar Frontend
 ```bash
 cd frontend
 npm install
@@ -208,7 +261,51 @@ Interface web em `http://localhost:5173`
 
 ## Comandos Úteis
 
-### Backend
+### Comandos NPM da Raiz (Gerais)
+
+#### Desenvolvimento
+```bash
+npm start          # Setup completo (1ª vez): Docker + install + migrations + dev
+npm run dev        # Inicia backend + frontend (uso diário)
+npm stop           # Para todos os serviços
+```
+
+#### Instalação
+```bash
+npm run install:all       # Instala deps backend + frontend
+npm run install:backend   # Instala deps apenas do backend
+npm run install:frontend  # Instala deps apenas do frontend
+```
+
+#### Docker
+```bash
+npm run docker:up       # Sobe containers (PostgreSQL, Redis, Adminer)
+npm run docker:down     # Para containers
+npm run docker:logs     # Ver logs dos containers
+npm run docker:ps       # Status dos containers
+npm run docker:restart  # Reinicia containers
+```
+
+#### Database
+```bash
+npm run db:setup     # Setup completo: generate + migrate + seed
+npm run db:migrate   # Executa migrations
+npm run db:seed      # Popula banco com dados iniciais
+npm run db:studio    # Abre Prisma Studio (GUI do banco)
+npm run db:reset     # Reseta banco (CUIDADO: apaga tudo)
+```
+
+#### Build e Testes
+```bash
+npm run build           # Build backend + frontend
+npm run build:backend   # Build apenas backend
+npm run build:frontend  # Build apenas frontend
+npm test                # Roda testes do backend
+npm run test:coverage   # Testes com coverage
+npm run lint            # Lint backend + frontend
+```
+
+### Backend (dentro de /backend)
 ```bash
 # Desenvolvimento
 npm run dev
@@ -228,10 +325,10 @@ npm run db:studio
 npm run cron:execute-expenses
 ```
 
-### Database
+### Database (comandos avançados)
 ```bash
 # Criar nova migration
-npx prisma migrate dev --name nome_da_migration
+cd backend && npx prisma migrate dev --name nome_da_migration
 
 # Resetar banco (CUIDADO: apaga tudo)
 npm run db:reset
@@ -240,19 +337,13 @@ npm run db:reset
 docker exec -it bfin_postgres psql -U bfin_user -d bfin_dev
 ```
 
-### Docker
+### Docker (comandos avançados)
 ```bash
-# Subir serviços
-docker-compose up -d
-
-# Ver logs
-docker-compose logs -f
-
-# Parar serviços
-docker-compose down
-
 # Resetar volumes (apaga dados)
 docker-compose down -v
+
+# Rebuildar containers
+docker-compose up -d --build
 ```
 
 ---

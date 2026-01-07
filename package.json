@@ -1,0 +1,45 @@
+{
+  "name": "bfin",
+  "version": "1.0.0",
+  "description": "BFIN - Banking Finance - Sistema de gerenciamento financeiro pessoal",
+  "private": true,
+  "scripts": {
+    "start": "npm run docker:up && npm run install:all && npm run db:setup && npm run dev",
+    "dev": "npm run docker:up && concurrently -n \"backend,frontend\" -c \"blue,green\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "stop": "npm run kill:servers && npm run docker:down",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:ps": "docker-compose ps",
+    "docker:restart": "docker-compose restart",
+    "db:setup": "cd backend && npm run db:generate && npm run db:migrate && npm run db:seed",
+    "db:migrate": "cd backend && npm run db:migrate",
+    "db:seed": "cd backend && npm run db:seed",
+    "db:studio": "cd backend && npm run db:studio",
+    "db:reset": "cd backend && npm run db:reset",
+    "kill:servers": "killall -9 node 2>/dev/null || true",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "test": "cd backend && npm run test",
+    "test:coverage": "cd backend && npm run test:coverage",
+    "lint": "npm run lint:backend && npm run lint:frontend",
+    "lint:backend": "cd backend && npm run lint",
+    "lint:frontend": "cd frontend && npm run lint"
+  },
+  "keywords": [
+    "finance",
+    "banking",
+    "personal-finance"
+  ],
+  "author": "Igor Guariroba",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
