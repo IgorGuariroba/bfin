@@ -11,7 +11,7 @@ import { TransactionList } from '../components/transactions/TransactionList';
 import { useAccounts } from '../hooks/useAccounts';
 import { useTotalDailyLimit } from '../hooks/useDailyLimit';
 import { useUpcomingFixedExpenses, useMarkAsPaid } from '../hooks/useTransactions';
-import { Shield } from 'lucide-react';
+import { Shield, TrendingUp, Calendar, ShoppingCart } from 'lucide-react';
 
 export function Dashboard() {
   const { user, signOut } = useAuth();
@@ -88,6 +88,59 @@ export function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Ações Rápidas */}
+        {!loadingAccounts && accounts && accounts.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {/* Botão Nova Receita */}
+            <button
+              onClick={() => setIncomeDialogOpen(true)}
+              className="bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg p-6 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+            >
+              <div className="flex flex-col items-center gap-3">
+                <div className="bg-white/20 p-3 rounded-full">
+                  <TrendingUp className="h-8 w-8" />
+                </div>
+                <div className="text-center">
+                  <h3 className="text-lg font-bold">Nova Receita</h3>
+                  <p className="text-sm text-green-100 mt-1">Registrar entrada</p>
+                </div>
+              </div>
+            </button>
+
+            {/* Botão Despesa Fixa */}
+            <button
+              onClick={() => setFixedExpenseDialogOpen(true)}
+              className="bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg p-6 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+            >
+              <div className="flex flex-col items-center gap-3">
+                <div className="bg-white/20 p-3 rounded-full">
+                  <Calendar className="h-8 w-8" />
+                </div>
+                <div className="text-center">
+                  <h3 className="text-lg font-bold">Despesa Fixa</h3>
+                  <p className="text-sm text-orange-100 mt-1">Conta recorrente</p>
+                </div>
+              </div>
+            </button>
+
+            {/* Botão Despesa Variável */}
+            <button
+              onClick={() => setVariableExpenseDialogOpen(true)}
+              className="bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg p-6 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+            >
+              <div className="flex flex-col items-center gap-3">
+                <div className="bg-white/20 p-3 rounded-full">
+                  <ShoppingCart className="h-8 w-8" />
+                </div>
+                <div className="text-center">
+                  <h3 className="text-lg font-bold">Despesa Variável</h3>
+                  <p className="text-sm text-red-100 mt-1">Gasto do dia</p>
+                </div>
+              </div>
+            </button>
+          </div>
+        )}
+
         {/* Alerta Limite Diário */}
         {!loadingDailyLimit && !loadingAccounts && dailyLimit && dailyLimit.totalDailyLimit > 0 && (
           <div
@@ -225,38 +278,18 @@ export function Dashboard() {
           )}
         </div>
 
-        {/* Call to Action */}
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-2">
-            Comece a usar o BFIN!
-          </h3>
-          {loadingAccounts ? (
-            <p className="text-blue-700">Carregando...</p>
-          ) : !accounts || accounts.length === 0 ? (
-            <>
-              <p className="text-blue-700 mb-4">
-                Você precisa criar uma conta bancária antes de registrar transações.
-              </p>
-              <Button onClick={() => setAccountDialogOpen(true)}>+ Criar Conta</Button>
-            </>
-          ) : (
-            <>
-              <p className="text-blue-700 mb-4">
-                Registre suas receitas e despesas para gerenciar suas finanças
-                automaticamente.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Button onClick={() => setIncomeDialogOpen(true)}>+ Nova Receita</Button>
-                <Button variant="outline" onClick={() => setFixedExpenseDialogOpen(true)}>
-                  + Despesa Fixa
-                </Button>
-                <Button variant="outline" onClick={() => setVariableExpenseDialogOpen(true)}>
-                  + Despesa Variável
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
+        {/* Mensagem para criar conta se não houver */}
+        {!loadingAccounts && (!accounts || accounts.length === 0) && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-blue-900 mb-2">
+              Bem-vindo ao BFIN!
+            </h3>
+            <p className="text-blue-700 mb-4">
+              Para começar, você precisa criar uma conta bancária.
+            </p>
+            <Button onClick={() => setAccountDialogOpen(true)}>+ Criar Conta</Button>
+          </div>
+        )}
       </main>
 
       {/* Income Dialog */}
