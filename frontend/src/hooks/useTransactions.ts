@@ -30,6 +30,9 @@ export function useCreateIncome() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-limit'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-limit-status'] });
+      queryClient.invalidateQueries({ queryKey: ['total-daily-limit'] });
     },
   });
 }
@@ -42,6 +45,9 @@ export function useCreateFixedExpense() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-limit'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-limit-status'] });
+      queryClient.invalidateQueries({ queryKey: ['total-daily-limit'] });
     },
   });
 }
@@ -54,6 +60,9 @@ export function useCreateVariableExpense() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-limit'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-limit-status'] });
+      queryClient.invalidateQueries({ queryKey: ['total-daily-limit'] });
     },
   });
 }
@@ -66,6 +75,9 @@ export function useDeleteTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-limit'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-limit-status'] });
+      queryClient.invalidateQueries({ queryKey: ['total-daily-limit'] });
     },
   });
 }
