@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, ModalProps, Title, Text } from '@mantine/core';
+import { Modal, Title, Text } from '@mantine/core';
 
 interface DialogProps {
   open: boolean;
@@ -50,7 +50,7 @@ export function DialogContent({ children, className = '' }: DialogContentProps) 
 }
 
 export function DialogHeader({ children }: DialogHeaderProps) {
-  return <div style={{ marginBottom: '1rem' }}>{children}</div>;
+  return <div className="mb-4">{children}</div>;
 }
 
 export function DialogTitle({ children }: DialogTitleProps) {
@@ -62,12 +62,13 @@ export function DialogDescription({ children }: DialogDescriptionProps) {
 }
 
 export function DialogClose({ onClose }: { onClose?: () => void }) {
-  const context = React.useContext(DialogContext);
-  // Use onClose from props or context
-  const handleClose = onClose || context.onClose;
-
   // Mantine Modal já tem o botão de fechar embutido, então retornamos null
   // Se precisar de um botão customizado, pode usar:
+  // const context = React.useContext(DialogContext);
+  // const handleClose = onClose || context.onClose;
   // return <Button variant="outline" onClick={handleClose}>Fechar</Button>;
+
+  // Evita warning de variável não usada
+  void onClose;
   return null;
 }

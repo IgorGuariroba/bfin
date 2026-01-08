@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    /* Semantic Colors (existing) */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
@@ -32,7 +33,115 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
 
+    /* Color Palette Tokens */
+    /* Blue (Primary) */
+    --clr-blue-50: 239 246 255;
+    --clr-blue-100: 219 234 254;
+    --clr-blue-200: 191 219 254;
+    --clr-blue-500: 59 130 246;
+    --clr-blue-600: 37 99 235;
+    --clr-blue-700: 29 78 216;
+    --clr-blue-800: 30 64 175;
+
+    /* Green (Success) */
+    --clr-green-50: 240 253 244;
+    --clr-green-100: 220 252 231;
+    --clr-green-600: 22 163 74;
+    --clr-green-700: 21 128 61;
+
+    /* Red (Danger) */
+    --clr-red-50: 254 242 242;
+    --clr-red-500: 239 68 68;
+    --clr-red-600: 220 38 38;
+    --clr-red-700: 185 28 28;
+
+    /* Yellow (Warning) */
+    --clr-yellow-50: 254 252 232;
+    --clr-yellow-100: 254 249 195;
+    --clr-yellow-600: 202 138 4;
+    --clr-yellow-700: 161 98 7;
+
+    /* Orange */
+    --clr-orange-500: 249 115 22;
+    --clr-orange-600: 234 88 12;
+    --clr-orange-700: 194 65 12;
+
+    /* Purple */
+    --clr-purple-50: 250 245 255;
+    --clr-purple-100: 243 232 255;
+    --clr-purple-600: 147 51 234;
+    --clr-purple-800: 107 33 168;
+
+    /* Gray (Neutral) */
+    --clr-gray-50: 249 250 251;
+    --clr-gray-100: 243 244 246;
+    --clr-gray-300: 209 213 219;
+    --clr-gray-400: 156 163 175;
+    --clr-gray-500: 107 114 128;
+    --clr-gray-600: 75 85 99;
+    --clr-gray-700: 55 65 81;
+    --clr-gray-900: 17 24 39;
+
+    /* Spacing Tokens */
+    --space-0: 0;
+    --space-0-5: 0.125rem;
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-10: 2.5rem;
+    --space-12: 3rem;
+    --space-16: 4rem;
+
+    /* Typography Tokens */
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-4xl: 2.25rem;
+
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    --line-height-xs: 1.25rem;
+    --line-height-sm: 1.375rem;
+    --line-height-base: 1.5rem;
+    --line-height-lg: 1.75rem;
+
+    /* Shadow Tokens */
+    --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+    /* Border Radius Tokens */
+    --radius-xs: 0.125rem;
+    --radius-sm: 0.25rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.75rem;
+    --radius-full: 9999px;
+
+    /* Legacy radius for compatibility */
     --radius: 0.5rem;
+
+    /* Transition Tokens */
+    --duration-fast: 100ms;
+    --duration-base: 200ms;
+    --duration-slow: 300ms;
+
+    --easing-linear: linear;
+    --easing-ease-in: cubic-bezier(0.4, 0, 1, 1);
+    --easing-ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --easing-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
