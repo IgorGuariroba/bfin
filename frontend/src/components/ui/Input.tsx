@@ -1,33 +1,18 @@
-import { InputHTMLAttributes, forwardRef } from 'react';
-import { clsx } from 'clsx';
+import { forwardRef } from 'react';
+import { TextInput, TextInputProps } from '@mantine/core';
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
+interface InputProps extends Omit<TextInputProps, 'error'> {
   error?: string;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, className, ...props }, ref) => {
+  ({ error, ...props }, ref) => {
     return (
-      <div className="w-full">
-        {label && (
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {label}
-          </label>
-        )}
-        <input
-          ref={ref}
-          className={clsx(
-            'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-            {
-              'border-red-500 focus:ring-red-500': error,
-            },
-            className
-          )}
-          {...props}
-        />
-        {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
-      </div>
+      <TextInput
+        ref={ref}
+        error={error}
+        {...props}
+      />
     );
   }
 );

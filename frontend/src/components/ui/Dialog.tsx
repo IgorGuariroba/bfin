@@ -1,6 +1,5 @@
 import React from 'react';
-import { X } from 'lucide-react';
-import { Button } from './Button';
+import { Modal, ModalProps, Title, Text } from '@mantine/core';
 
 interface DialogProps {
   open: boolean;
@@ -25,52 +24,50 @@ interface DialogDescriptionProps {
   children: React.ReactNode;
 }
 
-export function Dialog({ open, onOpenChange, children }: DialogProps) {
-  if (!open) return null;
+// Context para compartilhar o controle do modal
+const DialogContext = React.createContext<{
+  onClose: () => void;
+}>({ onClose: () => {} });
 
+export function Dialog({ open, onOpenChange, children }: DialogProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50"
-        onClick={() => onOpenChange(false)}
-      />
-      {/* Content */}
-      <div className="relative z-50">{children}</div>
-    </div>
+    <DialogContext.Provider value={{ onClose: () => onOpenChange(false) }}>
+      <Modal
+        opened={open}
+        onClose={() => onOpenChange(false)}
+        size="md"
+        centered
+        overlayProps={{ opacity: 0.55, blur: 3 }}
+      >
+        {children}
+      </Modal>
+    </DialogContext.Provider>
   );
 }
 
 export function DialogContent({ children, className = '' }: DialogContentProps) {
-  return (
-    <div
-      className={`bg-white rounded-lg shadow-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto ${className}`}
-    >
-      {children}
-    </div>
-  );
+  return <div className={className}>{children}</div>;
 }
 
 export function DialogHeader({ children }: DialogHeaderProps) {
-  return <div className="mb-4 pr-12">{children}</div>;
+  return <div style={{ marginBottom: '1rem' }}>{children}</div>;
 }
 
 export function DialogTitle({ children }: DialogTitleProps) {
-  return <h2 className="text-xl font-semibold text-gray-900">{children}</h2>;
+  return <Title order={3}>{children}</Title>;
 }
 
 export function DialogDescription({ children }: DialogDescriptionProps) {
-  return <p className="text-sm text-gray-500 mt-1">{children}</p>;
+  return <Text size="sm" c="dimmed" mt="xs">{children}</Text>;
 }
 
-export function DialogClose({ onClose }: { onClose: () => void }) {
-  return (
-    <Button
-      variant="outline"
-      onClick={onClose}
-      className="absolute top-4 right-4 p-1"
-    >
-      <X className="h-4 w-4" />
-    </Button>
-  );
+export function DialogClose({ onClose }: { onClose?: () => void }) {
+  const context = React.useContext(DialogContext);
+  // Use onClose from props or context
+  const handleClose = onClose || context.onClose;
+
+  // Mantine Modal já tem o botão de fechar embutido, então retornamos null
+  // Se precisar de um botão customizado, pode usar:
+  // return <Button variant="outline" onClick={handleClose}>Fechar</Button>;
+  return null;
 }
