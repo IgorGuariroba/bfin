@@ -1,8 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 import { ValidationError, InsufficientBalanceError, NotFoundError, ForbiddenError } from '../middlewares/errorHandler';
 import { SuggestionEngine } from './SuggestionEngine';
+import { AccountMemberService } from './AccountMemberService';
 
 const prisma = new PrismaClient();
+const accountMemberService = new AccountMemberService();
 
 interface CreateIncomeDTO {
   accountId: string;
@@ -42,7 +44,7 @@ export class TransactionService {
     }
 
     return await prisma.$transaction(async (tx) => {
-      // 1. Buscar conta e verificar propriedade
+      // 1. Buscar conta e verificar acesso
       const account = await tx.account.findUnique({
         where: { id: data.accountId },
       });
@@ -51,7 +53,9 @@ export class TransactionService {
         throw new NotFoundError('Account not found');
       }
 
-      if (account.user_id !== userId) {
+      // Verificar acesso (owner ou membro convidado)
+      const access = await accountMemberService.checkAccess(data.accountId, userId);
+      if (!access.hasAccess) {
         throw new ForbiddenError('Access denied to this account');
       }
 
@@ -158,7 +162,9 @@ export class TransactionService {
         throw new NotFoundError('Account not found');
       }
 
-      if (account.user_id !== userId) {
+      // Verificar acesso (owner ou membro convidado)
+      const access = await accountMemberService.checkAccess(data.accountId, userId);
+      if (!access.hasAccess) {
         throw new ForbiddenError('Access denied to this account');
       }
 
@@ -240,7 +246,9 @@ export class TransactionService {
         throw new NotFoundError('Account not found');
       }
 
-      if (account.user_id !== userId) {
+      // Verificar acesso (owner ou membro convidado)
+      const access = await accountMemberService.checkAccess(data.accountId, userId);
+      if (!access.hasAccess) {
         throw new ForbiddenError('Access denied to this account');
       }
 
@@ -321,21 +329,38 @@ export class TransactionService {
     // Construir where clause
     const where: any = {};
 
-    // Se accountId fornecido, verificar se pertence ao usuário
+    // Se accountId fornecido, verificar acesso
     if (filters.accountId) {
       const account = await prisma.account.findUnique({
         where: { id: filters.accountId },
       });
 
-      if (!account || account.user_id !== userId) {
+      if (!account) {
+        throw new NotFoundError('Account not found');
+      }
+
+      // Verificar acesso (owner ou membro convidado)
+      const access = await accountMemberService.checkAccess(filters.accountId, userId);
+      if (!access.hasAccess) {
         throw new ForbiddenError('Access denied to this account');
       }
 
       where.account_id = filters.accountId;
     } else {
-      // Buscar todas as contas do usuário
+      // Buscar todas as contas do usuário (próprias + compartilhadas)
       const userAccounts = await prisma.account.findMany({
-        where: { user_id: userId },
+        where: {
+          OR: [
+            { user_id: userId }, // Contas próprias
+            {
+              members: {
+                some: {
+                  user_id: userId,
+                },
+              },
+            }, // Contas compartilhadas
+          ],
+        },
         select: { id: true },
       });
 
@@ -424,8 +449,9 @@ export class TransactionService {
       throw new NotFoundError('Transaction not found');
     }
 
-    // Verificar se a conta pertence ao usuário
-    if (transaction.account.user_id !== userId) {
+    // Verificar acesso (owner ou membro convidado)
+    const access = await accountMemberService.checkAccess(transaction.account_id, userId);
+    if (!access.hasAccess) {
       throw new ForbiddenError('Access denied to this transaction');
     }
 
