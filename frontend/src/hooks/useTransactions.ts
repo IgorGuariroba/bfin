@@ -33,6 +33,7 @@ export function useCreateIncome() {
       queryClient.invalidateQueries({ queryKey: ['daily-limit'] });
       queryClient.invalidateQueries({ queryKey: ['daily-limit-status'] });
       queryClient.invalidateQueries({ queryKey: ['total-daily-limit'] });
+      queryClient.invalidateQueries({ queryKey: ['spending-history'] });
     },
   });
 }
@@ -48,6 +49,7 @@ export function useCreateFixedExpense() {
       queryClient.invalidateQueries({ queryKey: ['daily-limit'] });
       queryClient.invalidateQueries({ queryKey: ['daily-limit-status'] });
       queryClient.invalidateQueries({ queryKey: ['total-daily-limit'] });
+      queryClient.invalidateQueries({ queryKey: ['spending-history'] });
     },
   });
 }
@@ -63,6 +65,7 @@ export function useCreateVariableExpense() {
       queryClient.invalidateQueries({ queryKey: ['daily-limit'] });
       queryClient.invalidateQueries({ queryKey: ['daily-limit-status'] });
       queryClient.invalidateQueries({ queryKey: ['total-daily-limit'] });
+      queryClient.invalidateQueries({ queryKey: ['spending-history'] });
     },
   });
 }
@@ -86,6 +89,7 @@ export function useUpdateTransaction() {
       queryClient.invalidateQueries({ queryKey: ['daily-limit'] });
       queryClient.invalidateQueries({ queryKey: ['daily-limit-status'] });
       queryClient.invalidateQueries({ queryKey: ['total-daily-limit'] });
+      queryClient.invalidateQueries({ queryKey: ['spending-history'] });
     },
   });
 }
@@ -101,6 +105,7 @@ export function useMarkAsPaid() {
       queryClient.invalidateQueries({ queryKey: ['daily-limit'] });
       queryClient.invalidateQueries({ queryKey: ['daily-limit-status'] });
       queryClient.invalidateQueries({ queryKey: ['total-daily-limit'] });
+      queryClient.invalidateQueries({ queryKey: ['spending-history'] });
     },
   });
 }
@@ -116,6 +121,7 @@ export function useDuplicateTransaction() {
       queryClient.invalidateQueries({ queryKey: ['daily-limit'] });
       queryClient.invalidateQueries({ queryKey: ['daily-limit-status'] });
       queryClient.invalidateQueries({ queryKey: ['total-daily-limit'] });
+      queryClient.invalidateQueries({ queryKey: ['spending-history'] });
     },
   });
 }
@@ -131,6 +137,7 @@ export function useDeleteTransaction() {
       queryClient.invalidateQueries({ queryKey: ['daily-limit'] });
       queryClient.invalidateQueries({ queryKey: ['daily-limit-status'] });
       queryClient.invalidateQueries({ queryKey: ['total-daily-limit'] });
+      queryClient.invalidateQueries({ queryKey: ['spending-history'] });
     },
   });
 }

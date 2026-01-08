@@ -19,6 +19,24 @@ interface SuggestionHistory {
   createdAt: Date;
 }
 
+export interface DailySpendingHistory {
+  date: string;
+  dailyLimit: number;
+  spent: number;
+  percentageUsed: number;
+  exceeded: boolean;
+  status: 'ok' | 'warning' | 'exceeded';
+}
+
+export interface SpendingHistoryResponse {
+  accountId: string;
+  days: number;
+  history: DailySpendingHistory[];
+  totalSpent: number;
+  averageDailySpent: number;
+  daysWithSpending: number;
+}
+
 export class SuggestionEngine {
   private static DAYS_FOR_CALCULATION = 30;
   private static CACHE_TTL_SECONDS = 86400; // 24 horas
@@ -142,6 +160,152 @@ export class SuggestionEngine {
       availableBalance: Number(s.available_balance_snapshot),
       createdAt: s.created_at,
     }));
+  }
+
+  /**
+   * Obtém o histórico de gastos diários com limite
+   */
+  static async getSpendingHistory(
+    accountId: string,
+    days: number = 7
+  ): Promise<SpendingHistoryResponse> {
+    // Validar parâmetros
+    if (days < 1 || days > 30) {
+      throw new Error('Days must be between 1 and 30');
+    }
+
+    // Verificar cache no Redis
+    const cacheKey = `spending-history:${accountId}:${days}`;
+    const cachedData = await redis.get(cacheKey);
+
+    if (cachedData) {
+      return JSON.parse(cachedData);
+    }
+
+    // Calcular date range
+    const endDate = new Date();
+    endDate.setHours(23, 59, 59, 999);
+
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    // Query 1: Agregar gastos diários
+    const dailyExpenses = await prisma.$queryRaw<
+      Array<{ date: Date; spent: any }>
+    >`
+      SELECT
+        DATE(executed_date) as date,
+        SUM(amount) as spent
+      FROM transactions
+      WHERE
+        account_id = ${accountId}
+        AND type = 'variable_expense'
+        AND status = 'executed'
+        AND executed_date >= ${startDate}
+        AND executed_date <= ${endDate}
+      GROUP BY DATE(executed_date)
+      ORDER BY date DESC
+    `;
+
+    // Query 2: Buscar snapshots de limites diários
+    const dailyLimitSnapshots = await prisma.spendingSuggestion.findMany({
+      where: {
+        account_id: accountId,
+        created_at: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      select: {
+        daily_limit: true,
+        created_at: true,
+      },
+      orderBy: { created_at: 'desc' },
+    });
+
+    // Obter limite diário atual como fallback
+    const currentLimit = await this.getDailyLimit(accountId);
+
+    // Criar mapa de limites por data
+    const limitsByDate = new Map<string, number>();
+    for (const snapshot of dailyLimitSnapshots) {
+      const dateStr = snapshot.created_at.toISOString().split('T')[0];
+      if (!limitsByDate.has(dateStr)) {
+        limitsByDate.set(dateStr, Number(snapshot.daily_limit));
+      }
+    }
+
+    // Combinar dados e calcular estatísticas
+    const history: DailySpendingHistory[] = [];
+    let totalSpent = 0;
+
+    for (const expense of dailyExpenses) {
+      const dateStr = new Date(expense.date).toISOString().split('T')[0];
+      const spent = Number(expense.spent);
+
+      // Filtrar apenas dias com gastos
+      if (spent <= 0) continue;
+
+      // Buscar limite do dia (snapshot ou fallback)
+      let dailyLimit = limitsByDate.get(dateStr);
+
+      // Se não encontrou snapshot exato, buscar o mais próximo anterior
+      if (!dailyLimit) {
+        const expenseDate = new Date(expense.date);
+        let closestLimit = currentLimit.dailyLimit;
+
+        for (const snapshot of dailyLimitSnapshots) {
+          if (snapshot.created_at <= expenseDate) {
+            closestLimit = Number(snapshot.daily_limit);
+            break;
+          }
+        }
+
+        dailyLimit = closestLimit;
+      }
+
+      const percentageUsed = dailyLimit > 0 ? (spent / dailyLimit) * 100 : 0;
+      const exceeded = spent > dailyLimit;
+
+      let status: 'ok' | 'warning' | 'exceeded';
+      if (exceeded) {
+        status = 'exceeded';
+      } else if (percentageUsed >= 80) {
+        status = 'warning';
+      } else {
+        status = 'ok';
+      }
+
+      history.push({
+        date: dateStr,
+        dailyLimit,
+        spent,
+        percentageUsed,
+        exceeded,
+        status,
+      });
+
+      totalSpent += spent;
+    }
+
+    // Calcular estatísticas
+    const daysWithSpending = history.length;
+    const averageDailySpent = daysWithSpending > 0 ? totalSpent / daysWithSpending : 0;
+
+    const response: SpendingHistoryResponse = {
+      accountId,
+      days,
+      history,
+      totalSpent,
+      averageDailySpent,
+      daysWithSpending,
+    };
+
+    // Cachear no Redis (1 hora)
+    await redis.setex(cacheKey, 3600, JSON.stringify(response));
+
+    return response;
   }
 
   /**

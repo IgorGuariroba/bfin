@@ -33,6 +33,15 @@ router.get('/status', SuggestionController.getStatus);
 router.get('/history', SuggestionController.getHistory);
 
 /**
+ * @route GET /api/v1/suggestions/spending-history
+ * @desc Obtém o histórico de gastos diários com limite
+ * @query account_id - ID da conta
+ * @query days - Número de dias (padrão: 7, máx: 30)
+ * @access Private
+ */
+router.get('/spending-history', SuggestionController.getSpendingHistory);
+
+/**
  * @route POST /api/v1/suggestions/recalculate
  * @desc Força o recálculo do limite diário (invalida cache)
  * @query account_id - ID da conta

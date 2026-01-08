@@ -15,6 +15,7 @@ import { useTotalDailyLimit } from '../hooks/useDailyLimit';
 import { useUpcomingFixedExpenses, useMarkAsPaid } from '../hooks/useTransactions';
 import { useMyInvitations } from '../hooks/useAccountMembers';
 import { Shield, TrendingUp, Calendar, ShoppingCart, Wallet, Mail } from 'lucide-react';
+import SpendingHistoryChart from '../components/dashboard/SpendingHistoryChart';
 
 export function Dashboard() {
   const { user, signOut } = useAuth();
@@ -27,6 +28,7 @@ export function Dashboard() {
   const [transactionsDialogOpen, setTransactionsDialogOpen] = useState(false);
   const [emergencyReserveDialogOpen, setEmergencyReserveDialogOpen] = useState(false);
   const [invitationsDialogOpen, setInvitationsDialogOpen] = useState(false);
+  const [showSpendingHistory, setShowSpendingHistory] = useState(false);
   const { data: accounts, isLoading: loadingAccounts } = useAccounts();
   const { data: invitations = [] } = useMyInvitations();
 
@@ -118,20 +120,26 @@ export function Dashboard() {
         {/* Alerta Limite Diário - Compacto no lado direito */}
         {!loadingDailyLimit && !loadingAccounts && dailyLimit && dailyLimit.totalDailyLimit > 0 && (
           <div className="mb-6 flex justify-end">
-            <div
-              className={`rounded-lg p-4 border w-full md:w-2/5 ${
+            <button
+              onClick={() => setShowSpendingHistory(!showSpendingHistory)}
+              className={`rounded-lg p-4 border w-full md:w-2/5 transition-all hover:shadow-md text-left ${
                 dailyLimit.exceeded
-                  ? 'bg-red-50 border-red-200'
+                  ? 'bg-red-50 border-red-200 hover:bg-red-100'
                   : dailyLimit.percentageUsed > 80
-                  ? 'bg-yellow-50 border-yellow-200'
-                  : 'bg-blue-50 border-blue-200'
+                  ? 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100'
+                  : 'bg-blue-50 border-blue-200 hover:bg-blue-100'
               }`}
             >
               <div className="space-y-2">
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                    Limite Diário Sugerido
-                  </h3>
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      Limite Diário Sugerido
+                    </h3>
+                    <span className="text-xs text-gray-600">
+                      {showSpendingHistory ? '▼ Ocultar histórico' : '▶ Ver histórico'}
+                    </span>
+                  </div>
                   <div className="flex items-center justify-between text-xs text-gray-600">
                     <span>Gasto hoje</span>
                     <span className="font-medium">
@@ -163,8 +171,13 @@ export function Dashboard() {
                   )}
                 </p>
               </div>
-            </div>
+            </button>
           </div>
+        )}
+
+        {/* Histórico de Gastos */}
+        {!loadingAccounts && accounts && accounts.length > 0 && showSpendingHistory && (
+          <SpendingHistoryChart accountIds={accountIds} days={7} />
         )}
 
         {/* Ações Rápidas */}

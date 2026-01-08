@@ -134,6 +134,58 @@ export class SuggestionController {
   }
 
   /**
+   * GET /api/v1/suggestions/spending-history?account_id=xxx&days=7
+   * Retorna o histórico de gastos diários com limite
+   */
+  static async getSpendingHistory(req: AuthRequest, res: Response) {
+    try {
+      const { account_id, days } = req.query;
+
+      if (!account_id || typeof account_id !== 'string') {
+        return res.status(400).json({
+          error: 'BadRequest',
+          message: 'account_id is required',
+        });
+      }
+
+      const daysNumber = days ? parseInt(days as string, 10) : 7;
+
+      // Validar range de dias
+      if (isNaN(daysNumber) || daysNumber < 1 || daysNumber > 30) {
+        return res.status(400).json({
+          error: 'BadRequest',
+          message: 'days must be a number between 1 and 30',
+        });
+      }
+
+      const history = await SuggestionEngine.getSpendingHistory(account_id, daysNumber);
+
+      return res.status(200).json(history);
+    } catch (error: any) {
+      console.error('Error getting spending history:', error);
+
+      if (error.message === 'Account not found') {
+        return res.status(404).json({
+          error: 'NotFound',
+          message: 'Account not found',
+        });
+      }
+
+      if (error.message === 'Days must be between 1 and 30') {
+        return res.status(400).json({
+          error: 'BadRequest',
+          message: error.message,
+        });
+      }
+
+      return res.status(500).json({
+        error: 'InternalServerError',
+        message: 'Failed to get spending history',
+      });
+    }
+  }
+
+  /**
    * GET /api/v1/suggestions/status?account_id=xxx
    * Retorna o status do limite (excedido ou não)
    */
