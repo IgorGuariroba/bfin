@@ -10,30 +10,27 @@ export const fonts = {
 };
 
 export const fontSizes = {
-  xs: '0.75rem',     // 12px
-  sm: '0.875rem',    // 14px
-  md: '1rem',        // 16px
-  lg: '1.125rem',    // 18px
-  xl: '1.25rem',     // 20px
-  '2xl': '1.5rem',   // 24px
-  '3xl': '1.875rem', // 30px
-  '4xl': '2.25rem',  // 36px
-  '5xl': '3rem',     // 48px
+  xs: 'var(--font-size-xs)',     // 0.75rem (12px)
+  sm: 'var(--font-size-sm)',     // 0.875rem (14px)
+  md: 'var(--font-size-base)',   // 1rem (16px)
+  lg: 'var(--font-size-lg)',     // 1.125rem (18px)
+  xl: 'var(--font-size-xl)',     // 1.25rem (20px)
+  '2xl': 'var(--font-size-2xl)', // 1.5rem (24px)
+  '4xl': 'var(--font-size-4xl)', // 2.25rem (36px)
 };
 
 export const fontWeights = {
-  normal: 400,
-  medium: 500,
-  semibold: 600,
-  bold: 700,
-  extrabold: 800,
+  normal: 'var(--font-weight-normal)',       // 400
+  medium: 'var(--font-weight-medium)',       // 500
+  semibold: 'var(--font-weight-semibold)',   // 600
+  bold: 'var(--font-weight-bold)',           // 700
 };
 
 export const lineHeights = {
-  xs: '1.25rem',
-  sm: '1.375rem',
-  base: '1.5rem',
-  lg: '1.75rem',
+  xs: 'var(--line-height-xs)',     // 1.25rem
+  sm: 'var(--line-height-sm)',     // 1.375rem
+  base: 'var(--line-height-base)', // 1.5rem
+  lg: 'var(--line-height-lg)',     // 1.75rem
   normal: 'normal',
   none: 1,
   shorter: 1.25,
