@@ -20,6 +20,9 @@ import {
   ModalHeader,
   ModalCloseButton,
   ModalBody,
+  Alert,
+  AlertIcon,
+  AlertTitle,
 } from '@chakra-ui/react';
 import { Button } from '../components/atoms/Button';
 import { IncomeForm, FixedExpenseForm, VariableExpenseForm, CreateAccountForm } from '../components/organisms/forms';
@@ -44,7 +47,6 @@ export function Dashboard() {
   const [transactionsDialogOpen, setTransactionsDialogOpen] = useState(false);
   const [emergencyReserveDialogOpen, setEmergencyReserveDialogOpen] = useState(false);
   const [invitationsDialogOpen, setInvitationsDialogOpen] = useState(false);
-  const [showSpendingHistory, setShowSpendingHistory] = useState(false);
   const { data: accounts, isLoading: loadingAccounts } = useAccounts();
   const { data: invitations = [] } = useMyInvitations();
 
@@ -143,75 +145,70 @@ export function Dashboard() {
             <Flex justify="flex-end">
               <Box
                 as="button"
-                onClick={() => setShowSpendingHistory(!showSpendingHistory)}
-                borderRadius="lg"
-                p={4}
-                borderWidth="1px"
+                onClick={() => navigate('/daily-limit')}
                 w={{ base: 'full', md: '40%' }}
+                cursor="pointer"
                 transition="all 0.2s"
-                _hover={{ shadow: 'md' }}
-                textAlign="left"
-                bg={
-                  dailyLimit.exceeded
-                    ? 'red.50'
-                    : dailyLimit.percentageUsed > 80
-                    ? 'yellow.50'
-                    : 'blue.50'
-                }
-                borderColor={
-                  dailyLimit.exceeded
-                    ? 'red.200'
-                    : dailyLimit.percentageUsed > 80
-                    ? 'yellow.200'
-                    : 'blue.200'
-                }
+                _hover={{ transform: 'translateY(-2px)', shadow: 'lg' }}
               >
-                <VStack spacing={2} align="stretch">
-                  <Flex justify="space-between" align="center" mb={1}>
-                    <Text fontSize="sm" fontWeight="semibold" color="gray.900">
-                      Limite Diário Sugerido
-                    </Text>
-                    <Text fontSize="xs" color="gray.600">
-                      {showSpendingHistory ? '▼ Ocultar histórico' : '▶ Ver histórico'}
-                    </Text>
-                  </Flex>
-                  <Flex justify="space-between" fontSize="xs" color="gray.600">
-                    <Text>Gasto hoje</Text>
-                    <Text fontWeight="medium">
-                      {formatCurrency(dailyLimit.totalSpentToday)} / {formatCurrency(dailyLimit.totalDailyLimit)}
-                    </Text>
-                  </Flex>
-                  <Progress
-                    value={Math.min(100, dailyLimit.percentageUsed)}
-                    colorScheme={
-                      dailyLimit.exceeded
-                        ? 'red'
-                        : dailyLimit.percentageUsed > 80
-                        ? 'yellow'
-                        : 'blue'
-                    }
-                    size="sm"
-                    borderRadius="full"
-                  />
-                  <Text fontSize="xs">
-                    {dailyLimit.exceeded ? (
-                      <Text as="span" color="red.700" fontWeight="medium">
-                        Excedido em {formatCurrency(dailyLimit.totalSpentToday - dailyLimit.totalDailyLimit)}
-                      </Text>
-                    ) : (
-                      <Text as="span" color={dailyLimit.percentageUsed > 80 ? 'yellow.700' : 'green.700'}>
-                        Restam {formatCurrency(dailyLimit.totalRemaining)} hoje
-                      </Text>
-                    )}
-                  </Text>
-                </VStack>
+                <Alert
+                  status={
+                    dailyLimit.exceeded
+                      ? 'error'
+                      : dailyLimit.percentageUsed > 80
+                      ? 'warning'
+                      : 'success'
+                  }
+                  variant="outline"
+                  borderRadius="lg"
+                >
+                  <AlertIcon />
+                  <Box flex="1">
+                    <AlertTitle>
+                      <VStack spacing={2} align="stretch" w="full">
+                        <Flex justify="space-between" align="center">
+                          <Text fontSize="sm" fontWeight="semibold">
+                            Limite Diário Sugerido
+                          </Text>
+                          <Text fontSize="xs" opacity={0.8}>
+                            ▶ Ver detalhes
+                          </Text>
+                        </Flex>
+                        <Flex justify="space-between" fontSize="xs" opacity={0.9}>
+                          <Text>Gasto hoje</Text>
+                          <Text fontWeight="medium">
+                            {formatCurrency(dailyLimit.totalSpentToday)} / {formatCurrency(dailyLimit.totalDailyLimit)}
+                          </Text>
+                        </Flex>
+                        <Progress
+                          value={Math.min(100, dailyLimit.percentageUsed)}
+                          colorScheme={
+                            dailyLimit.exceeded
+                              ? 'red'
+                              : dailyLimit.percentageUsed > 80
+                              ? 'yellow'
+                              : 'green'
+                          }
+                          size="sm"
+                          borderRadius="full"
+                        />
+                        <Text fontSize="xs">
+                          {dailyLimit.exceeded ? (
+                            <Text as="span" fontWeight="medium">
+                              Excedido em {formatCurrency(dailyLimit.totalSpentToday - dailyLimit.totalDailyLimit)}
+                            </Text>
+                          ) : (
+                            <Text as="span">
+                              Restam {formatCurrency(dailyLimit.totalRemaining)} hoje
+                            </Text>
+                          )}
+                        </Text>
+                      </VStack>
+                    </AlertTitle>
+                  </Box>
+                </Alert>
               </Box>
             </Flex>
-          )}
-
-          {/* Spending History Chart */}
-          {!loadingAccounts && accounts && accounts.length > 0 && showSpendingHistory && (
-            <SpendingHistoryChart accountIds={accountIds} days={7} />
           )}
 
           {/* Quick Actions */}

@@ -6,6 +6,7 @@ import { ColorModeSync } from './components/ColorModeSync';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
+import { DailyLimitPage } from './pages/DailyLimitPage';
 import { StyleguideLayout, DesignTokensPage } from './pages/styleguide';
 
 // Create a client
@@ -82,6 +83,14 @@ function AppRoutes() {
         element={
           <PrivateRoute>
             <Dashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/daily-limit"
+        element={
+          <PrivateRoute>
+            <DailyLimitPage />
           </PrivateRoute>
         }
       />
