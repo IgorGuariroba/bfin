@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
+import { StyleguideLayout, DesignTokensPage } from './pages/styleguide';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -86,6 +87,11 @@ function AppRoutes() {
 
       {/* 404 */}
       <Route path="*" element={<Navigate to="/" />} />
+
+      {/* Styleguide */}
+      <Route path="/styleguide" element={<StyleguideLayout />}>
+        <Route index element={<DesignTokensPage />} />
+      </Route>
     </Routes>
   );
 }
