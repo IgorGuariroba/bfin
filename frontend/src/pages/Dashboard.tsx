@@ -1,21 +1,24 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Button } from '../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '../components/ui/Dialog';
-import { IncomeForm } from '../components/transactions/IncomeForm';
-import { FixedExpenseForm } from '../components/transactions/FixedExpenseForm';
-import { VariableExpenseForm } from '../components/transactions/VariableExpenseForm';
-import { CreateAccountForm } from '../components/accounts/CreateAccountForm';
-import { AccountsDialog } from '../components/accounts/AccountsDialog';
-import { InvitationsDialog } from '../components/invitations/InvitationsDialog';
-import { TransactionList } from '../components/transactions/TransactionList';
+import {
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+} from '@chakra-ui/react';
+import { Button } from '../components/atoms/Button';
+import { IncomeForm, FixedExpenseForm, VariableExpenseForm, CreateAccountForm } from '../components/organisms/forms';
+import { AccountsDialog, InvitationsDialog } from '../components/organisms/dialogs';
+import { TransactionList } from '../components/organisms/lists';
+import { SpendingHistoryChart } from '../components/organisms/charts';
 import { useAccounts } from '../hooks/useAccounts';
 import { useTotalDailyLimit } from '../hooks/useDailyLimit';
 import { useUpcomingFixedExpenses, useMarkAsPaid } from '../hooks/useTransactions';
 import { useMyInvitations } from '../hooks/useAccountMembers';
 import { Shield, TrendingUp, Calendar, ShoppingCart, Wallet, Mail } from 'lucide-react';
-import SpendingHistoryChart from '../components/dashboard/SpendingHistoryChart';
 
 export function Dashboard() {
   const { user, signOut } = useAuth();
@@ -330,68 +333,72 @@ export function Dashboard() {
       </main>
 
       {/* Income Dialog */}
-      <Dialog open={incomeDialogOpen} onOpenChange={setIncomeDialogOpen}>
-        <DialogContent className="relative">
-          <DialogClose onClose={() => setIncomeDialogOpen(false)} />
-          <DialogHeader>
-            <DialogTitle>Nova Receita</DialogTitle>
-          </DialogHeader>
-          <IncomeForm
-            onSuccess={() => {
-              setIncomeDialogOpen(false);
-            }}
-            onCancel={() => setIncomeDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+      <Modal isOpen={incomeDialogOpen} onClose={() => setIncomeDialogOpen(false)}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Nova Receita</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <IncomeForm
+              onSuccess={() => {
+                setIncomeDialogOpen(false);
+              }}
+              onCancel={() => setIncomeDialogOpen(false)}
+            />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
       {/* Fixed Expense Dialog */}
-      <Dialog open={fixedExpenseDialogOpen} onOpenChange={setFixedExpenseDialogOpen}>
-        <DialogContent className="relative">
-          <DialogClose onClose={() => setFixedExpenseDialogOpen(false)} />
-          <DialogHeader>
-            <DialogTitle>Nova Despesa Fixa</DialogTitle>
-          </DialogHeader>
-          <FixedExpenseForm
-            onSuccess={() => {
-              setFixedExpenseDialogOpen(false);
-            }}
-            onCancel={() => setFixedExpenseDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+      <Modal isOpen={fixedExpenseDialogOpen} onClose={() => setFixedExpenseDialogOpen(false)}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Nova Despesa Fixa</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <FixedExpenseForm
+              onSuccess={() => {
+                setFixedExpenseDialogOpen(false);
+              }}
+              onCancel={() => setFixedExpenseDialogOpen(false)}
+            />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
       {/* Variable Expense Dialog */}
-      <Dialog open={variableExpenseDialogOpen} onOpenChange={setVariableExpenseDialogOpen}>
-        <DialogContent className="relative">
-          <DialogClose onClose={() => setVariableExpenseDialogOpen(false)} />
-          <DialogHeader>
-            <DialogTitle>Nova Despesa Variável</DialogTitle>
-          </DialogHeader>
-          <VariableExpenseForm
-            onSuccess={() => {
-              setVariableExpenseDialogOpen(false);
-            }}
-            onCancel={() => setVariableExpenseDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+      <Modal isOpen={variableExpenseDialogOpen} onClose={() => setVariableExpenseDialogOpen(false)}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Nova Despesa Variável</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <VariableExpenseForm
+              onSuccess={() => {
+                setVariableExpenseDialogOpen(false);
+              }}
+              onCancel={() => setVariableExpenseDialogOpen(false)}
+            />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
       {/* Create Account Dialog */}
-      <Dialog open={accountDialogOpen} onOpenChange={setAccountDialogOpen}>
-        <DialogContent className="relative">
-          <DialogClose onClose={() => setAccountDialogOpen(false)} />
-          <DialogHeader>
-            <DialogTitle>Criar Conta Bancária</DialogTitle>
-          </DialogHeader>
-          <CreateAccountForm
-            onSuccess={() => {
-              setAccountDialogOpen(false);
-            }}
-            onCancel={() => setAccountDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+      <Modal isOpen={accountDialogOpen} onClose={() => setAccountDialogOpen(false)}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Criar Conta Bancária</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <CreateAccountForm
+              onSuccess={() => {
+                setAccountDialogOpen(false);
+              }}
+              onCancel={() => setAccountDialogOpen(false)}
+            />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
       {/* Manage Accounts Dialog */}
       <AccountsDialog
@@ -400,57 +407,58 @@ export function Dashboard() {
       />
 
       {/* Transactions Dialog */}
-      <Dialog open={transactionsDialogOpen} onOpenChange={setTransactionsDialogOpen}>
-        <DialogContent className="relative max-w-4xl">
-          <DialogClose onClose={() => setTransactionsDialogOpen(false)} />
-          <DialogHeader>
-            <DialogTitle>Todas as Transações</DialogTitle>
-          </DialogHeader>
-          <TransactionList />
-        </DialogContent>
-      </Dialog>
+      <Modal isOpen={transactionsDialogOpen} onClose={() => setTransactionsDialogOpen(false)} size="4xl">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Todas as Transações</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <TransactionList />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
       {/* Emergency Reserve Dialog */}
-      <Dialog open={emergencyReserveDialogOpen} onOpenChange={setEmergencyReserveDialogOpen}>
-        <DialogContent className="relative">
-          <DialogClose onClose={() => setEmergencyReserveDialogOpen(false)} />
-          <DialogHeader>
-            <DialogTitle>
-              <div className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-blue-600" />
-                <span>Reserva de Emergência</span>
+      <Modal isOpen={emergencyReserveDialogOpen} onClose={() => setEmergencyReserveDialogOpen(false)}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-blue-600" />
+              <span>Reserva de Emergência</span>
+            </div>
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800 mb-2">
+                  Sua reserva de emergência é calculada automaticamente como 30% de todas as receitas recebidas.
+                </p>
+                <p className="text-3xl font-bold text-blue-600">
+                  {loadingAccounts ? 'Carregando...' : formatCurrency(totals.emergencyReserve)}
+                </p>
               </div>
-            </DialogTitle>
-          </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-800 mb-2">
-                Sua reserva de emergência é calculada automaticamente como 30% de todas as receitas recebidas.
-              </p>
-              <p className="text-3xl font-bold text-blue-600">
-                {loadingAccounts ? 'Carregando...' : formatCurrency(totals.emergencyReserve)}
-              </p>
-            </div>
+              <div className="space-y-2 text-sm text-gray-600">
+                <h4 className="font-semibold text-gray-900">Para que serve?</h4>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  <li>Proteção financeira para imprevistos</li>
+                  <li>Cobertura para emergências médicas</li>
+                  <li>Segurança em caso de perda de renda</li>
+                  <li>Reparos urgentes em casa ou veículo</li>
+                </ul>
+              </div>
 
-            <div className="space-y-2 text-sm text-gray-600">
-              <h4 className="font-semibold text-gray-900">Para que serve?</h4>
-              <ul className="list-disc list-inside space-y-1 ml-2">
-                <li>Proteção financeira para imprevistos</li>
-                <li>Cobertura para emergências médicas</li>
-                <li>Segurança em caso de perda de renda</li>
-                <li>Reparos urgentes em casa ou veículo</li>
-              </ul>
+              <div className="bg-gray-50 rounded-lg p-4 text-xs text-gray-500">
+                <p className="font-medium text-gray-700 mb-1">Como funciona:</p>
+                <p>A cada receita recebida, 30% é automaticamente separado para sua reserva de emergência.
+                Os 70% restantes ficam disponíveis para seus gastos do dia a dia.</p>
+              </div>
             </div>
-
-            <div className="bg-gray-50 rounded-lg p-4 text-xs text-gray-500">
-              <p className="font-medium text-gray-700 mb-1">Como funciona:</p>
-              <p>A cada receita recebida, 30% é automaticamente separado para sua reserva de emergência.
-              Os 70% restantes ficam disponíveis para seus gastos do dia a dia.</p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
       {/* Invitations Dialog */}
       <InvitationsDialog

@@ -1,2 +1,2 @@
-// List organisms will be exported here as they are migrated
-// export { TransactionList } from './TransactionList';
+// List organisms
+export { TransactionList } from './TransactionList';
