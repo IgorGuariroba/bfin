@@ -23,8 +23,8 @@ import {
 } from './foundations';
 
 const config: ThemeConfig = {
-  initialColorMode: 'light',
-  useSystemColorMode: false,
+  initialColorMode: 'system',
+  useSystemColorMode: true,
 };
 
 /**

@@ -19,9 +19,11 @@ import {
   Icon,
   Divider,
   Flex,
+  Box,
 } from '@chakra-ui/react';
 import { MdEmail, MdLock, MdPerson } from 'react-icons/md';
 import { useAuth } from '../contexts/AuthContext';
+import { ThemeToggle } from '../components/ui/ThemeToggle';
 
 export function Register() {
   const [fullName, setFullName] = useState('');
@@ -62,7 +64,12 @@ export function Register() {
   }
 
   return (
-    <Flex minH="100vh" align="center" justify="center" bg="gray.50">
+    <Flex minH="100vh" align="center" justify="center" bg="var(--background)" position="relative">
+      {/* Theme Toggle - Fixed top-right */}
+      <Box position="absolute" top={4} right={4} zIndex={10}>
+        <ThemeToggle variant="icon" size="md" />
+      </Box>
+
       <Container maxW="md" py={{ base: "12", md: "24" }} px={{ base: "0", sm: "8" }}>
         <VStack spacing="8">
           {/* Logo e Header */}

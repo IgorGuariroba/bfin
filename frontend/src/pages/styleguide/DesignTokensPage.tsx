@@ -20,7 +20,6 @@ import {
   Radio,
   Stack,
   Icon,
-  useColorMode,
   Flex,
   SimpleGrid,
   Input,
@@ -35,7 +34,8 @@ import {
   Td,
   TableContainer,
 } from "@chakra-ui/react"
-import { Sun, Moon, Info, AlertCircle, CheckCircle, AlertTriangle, Check, Copy } from "lucide-react"
+import { Info, AlertCircle, CheckCircle, AlertTriangle, Check } from "lucide-react"
+import { ThemeToggle } from "../../components/ui/ThemeToggle"
 
 // Color swatch component with copy functionality
 function ColorSwatch({
@@ -187,9 +187,7 @@ function ContrastPair({
 }
 
 export function DesignTokensPage() {
-  const { colorMode, toggleColorMode } = useColorMode()
   const [radioValue, setRadioValue] = useState("option-1")
-  const isDark = colorMode === "dark"
 
   return (
     <Box minH="100vh" p={8} bg="var(--background)" color="var(--foreground)">
@@ -204,17 +202,7 @@ export function DesignTokensPage() {
                 Sistema de cores semânticas baseado em <Code colorScheme="purple">#7C3AED</Code> com acessibilidade WCAG AA
               </Text>
             </Box>
-            <Button
-              variant="outline"
-              leftIcon={<Icon as={isDark ? Sun : Moon} boxSize={4} />}
-              onClick={toggleColorMode}
-              borderRadius="full"
-              borderColor="var(--border)"
-              color="var(--foreground)"
-              _hover={{ bg: "var(--accent)" }}
-            >
-              {isDark ? "Light" : "Dark"} Mode
-            </Button>
+            <ThemeToggle variant="button" size="md" showLabel={true} />
           </Flex>
 
           {/* Primary Color Hero */}

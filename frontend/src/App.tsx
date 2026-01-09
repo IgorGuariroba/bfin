@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Box, VStack, Spinner, Text } from '@chakra-ui/react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ColorModeSync } from './components/ColorModeSync';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
@@ -105,6 +106,7 @@ function App() {
           v7_relativeSplatPath: true,
         }}
       >
+        <ColorModeSync />
         <AuthProvider>
           <AppRoutes />
         </AuthProvider>

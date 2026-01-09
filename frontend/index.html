@@ -5,6 +5,22 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BFIN - Banking Finance</title>
+    <script>
+      try {
+        var storageKey = 'chakra-ui-color-mode';
+        var storageValue = localStorage.getItem(storageKey);
+        var mode = storageValue || 'system';
+
+        if (mode === 'system') {
+          var mql = window.matchMedia('(prefers-color-scheme: dark)');
+          mode = mql.matches ? 'dark' : 'light';
+        }
+
+        if (mode === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
+  Box,
   Button,
   FormControl,
   FormLabel,
@@ -22,6 +23,7 @@ import {
 } from '@chakra-ui/react';
 import { MdEmail, MdLock } from 'react-icons/md';
 import { useAuth } from '../contexts/AuthContext';
+import { ThemeToggle } from '../components/ui/ThemeToggle';
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -48,7 +50,12 @@ export function Login() {
   }
 
   return (
-    <Flex minH="100vh" align="center" justify="center" bg="var(--background)">
+    <Flex minH="100vh" align="center" justify="center" bg="var(--background)" position="relative">
+      {/* Theme Toggle - Fixed top-right */}
+      <Box position="absolute" top={4} right={4} zIndex={10}>
+        <ThemeToggle variant="icon" size="md" />
+      </Box>
+
       <Container maxW="md" py={{ base: "12", md: "24" }} px={{ base: "0", sm: "8" }}>
         <VStack spacing="8">
           {/* Logo e Header */}

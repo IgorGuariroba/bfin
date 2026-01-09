@@ -14,7 +14,6 @@ import {
   Badge,
   Progress,
   IconButton,
-  useColorModeValue,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -32,6 +31,7 @@ import { useTotalDailyLimit } from '../hooks/useDailyLimit';
 import { useUpcomingFixedExpenses, useMarkAsPaid } from '../hooks/useTransactions';
 import { useMyInvitations } from '../hooks/useAccountMembers';
 import { Shield, TrendingUp, Calendar, ShoppingCart, Wallet, Mail } from 'lucide-react';
+import { ThemeToggle } from '../components/ui/ThemeToggle';
 
 export function Dashboard() {
   const { user, signOut } = useAuth();
@@ -52,9 +52,6 @@ export function Dashboard() {
   const { data: dailyLimit, isLoading: loadingDailyLimit } = useTotalDailyLimit(accountIds);
   const { data: upcomingExpenses, isLoading: loadingUpcomingExpenses } = useUpcomingFixedExpenses();
   const markAsPaid = useMarkAsPaid();
-
-  const bgColor = useColorModeValue('gray.50', 'gray.900');
-  const headerBg = useColorModeValue('white', 'gray.800');
 
   function handleSignOut() {
     signOut();
@@ -89,9 +86,9 @@ export function Dashboard() {
   };
 
   return (
-    <Box minH="100vh" bg={bgColor}>
+    <Box minH="100vh" bg="var(--background)">
       {/* Header */}
-      <Box as="header" bg={headerBg} shadow="sm">
+      <Box as="header" bg="var(--card)" shadow="sm">
         <Container maxW="7xl" py={4}>
           <Flex align="center" justify="space-between">
             <HStack spacing={4}>
@@ -129,6 +126,7 @@ export function Dashboard() {
               >
                 Gerenciar Contas
               </Button>
+              <ThemeToggle variant="icon" size="md" />
               <Button variant="outline" onClick={handleSignOut}>
                 Sair
               </Button>
