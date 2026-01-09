@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Box, Container, VStack, Heading, Text, Link, Alert, AlertIcon } from '@chakra-ui/react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/atoms/Button';
 import { FormField } from '../components/molecules/FormField';
@@ -29,62 +30,64 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-blue-600">BFIN</h1>
-          <h2 className="mt-2 text-3xl font-bold text-gray-900">
-            Bem-vindo de volta
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Faça login para acessar sua conta
-          </p>
-        </div>
+    <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="gray.50" px={4}>
+      <Container maxW="md" w="full">
+        <VStack spacing={8}>
+          <VStack spacing={2} textAlign="center">
+            <Heading size="2xl" color="brand.600">BFIN</Heading>
+            <Heading size="xl" color="gray.900">
+              Bem-vindo de volta
+            </Heading>
+            <Text fontSize="sm" color="gray.600">
+              Faça login para acessar sua conta
+            </Text>
+          </VStack>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-              {error}
-            </div>
-          )}
+          <Box as="form" w="full" onSubmit={handleSubmit}>
+            <VStack spacing={6}>
+              {error && (
+                <Alert status="error" borderRadius="md">
+                  <AlertIcon />
+                  {error}
+                </Alert>
+              )}
 
-          <div className="space-y-4">
-            <FormField
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              isRequired
-              placeholder="seu@email.com"
-              autoComplete="email"
-            />
+              <VStack spacing={4} w="full">
+                <FormField
+                  label="Email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  isRequired
+                  placeholder="seu@email.com"
+                  autoComplete="email"
+                />
 
-            <FormField
-              label="Senha"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              isRequired
-              placeholder="••••••••"
-              autoComplete="current-password"
-            />
-          </div>
+                <FormField
+                  label="Senha"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  isRequired
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                />
+              </VStack>
 
-          <Button type="submit" className="w-full" isLoading={isLoading}>
-            Entrar
-          </Button>
+              <Button type="submit" w="full" isLoading={isLoading}>
+                Entrar
+              </Button>
 
-          <p className="text-center text-sm text-gray-600">
-            Não tem uma conta?{' '}
-            <Link
-              to="/register"
-              className="font-medium text-blue-600 hover:text-blue-500"
-            >
-              Criar conta
-            </Link>
-          </p>
-        </form>
-      </div>
-    </div>
+              <Text textAlign="center" fontSize="sm" color="gray.600">
+                Não tem uma conta?{' '}
+                <Link as={RouterLink} to="/register" fontWeight="medium" color="brand.600" _hover={{ color: 'brand.500' }}>
+                  Criar conta
+                </Link>
+              </Text>
+            </VStack>
+          </Box>
+        </VStack>
+      </Container>
+    </Box>
   );
 }

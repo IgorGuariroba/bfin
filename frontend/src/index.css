@@ -1,9 +1,9 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/**
+ * Design Tokens - CSS Custom Properties
+ * Used by Chakra UI theme (src/theme/)
+ */
 
-@layer base {
-  :root {
+:root {
     /* Semantic Colors (existing) */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
@@ -142,9 +142,9 @@
     --easing-ease-in: cubic-bezier(0.4, 0, 1, 1);
     --easing-ease-out: cubic-bezier(0, 0, 0.2, 1);
     --easing-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-  }
+}
 
-  .dark {
+.dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
@@ -172,14 +172,4 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
 }
