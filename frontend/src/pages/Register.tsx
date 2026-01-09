@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { Box, Container, VStack, Heading, Text, Link, Alert, AlertIcon } from '@chakra-ui/react';
+import { Box, Container, Heading, Text, Link, Alert, AlertIcon, Stack } from '@chakra-ui/react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/atoms/Button';
 import { FormField } from '../components/molecules/FormField';
@@ -44,21 +44,23 @@ export function Register() {
   }
 
   return (
-    <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="gray.50" px={4}>
+    <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="gray.50" py={12} px={{ base: 4, sm: 6, lg: 8 }}>
       <Container maxW="md" w="full">
-        <VStack spacing={8}>
-          <VStack spacing={2} textAlign="center">
-            <Heading size="2xl" color="brand.600">BFIN</Heading>
-            <Heading size="xl" color="gray.900">
+        <Stack spacing={8} mx="auto" maxW="lg" py={12} px={{ base: 4, sm: 6 }}>
+          <Stack spacing={3} align="center" textAlign="center">
+            <Heading as="h1" fontSize="4xl" fontWeight="bold" color="brand.600">
+              BFIN
+            </Heading>
+            <Heading as="h2" fontSize="3xl" fontWeight="bold" color="gray.900">
               Criar conta
             </Heading>
             <Text fontSize="sm" color="gray.600">
               Comece a gerenciar suas finanças hoje
             </Text>
-          </VStack>
+          </Stack>
 
-          <Box as="form" w="full" onSubmit={handleSubmit}>
-            <VStack spacing={6}>
+          <Box as="form" onSubmit={handleSubmit}>
+            <Stack spacing={6}>
               {error && (
                 <Alert status="error" borderRadius="md">
                   <AlertIcon />
@@ -66,7 +68,7 @@ export function Register() {
                 </Alert>
               )}
 
-              <VStack spacing={4} w="full">
+              <Stack spacing={5}>
                 <FormField
                   label="Nome completo"
                   type="text"
@@ -106,9 +108,9 @@ export function Register() {
                   placeholder="••••••••"
                   autoComplete="new-password"
                 />
-              </VStack>
+              </Stack>
 
-              <Button type="submit" w="full" isLoading={isLoading}>
+              <Button type="submit" width="full" isLoading={isLoading} size="lg">
                 Criar conta
               </Button>
 
@@ -118,9 +120,9 @@ export function Register() {
                   Fazer login
                 </Link>
               </Text>
-            </VStack>
+            </Stack>
           </Box>
-        </VStack>
+        </Stack>
       </Container>
     </Box>
   );
