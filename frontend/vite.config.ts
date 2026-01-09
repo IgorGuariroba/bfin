@@ -10,6 +10,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  optimizeDeps: {
+    include: ['@chakra-ui/react', '@emotion/react', '@emotion/styled', 'framer-motion'],
+  },
   server: {
     port: 5173,
     proxy: {

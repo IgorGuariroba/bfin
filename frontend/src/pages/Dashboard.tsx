@@ -2,6 +2,19 @@ import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
+  Box,
+  Container,
+  Flex,
+  Heading,
+  Text,
+  VStack,
+  HStack,
+  Grid,
+  GridItem,
+  Badge,
+  Progress,
+  IconButton,
+  useColorModeValue,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -35,13 +48,13 @@ export function Dashboard() {
   const { data: accounts, isLoading: loadingAccounts } = useAccounts();
   const { data: invitations = [] } = useMyInvitations();
 
-  // Buscar limite diário de todas as contas
   const accountIds = accounts?.map((acc) => acc.id) || [];
   const { data: dailyLimit, isLoading: loadingDailyLimit } = useTotalDailyLimit(accountIds);
-
-  // Buscar próximas despesas fixas
   const { data: upcomingExpenses, isLoading: loadingUpcomingExpenses } = useUpcomingFixedExpenses();
   const markAsPaid = useMarkAsPaid();
+
+  const bgColor = useColorModeValue('gray.50', 'gray.900');
+  const headerBg = useColorModeValue('white', 'gray.800');
 
   function handleSignOut() {
     signOut();
@@ -58,7 +71,6 @@ export function Dashboard() {
     }
   }
 
-  // Calculate totals from accounts
   const totals = accounts?.reduce(
     (acc, account) => ({
       totalBalance: acc.totalBalance + Number(account.total_balance),
@@ -69,7 +81,6 @@ export function Dashboard() {
     { totalBalance: 0, availableBalance: 0, lockedBalance: 0, emergencyReserve: 0 }
   ) || { totalBalance: 0, availableBalance: 0, lockedBalance: 0, emergencyReserve: 0 };
 
-  // Format currency
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -78,261 +89,337 @@ export function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <Box minH="100vh" bg={bgColor}>
       {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-blue-600">BFIN</h1>
-              <span className="ml-4 text-gray-600">Dashboard</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-gray-700">Olá, {user?.full_name}</span>
-              <Button
-                variant="outline"
-                onClick={() => setInvitationsDialogOpen(true)}
-                className="flex items-center gap-2 relative"
-              >
-                <Mail className="h-4 w-4" />
-                Convites
+      <Box as="header" bg={headerBg} shadow="sm">
+        <Container maxW="7xl" py={4}>
+          <Flex align="center" justify="space-between">
+            <HStack spacing={4}>
+              <Heading size="lg" color="brand.600">BFIN</Heading>
+              <Text color="gray.600">Dashboard</Text>
+            </HStack>
+            <HStack spacing={4}>
+              <Text color="gray.700">Olá, {user?.full_name}</Text>
+              <Box position="relative">
+                <Button
+                  variant="outline"
+                  onClick={() => setInvitationsDialogOpen(true)}
+                  leftIcon={<Mail size={16} />}
+                >
+                  Convites
+                </Button>
                 {invitations.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  <Badge
+                    position="absolute"
+                    top="-8px"
+                    right="-8px"
+                    colorScheme="red"
+                    borderRadius="full"
+                    fontSize="xs"
+                    px={2}
+                  >
                     {invitations.length}
-                  </span>
+                  </Badge>
                 )}
-              </Button>
+              </Box>
               <Button
                 variant="outline"
                 onClick={() => setManageAccountsDialogOpen(true)}
-                className="flex items-center gap-2"
+                leftIcon={<Wallet size={16} />}
               >
-                <Wallet className="h-4 w-4" />
                 Gerenciar Contas
               </Button>
               <Button variant="outline" onClick={handleSignOut}>
                 Sair
               </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+            </HStack>
+          </Flex>
+        </Container>
+      </Box>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Alerta Limite Diário - Compacto no lado direito */}
-        {!loadingDailyLimit && !loadingAccounts && dailyLimit && dailyLimit.totalDailyLimit > 0 && (
-          <div className="mb-6 flex justify-end">
-            <button
-              onClick={() => setShowSpendingHistory(!showSpendingHistory)}
-              className={`rounded-lg p-4 border w-full md:w-2/5 transition-all hover:shadow-md text-left ${
-                dailyLimit.exceeded
-                  ? 'bg-red-50 border-red-200 hover:bg-red-100'
-                  : dailyLimit.percentageUsed > 80
-                  ? 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100'
-                  : 'bg-blue-50 border-blue-200 hover:bg-blue-100'
-              }`}
-            >
-              <div className="space-y-2">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="text-sm font-semibold text-gray-900">
+      <Container maxW="7xl" py={8}>
+        <VStack spacing={6} align="stretch">
+          {/* Daily Limit Alert */}
+          {!loadingDailyLimit && !loadingAccounts && dailyLimit && dailyLimit.totalDailyLimit > 0 && (
+            <Flex justify="flex-end">
+              <Box
+                as="button"
+                onClick={() => setShowSpendingHistory(!showSpendingHistory)}
+                borderRadius="lg"
+                p={4}
+                borderWidth="1px"
+                w={{ base: 'full', md: '40%' }}
+                transition="all 0.2s"
+                _hover={{ shadow: 'md' }}
+                textAlign="left"
+                bg={
+                  dailyLimit.exceeded
+                    ? 'red.50'
+                    : dailyLimit.percentageUsed > 80
+                    ? 'yellow.50'
+                    : 'blue.50'
+                }
+                borderColor={
+                  dailyLimit.exceeded
+                    ? 'red.200'
+                    : dailyLimit.percentageUsed > 80
+                    ? 'yellow.200'
+                    : 'blue.200'
+                }
+              >
+                <VStack spacing={2} align="stretch">
+                  <Flex justify="space-between" align="center" mb={1}>
+                    <Text fontSize="sm" fontWeight="semibold" color="gray.900">
                       Limite Diário Sugerido
-                    </h3>
-                    <span className="text-xs text-gray-600">
+                    </Text>
+                    <Text fontSize="xs" color="gray.600">
                       {showSpendingHistory ? '▼ Ocultar histórico' : '▶ Ver histórico'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-gray-600">
-                    <span>Gasto hoje</span>
-                    <span className="font-medium">
+                    </Text>
+                  </Flex>
+                  <Flex justify="space-between" fontSize="xs" color="gray.600">
+                    <Text>Gasto hoje</Text>
+                    <Text fontWeight="medium">
                       {formatCurrency(dailyLimit.totalSpentToday)} / {formatCurrency(dailyLimit.totalDailyLimit)}
-                    </span>
-                  </div>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full ${
+                    </Text>
+                  </Flex>
+                  <Progress
+                    value={Math.min(100, dailyLimit.percentageUsed)}
+                    colorScheme={
                       dailyLimit.exceeded
-                        ? 'bg-red-500'
+                        ? 'red'
                         : dailyLimit.percentageUsed > 80
-                        ? 'bg-yellow-500'
-                        : 'bg-blue-600'
-                    }`}
-                    style={{ width: `${Math.min(100, dailyLimit.percentageUsed)}%` }}
-                  ></div>
-                </div>
-                <p className="text-xs">
-                  {dailyLimit.exceeded ? (
-                    <span className="text-red-700 font-medium">
-                      Excedido em {formatCurrency(dailyLimit.totalSpentToday - dailyLimit.totalDailyLimit)}
-                    </span>
-                  ) : (
-                    <span className={dailyLimit.percentageUsed > 80 ? 'text-yellow-700' : 'text-green-700'}>
-                      Restam {formatCurrency(dailyLimit.totalRemaining)} hoje
-                    </span>
-                  )}
-                </p>
-              </div>
-            </button>
-          </div>
-        )}
-
-        {/* Histórico de Gastos */}
-        {!loadingAccounts && accounts && accounts.length > 0 && showSpendingHistory && (
-          <SpendingHistoryChart accountIds={accountIds} days={7} />
-        )}
-
-        {/* Ações Rápidas */}
-        {!loadingAccounts && accounts && accounts.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {/* Botão Nova Receita */}
-            <button
-              onClick={() => setIncomeDialogOpen(true)}
-              className="bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg p-6 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
-            >
-              <div className="flex flex-col items-center gap-3">
-                <div className="bg-white/20 p-3 rounded-full">
-                  <TrendingUp className="h-8 w-8" />
-                </div>
-                <div className="text-center">
-                  <h3 className="text-lg font-bold">Nova Receita</h3>
-                  <p className="text-sm text-green-100 mt-1">Registrar entrada</p>
-                </div>
-              </div>
-            </button>
-
-            {/* Botão Despesa Fixa */}
-            <button
-              onClick={() => setFixedExpenseDialogOpen(true)}
-              className="bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg p-6 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
-            >
-              <div className="flex flex-col items-center gap-3">
-                <div className="bg-white/20 p-3 rounded-full">
-                  <Calendar className="h-8 w-8" />
-                </div>
-                <div className="text-center">
-                  <h3 className="text-lg font-bold">Despesa Fixa</h3>
-                  <p className="text-sm text-orange-100 mt-1">Conta recorrente</p>
-                </div>
-              </div>
-            </button>
-
-            {/* Botão Despesa Variável */}
-            <button
-              onClick={() => setVariableExpenseDialogOpen(true)}
-              className="bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg p-6 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
-            >
-              <div className="flex flex-col items-center gap-3">
-                <div className="bg-white/20 p-3 rounded-full">
-                  <ShoppingCart className="h-8 w-8" />
-                </div>
-                <div className="text-center">
-                  <h3 className="text-lg font-bold">Despesa Variável</h3>
-                  <p className="text-sm text-red-100 mt-1">Gasto do dia</p>
-                </div>
-              </div>
-            </button>
-          </div>
-        )}
-
-        {/* Card Disponível */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-500">Saldo Disponível</h3>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setEmergencyReserveDialogOpen(true);
-              }}
-              className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-              title="Ver Reserva de Emergência"
-            >
-              <Shield className="h-5 w-5" />
-            </button>
-          </div>
-          <div
-            className="cursor-pointer"
-            onClick={() => setTransactionsDialogOpen(true)}
-          >
-            <p className="mt-2 text-4xl font-bold text-green-600">
-              {loadingAccounts ? 'Carregando...' : formatCurrency(totals.availableBalance)}
-            </p>
-            <p className="mt-1 text-sm text-gray-500">Para gastos · Clique para ver todas as transações</p>
-          </div>
-        </div>
-
-        {/* Próximas Despesas */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Próximas Despesas Fixas
-          </h2>
-          {loadingUpcomingExpenses ? (
-            <p className="text-gray-500">Carregando...</p>
-          ) : !upcomingExpenses?.transactions || upcomingExpenses.transactions.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              Nenhuma despesa agendada
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {upcomingExpenses.transactions.map((expense) => {
-                const dueDate = new Date(expense.due_date);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                dueDate.setHours(0, 0, 0, 0);
-                const isOverdue = dueDate < today;
-
-                return (
-                  <div
-                    key={expense.id}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{expense.description}</p>
-                      {expense.category && (
-                        <p className="text-sm text-gray-500 mt-1">{expense.category.name}</p>
-                      )}
-                    </div>
-                    <div className="text-right ml-4">
-                      <p className="font-bold text-red-600">{formatCurrency(expense.amount)}</p>
-                      <p className={`text-sm mt-1 ${isOverdue ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
-                        {isOverdue ? 'Vencida: ' : 'Vencimento: '}
-                        {new Date(expense.due_date).toLocaleDateString('pt-BR', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </p>
-                      <Button
-                        variant="outline"
-                        onClick={() => handleMarkAsPaid(expense.id, expense.description)}
-                        className="mt-2 text-xs py-1 px-2 bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
-                      >
-                        Marcar como Paga
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                        ? 'yellow'
+                        : 'blue'
+                    }
+                    size="sm"
+                    borderRadius="full"
+                  />
+                  <Text fontSize="xs">
+                    {dailyLimit.exceeded ? (
+                      <Text as="span" color="red.700" fontWeight="medium">
+                        Excedido em {formatCurrency(dailyLimit.totalSpentToday - dailyLimit.totalDailyLimit)}
+                      </Text>
+                    ) : (
+                      <Text as="span" color={dailyLimit.percentageUsed > 80 ? 'yellow.700' : 'green.700'}>
+                        Restam {formatCurrency(dailyLimit.totalRemaining)} hoje
+                      </Text>
+                    )}
+                  </Text>
+                </VStack>
+              </Box>
+            </Flex>
           )}
-        </div>
 
-        {/* Mensagem para criar conta se não houver */}
-        {!loadingAccounts && (!accounts || accounts.length === 0) && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-blue-900 mb-2">
-              Bem-vindo ao BFIN!
-            </h3>
-            <p className="text-blue-700 mb-4">
-              Para começar, você precisa criar uma conta bancária.
-            </p>
-            <Button onClick={() => setAccountDialogOpen(true)}>+ Criar Conta</Button>
-          </div>
-        )}
-      </main>
+          {/* Spending History Chart */}
+          {!loadingAccounts && accounts && accounts.length > 0 && showSpendingHistory && (
+            <SpendingHistoryChart accountIds={accountIds} days={7} />
+          )}
 
-      {/* Income Dialog */}
+          {/* Quick Actions */}
+          {!loadingAccounts && accounts && accounts.length > 0 && (
+            <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={4}>
+              <GridItem>
+                <Box
+                  as="button"
+                  onClick={() => setIncomeDialogOpen(true)}
+                  bgGradient="linear(to-br, green.500, green.600)"
+                  _hover={{ bgGradient: 'linear(to-br, green.600, green.700)' }}
+                  color="white"
+                  borderRadius="lg"
+                  p={6}
+                  shadow="lg"
+                  transition="all 0.2s"
+                  _active={{ transform: 'scale(0.95)' }}
+                  w="full"
+                >
+                  <VStack spacing={3}>
+                    <Box bg="whiteAlpha.200" p={3} borderRadius="full">
+                      <TrendingUp size={32} />
+                    </Box>
+                    <VStack spacing={1}>
+                      <Heading size="md">Nova Receita</Heading>
+                      <Text fontSize="sm" color="green.100">Registrar entrada</Text>
+                    </VStack>
+                  </VStack>
+                </Box>
+              </GridItem>
+
+              <GridItem>
+                <Box
+                  as="button"
+                  onClick={() => setFixedExpenseDialogOpen(true)}
+                  bgGradient="linear(to-br, orange.500, orange.600)"
+                  _hover={{ bgGradient: 'linear(to-br, orange.600, orange.700)' }}
+                  color="white"
+                  borderRadius="lg"
+                  p={6}
+                  shadow="lg"
+                  transition="all 0.2s"
+                  _active={{ transform: 'scale(0.95)' }}
+                  w="full"
+                >
+                  <VStack spacing={3}>
+                    <Box bg="whiteAlpha.200" p={3} borderRadius="full">
+                      <Calendar size={32} />
+                    </Box>
+                    <VStack spacing={1}>
+                      <Heading size="md">Despesa Fixa</Heading>
+                      <Text fontSize="sm" color="orange.100">Conta recorrente</Text>
+                    </VStack>
+                  </VStack>
+                </Box>
+              </GridItem>
+
+              <GridItem>
+                <Box
+                  as="button"
+                  onClick={() => setVariableExpenseDialogOpen(true)}
+                  bgGradient="linear(to-br, red.500, red.600)"
+                  _hover={{ bgGradient: 'linear(to-br, red.600, red.700)' }}
+                  color="white"
+                  borderRadius="lg"
+                  p={6}
+                  shadow="lg"
+                  transition="all 0.2s"
+                  _active={{ transform: 'scale(0.95)' }}
+                  w="full"
+                >
+                  <VStack spacing={3}>
+                    <Box bg="whiteAlpha.200" p={3} borderRadius="full">
+                      <ShoppingCart size={32} />
+                    </Box>
+                    <VStack spacing={1}>
+                      <Heading size="md">Despesa Variável</Heading>
+                      <Text fontSize="sm" color="red.100">Gasto do dia</Text>
+                    </VStack>
+                  </VStack>
+                </Box>
+              </GridItem>
+            </Grid>
+          )}
+
+          {/* Available Balance Card */}
+          <Box bg="white" borderRadius="lg" shadow="md" p={6}>
+            <Flex justify="space-between" align="center" mb={2}>
+              <Text fontSize="sm" fontWeight="medium" color="gray.500">
+                Saldo Disponível
+              </Text>
+              <IconButton
+                aria-label="Ver Reserva de Emergência"
+                icon={<Shield size={20} />}
+                onClick={() => setEmergencyReserveDialogOpen(true)}
+                size="sm"
+                variant="ghost"
+                colorScheme="blue"
+              />
+            </Flex>
+            <Box
+              as="button"
+              onClick={() => setTransactionsDialogOpen(true)}
+              cursor="pointer"
+              textAlign="left"
+              w="full"
+            >
+              <Text fontSize="4xl" fontWeight="bold" color="green.600" mt={2}>
+                {loadingAccounts ? 'Carregando...' : formatCurrency(totals.availableBalance)}
+              </Text>
+              <Text fontSize="sm" color="gray.500" mt={1}>
+                Para gastos · Clique para ver todas as transações
+              </Text>
+            </Box>
+          </Box>
+
+          {/* Upcoming Expenses */}
+          <Box bg="white" borderRadius="lg" shadow="md" p={6}>
+            <Heading size="md" color="gray.900" mb={4}>
+              Próximas Despesas Fixas
+            </Heading>
+            {loadingUpcomingExpenses ? (
+              <Text color="gray.500">Carregando...</Text>
+            ) : !upcomingExpenses?.transactions || upcomingExpenses.transactions.length === 0 ? (
+              <Box textAlign="center" py={8}>
+                <Text color="gray.500">Nenhuma despesa agendada</Text>
+              </Box>
+            ) : (
+              <VStack spacing={3} align="stretch">
+                {upcomingExpenses.transactions.map((expense) => {
+                  const dueDate = new Date(expense.due_date);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  dueDate.setHours(0, 0, 0, 0);
+                  const isOverdue = dueDate < today;
+
+                  return (
+                    <Flex
+                      key={expense.id}
+                      align="center"
+                      justify="space-between"
+                      p={4}
+                      borderWidth="1px"
+                      borderColor="gray.200"
+                      borderRadius="lg"
+                      _hover={{ bg: 'gray.50' }}
+                      transition="all 0.2s"
+                    >
+                      <Box flex="1">
+                        <Text fontWeight="medium" color="gray.900">
+                          {expense.description}
+                        </Text>
+                        {expense.category && (
+                          <Text fontSize="sm" color="gray.500" mt={1}>
+                            {expense.category.name}
+                          </Text>
+                        )}
+                      </Box>
+                      <VStack align="flex-end" ml={4} spacing={1}>
+                        <Text fontWeight="bold" color="red.600">
+                          {formatCurrency(expense.amount)}
+                        </Text>
+                        <Text
+                          fontSize="sm"
+                          color={isOverdue ? 'red.600' : 'gray.500'}
+                          fontWeight={isOverdue ? 'semibold' : 'normal'}
+                        >
+                          {isOverdue ? 'Vencida: ' : 'Vencimento: '}
+                          {new Date(expense.due_date).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </Text>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          colorScheme="green"
+                          onClick={() => handleMarkAsPaid(expense.id, expense.description)}
+                        >
+                          Marcar como Paga
+                        </Button>
+                      </VStack>
+                    </Flex>
+                  );
+                })}
+              </VStack>
+            )}
+          </Box>
+
+          {/* Create Account Message */}
+          {!loadingAccounts && (!accounts || accounts.length === 0) && (
+            <Box bg="blue.50" borderWidth="1px" borderColor="blue.200" borderRadius="lg" p={6}>
+              <Heading size="md" color="blue.900" mb={2}>
+                Bem-vindo ao BFIN!
+              </Heading>
+              <Text color="blue.700" mb={4}>
+                Para começar, você precisa criar uma conta bancária.
+              </Text>
+              <Button onClick={() => setAccountDialogOpen(true)}>+ Criar Conta</Button>
+            </Box>
+          )}
+        </VStack>
+      </Container>
+
+      {/* Modals */}
       <Modal isOpen={incomeDialogOpen} onClose={() => setIncomeDialogOpen(false)}>
         <ModalOverlay />
         <ModalContent>
@@ -340,16 +427,13 @@ export function Dashboard() {
           <ModalCloseButton />
           <ModalBody pb={6}>
             <IncomeForm
-              onSuccess={() => {
-                setIncomeDialogOpen(false);
-              }}
+              onSuccess={() => setIncomeDialogOpen(false)}
               onCancel={() => setIncomeDialogOpen(false)}
             />
           </ModalBody>
         </ModalContent>
       </Modal>
 
-      {/* Fixed Expense Dialog */}
       <Modal isOpen={fixedExpenseDialogOpen} onClose={() => setFixedExpenseDialogOpen(false)}>
         <ModalOverlay />
         <ModalContent>
@@ -357,16 +441,13 @@ export function Dashboard() {
           <ModalCloseButton />
           <ModalBody pb={6}>
             <FixedExpenseForm
-              onSuccess={() => {
-                setFixedExpenseDialogOpen(false);
-              }}
+              onSuccess={() => setFixedExpenseDialogOpen(false)}
               onCancel={() => setFixedExpenseDialogOpen(false)}
             />
           </ModalBody>
         </ModalContent>
       </Modal>
 
-      {/* Variable Expense Dialog */}
       <Modal isOpen={variableExpenseDialogOpen} onClose={() => setVariableExpenseDialogOpen(false)}>
         <ModalOverlay />
         <ModalContent>
@@ -374,16 +455,13 @@ export function Dashboard() {
           <ModalCloseButton />
           <ModalBody pb={6}>
             <VariableExpenseForm
-              onSuccess={() => {
-                setVariableExpenseDialogOpen(false);
-              }}
+              onSuccess={() => setVariableExpenseDialogOpen(false)}
               onCancel={() => setVariableExpenseDialogOpen(false)}
             />
           </ModalBody>
         </ModalContent>
       </Modal>
 
-      {/* Create Account Dialog */}
       <Modal isOpen={accountDialogOpen} onClose={() => setAccountDialogOpen(false)}>
         <ModalOverlay />
         <ModalContent>
@@ -391,22 +469,18 @@ export function Dashboard() {
           <ModalCloseButton />
           <ModalBody pb={6}>
             <CreateAccountForm
-              onSuccess={() => {
-                setAccountDialogOpen(false);
-              }}
+              onSuccess={() => setAccountDialogOpen(false)}
               onCancel={() => setAccountDialogOpen(false)}
             />
           </ModalBody>
         </ModalContent>
       </Modal>
 
-      {/* Manage Accounts Dialog */}
       <AccountsDialog
         isOpen={manageAccountsDialogOpen}
         onClose={() => setManageAccountsDialogOpen(false)}
       />
 
-      {/* Transactions Dialog */}
       <Modal isOpen={transactionsDialogOpen} onClose={() => setTransactionsDialogOpen(false)} size="4xl">
         <ModalOverlay />
         <ModalContent>
@@ -418,53 +492,53 @@ export function Dashboard() {
         </ModalContent>
       </Modal>
 
-      {/* Emergency Reserve Dialog */}
       <Modal isOpen={emergencyReserveDialogOpen} onClose={() => setEmergencyReserveDialogOpen(false)}>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>
-            <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-blue-600" />
-              <span>Reserva de Emergência</span>
-            </div>
+            <HStack>
+              <Shield size={20} color="var(--chakra-colors-blue-600)" />
+              <Text>Reserva de Emergência</Text>
+            </HStack>
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800 mb-2">
+            <VStack spacing={4} align="stretch">
+              <Box bg="blue.50" borderWidth="1px" borderColor="blue.200" borderRadius="lg" p={4}>
+                <Text fontSize="sm" color="blue.800" mb={2}>
                   Sua reserva de emergência é calculada automaticamente como 30% de todas as receitas recebidas.
-                </p>
-                <p className="text-3xl font-bold text-blue-600">
+                </Text>
+                <Text fontSize="3xl" fontWeight="bold" color="blue.600">
                   {loadingAccounts ? 'Carregando...' : formatCurrency(totals.emergencyReserve)}
-                </p>
-              </div>
+                </Text>
+              </Box>
 
-              <div className="space-y-2 text-sm text-gray-600">
-                <h4 className="font-semibold text-gray-900">Para que serve?</h4>
-                <ul className="list-disc list-inside space-y-1 ml-2">
+              <VStack spacing={2} align="stretch" fontSize="sm" color="gray.600">
+                <Heading size="sm" color="gray.900">Para que serve?</Heading>
+                <Box as="ul" pl={6} sx={{ listStyleType: 'disc' }}>
                   <li>Proteção financeira para imprevistos</li>
                   <li>Cobertura para emergências médicas</li>
                   <li>Segurança em caso de perda de renda</li>
                   <li>Reparos urgentes em casa ou veículo</li>
-                </ul>
-              </div>
+                </Box>
+              </VStack>
 
-              <div className="bg-gray-50 rounded-lg p-4 text-xs text-gray-500">
-                <p className="font-medium text-gray-700 mb-1">Como funciona:</p>
-                <p>A cada receita recebida, 30% é automaticamente separado para sua reserva de emergência.
-                Os 70% restantes ficam disponíveis para seus gastos do dia a dia.</p>
-              </div>
-            </div>
+              <Box bg="gray.50" borderRadius="lg" p={4} fontSize="xs" color="gray.500">
+                <Text fontWeight="medium" color="gray.700" mb={1}>Como funciona:</Text>
+                <Text>
+                  A cada receita recebida, 30% é automaticamente separado para sua reserva de emergência.
+                  Os 70% restantes ficam disponíveis para seus gastos do dia a dia.
+                </Text>
+              </Box>
+            </VStack>
           </ModalBody>
         </ModalContent>
       </Modal>
 
-      {/* Invitations Dialog */}
       <InvitationsDialog
         isOpen={invitationsDialogOpen}
         onClose={() => setInvitationsDialogOpen(false)}
       />
-    </div>
+    </Box>
   );
 }
