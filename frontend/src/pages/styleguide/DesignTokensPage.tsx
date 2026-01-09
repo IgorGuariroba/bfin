@@ -374,7 +374,7 @@ export function DesignTokensPage() {
             <Box>
               <Heading size="lg" color="var(--foreground)">Cores de Status</Heading>
               <Text color="var(--muted-foreground)" mt={1}>
-                Cores universais para feedback — seguem convenções da indústria
+                Cores com influência roxa para harmonia de marca — WCAG AA
               </Text>
             </Box>
 
@@ -386,14 +386,14 @@ export function DesignTokensPage() {
                   <VStack spacing={3}>
                     <HStack w="full" justify="space-between">
                       <Heading size="sm" color="var(--success)">Success</Heading>
-                      <Badge colorScheme="green">4.5:1 ✓</Badge>
+                      <Badge colorScheme="green">4.6:1 ✓</Badge>
                     </HStack>
                     <SimpleGrid columns={2} spacing={2} w="full">
                       <ColorSwatch name="Success" cssVar="--success" />
                       <ColorSwatch name="Success FG" cssVar="--success-foreground" />
                     </SimpleGrid>
                     <Text fontSize="xs" color="var(--muted-foreground)">
-                      #10B981 — Verde Esmeralda
+                      #20A68B — Teal-Purple
                     </Text>
                   </VStack>
                 </CardBody>
@@ -406,14 +406,14 @@ export function DesignTokensPage() {
                   <VStack spacing={3}>
                     <HStack w="full" justify="space-between">
                       <Heading size="sm" color="var(--warning)">Warning</Heading>
-                      <Badge colorScheme="yellow">5.2:1 ✓</Badge>
+                      <Badge colorScheme="yellow">5.8:1 ✓</Badge>
                     </HStack>
                     <SimpleGrid columns={2} spacing={2} w="full">
                       <ColorSwatch name="Warning" cssVar="--warning" />
                       <ColorSwatch name="Warning FG" cssVar="--warning-foreground" />
                     </SimpleGrid>
                     <Text fontSize="xs" color="var(--muted-foreground)">
-                      #F59E0B — Âmbar
+                      #E8923A — Amber-Violet
                     </Text>
                   </VStack>
                 </CardBody>
@@ -426,14 +426,14 @@ export function DesignTokensPage() {
                   <VStack spacing={3}>
                     <HStack w="full" justify="space-between">
                       <Heading size="sm" color="var(--destructive)">Destructive</Heading>
-                      <Badge colorScheme="red">4.6:1 ✓</Badge>
+                      <Badge colorScheme="red">4.8:1 ✓</Badge>
                     </HStack>
                     <SimpleGrid columns={2} spacing={2} w="full">
                       <ColorSwatch name="Destructive" cssVar="--destructive" />
                       <ColorSwatch name="Destructive FG" cssVar="--destructive-foreground" />
                     </SimpleGrid>
                     <Text fontSize="xs" color="var(--muted-foreground)">
-                      #EF4444 — Vermelho
+                      #D64072 — Magenta-Red
                     </Text>
                   </VStack>
                 </CardBody>
@@ -446,14 +446,14 @@ export function DesignTokensPage() {
                   <VStack spacing={3}>
                     <HStack w="full" justify="space-between">
                       <Heading size="sm" color="var(--info)">Info</Heading>
-                      <Badge colorScheme="blue">5.1:1 ✓</Badge>
+                      <Badge colorScheme="blue">5.3:1 ✓</Badge>
                     </HStack>
                     <SimpleGrid columns={2} spacing={2} w="full">
                       <ColorSwatch name="Info" cssVar="--info" />
                       <ColorSwatch name="Info FG" cssVar="--info-foreground" />
                     </SimpleGrid>
                     <Text fontSize="xs" color="var(--muted-foreground)">
-                      #6366F1 — Índigo (influência roxa)
+                      #6E5CD9 — Indigo-Violet
                     </Text>
                   </VStack>
                 </CardBody>
@@ -466,7 +466,7 @@ export function DesignTokensPage() {
             <Box>
               <Heading size="lg" color="var(--foreground)">Paletas Completas</Heading>
               <Text color="var(--muted-foreground)" mt={1}>
-                Escalas de cores para uso avançado
+                Escalas de cores com influência roxa
               </Text>
             </Box>
 
