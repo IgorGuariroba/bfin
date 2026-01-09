@@ -1,9 +1,27 @@
 import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { Box, Heading, Text, Link, Alert, AlertIcon } from '@chakra-ui/react';
+import {
+  Button,
+  FormControl,
+  FormLabel,
+  Input,
+  VStack,
+  Heading,
+  Text,
+  Link,
+  Container,
+  Alert,
+  AlertIcon,
+  Card,
+  CardBody,
+  InputGroup,
+  InputLeftElement,
+  Icon,
+  Divider,
+  Flex,
+} from '@chakra-ui/react';
+import { MdEmail, MdLock, MdPerson } from 'react-icons/md';
 import { useAuth } from '../contexts/AuthContext';
-import { Button } from '../components/atoms/Button';
-import { FormField } from '../components/molecules/FormField';
 
 export function Register() {
   const [fullName, setFullName] = useState('');
@@ -44,88 +62,170 @@ export function Register() {
   }
 
   return (
-    <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="gray.50" py="12" px={{ base: "4", sm: "6", lg: "8" }}>
-      <Box maxW="md" w="full" mx="auto" py="12" px={{ base: "4", sm: "6" }}>
-        <Box mb="8">
-          <Heading as="h1" fontSize="4xl" fontWeight="bold" color="brand.600" textAlign="center" mb="2">
-            BFIN
-          </Heading>
-          <Heading as="h2" fontSize="3xl" fontWeight="bold" color="gray.900" textAlign="center" mb="2">
-            Criar conta
-          </Heading>
-          <Text fontSize="sm" color="gray.600" textAlign="center">
-            Comece a gerenciar suas finanças hoje
-          </Text>
-        </Box>
+    <Flex minH="100vh" align="center" justify="center" bg="gray.50">
+      <Container maxW="md" py={{ base: "12", md: "24" }} px={{ base: "0", sm: "8" }}>
+        <VStack spacing="8">
+          {/* Logo e Header */}
+          <VStack spacing="2">
+            <Heading
+              size="2xl"
+              fontWeight="extrabold"
+              bgGradient="linear(to-r, brand.600, brand.800)"
+              bgClip="text"
+            >
+              BFIN
+            </Heading>
+            <Text color="gray.600" fontSize="lg">
+              Crie sua conta gratuitamente
+            </Text>
+          </VStack>
 
-        <Box as="form" onSubmit={handleSubmit}>
-          {error && (
-            <Alert status="error" borderRadius="md" mb="6">
-              <AlertIcon />
-              {error}
-            </Alert>
-          )}
+          {/* Card do Formulário */}
+          <Card w="full" shadow="xl" borderRadius="xl">
+            <CardBody p={{ base: "6", md: "8" }}>
+              <form onSubmit={handleSubmit}>
+                <VStack spacing="5" align="stretch">
+                  {error && (
+                    <Alert status="error" borderRadius="lg" variant="subtle">
+                      <AlertIcon />
+                      {error}
+                    </Alert>
+                  )}
 
-          <Box mb="5">
-            <FormField
-              label="Nome completo"
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              isRequired
-              placeholder="João Silva"
-              autoComplete="name"
-            />
-          </Box>
+                  {/* Campo Nome Completo */}
+                  <FormControl isRequired>
+                    <FormLabel color="gray.700" fontWeight="medium">
+                      Nome completo
+                    </FormLabel>
+                    <InputGroup>
+                      <InputLeftElement pointerEvents="none">
+                        <Icon as={MdPerson} color="gray.400" />
+                      </InputLeftElement>
+                      <Input
+                        type="text"
+                        placeholder="João Silva"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        size="lg"
+                        focusBorderColor="brand.500"
+                        autoComplete="name"
+                      />
+                    </InputGroup>
+                  </FormControl>
 
-          <Box mb="5">
-            <FormField
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              isRequired
-              placeholder="seu@email.com"
-              autoComplete="email"
-            />
-          </Box>
+                  {/* Campo Email */}
+                  <FormControl isRequired>
+                    <FormLabel color="gray.700" fontWeight="medium">
+                      Email
+                    </FormLabel>
+                    <InputGroup>
+                      <InputLeftElement pointerEvents="none">
+                        <Icon as={MdEmail} color="gray.400" />
+                      </InputLeftElement>
+                      <Input
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        size="lg"
+                        focusBorderColor="brand.500"
+                        autoComplete="email"
+                      />
+                    </InputGroup>
+                  </FormControl>
 
-          <Box mb="5">
-            <FormField
-              label="Senha"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              isRequired
-              placeholder="••••••••"
-              autoComplete="new-password"
-            />
-          </Box>
+                  {/* Campo Senha */}
+                  <FormControl isRequired>
+                    <FormLabel color="gray.700" fontWeight="medium">
+                      Senha
+                    </FormLabel>
+                    <InputGroup>
+                      <InputLeftElement pointerEvents="none">
+                        <Icon as={MdLock} color="gray.400" />
+                      </InputLeftElement>
+                      <Input
+                        type="password"
+                        placeholder="Mínimo 6 caracteres"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        size="lg"
+                        focusBorderColor="brand.500"
+                        autoComplete="new-password"
+                      />
+                    </InputGroup>
+                  </FormControl>
 
-          <Box mb="6">
-            <FormField
-              label="Confirmar senha"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              isRequired
-              placeholder="••••••••"
-              autoComplete="new-password"
-            />
-          </Box>
+                  {/* Campo Confirmar Senha */}
+                  <FormControl isRequired>
+                    <FormLabel color="gray.700" fontWeight="medium">
+                      Confirmar senha
+                    </FormLabel>
+                    <InputGroup>
+                      <InputLeftElement pointerEvents="none">
+                        <Icon as={MdLock} color="gray.400" />
+                      </InputLeftElement>
+                      <Input
+                        type="password"
+                        placeholder="Digite a senha novamente"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        size="lg"
+                        focusBorderColor="brand.500"
+                        autoComplete="new-password"
+                      />
+                    </InputGroup>
+                  </FormControl>
 
-          <Button type="submit" width="full" isLoading={isLoading} size="lg" mb="6">
-            Criar conta
-          </Button>
+                  {/* Botão Criar Conta */}
+                  <Button
+                    type="submit"
+                    colorScheme="brand"
+                    size="lg"
+                    fontSize="md"
+                    fontWeight="bold"
+                    isLoading={isLoading}
+                    loadingText="Criando conta..."
+                    w="full"
+                    mt="2"
+                  >
+                    Criar conta
+                  </Button>
 
-          <Text textAlign="center" fontSize="sm" color="gray.600">
-            Já tem uma conta?{' '}
-            <Link as={RouterLink} to="/login" fontWeight="medium" color="brand.600" _hover={{ color: 'brand.500' }}>
-              Fazer login
+                  {/* Divider */}
+                  <Flex align="center" py="2">
+                    <Divider />
+                    <Text px="3" color="gray.500" fontSize="sm" whiteSpace="nowrap">
+                      Já tem uma conta?
+                    </Text>
+                    <Divider />
+                  </Flex>
+
+                  {/* Link para Login */}
+                  <Button
+                    as={RouterLink}
+                    to="/login"
+                    variant="outline"
+                    colorScheme="brand"
+                    size="lg"
+                    fontSize="md"
+                    fontWeight="medium"
+                  >
+                    Fazer login
+                  </Button>
+                </VStack>
+              </form>
+            </CardBody>
+          </Card>
+
+          {/* Footer */}
+          <Text color="gray.500" fontSize="sm" textAlign="center">
+            Ao criar uma conta, você concorda com nossos{' '}
+            <Link color="brand.600" fontWeight="medium">
+              Termos de Serviço
             </Link>
           </Text>
-        </Box>
-      </Box>
-    </Box>
+        </VStack>
+      </Container>
+    </Flex>
   );
 }

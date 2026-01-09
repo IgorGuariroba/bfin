@@ -1,9 +1,27 @@
 import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { Box, Heading, Text, Link, Alert, AlertIcon } from '@chakra-ui/react';
+import {
+  Button,
+  FormControl,
+  FormLabel,
+  Input,
+  VStack,
+  Heading,
+  Text,
+  Link,
+  Container,
+  Alert,
+  AlertIcon,
+  Card,
+  CardBody,
+  InputGroup,
+  InputLeftElement,
+  Icon,
+  Divider,
+  Flex,
+} from '@chakra-ui/react';
+import { MdEmail, MdLock } from 'react-icons/md';
 import { useAuth } from '../contexts/AuthContext';
-import { Button } from '../components/atoms/Button';
-import { FormField } from '../components/molecules/FormField';
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -30,64 +48,128 @@ export function Login() {
   }
 
   return (
-    <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="gray.50" py="12" px={{ base: "4", sm: "6", lg: "8" }}>
-      <Box maxW="md" w="full" mx="auto" py="12" px={{ base: "4", sm: "6" }}>
-        <Box mb="8">
-          <Heading as="h1" fontSize="4xl" fontWeight="bold" color="brand.600" textAlign="center" mb="2">
-            BFIN
-          </Heading>
-          <Heading as="h2" fontSize="3xl" fontWeight="bold" color="gray.900" textAlign="center" mb="2">
-            Bem-vindo de volta
-          </Heading>
-          <Text fontSize="sm" color="gray.600" textAlign="center">
-            Faça login para acessar sua conta
-          </Text>
-        </Box>
+    <Flex minH="100vh" align="center" justify="center" bg="gray.50">
+      <Container maxW="md" py={{ base: "12", md: "24" }} px={{ base: "0", sm: "8" }}>
+        <VStack spacing="8">
+          {/* Logo e Header */}
+          <VStack spacing="2">
+            <Heading
+              size="2xl"
+              fontWeight="extrabold"
+              bgGradient="linear(to-r, brand.600, brand.800)"
+              bgClip="text"
+            >
+              BFIN
+            </Heading>
+            <Text color="gray.600" fontSize="lg">
+              Bem-vindo de volta
+            </Text>
+          </VStack>
 
-        <Box as="form" onSubmit={handleSubmit}>
-          {error && (
-            <Alert status="error" borderRadius="md" mb="6">
-              <AlertIcon />
-              {error}
-            </Alert>
-          )}
+          {/* Card do Formulário */}
+          <Card w="full" shadow="xl" borderRadius="xl">
+            <CardBody p={{ base: "6", md: "8" }}>
+              <form onSubmit={handleSubmit}>
+                <VStack spacing="6" align="stretch">
+                  {error && (
+                    <Alert status="error" borderRadius="lg" variant="subtle">
+                      <AlertIcon />
+                      {error}
+                    </Alert>
+                  )}
 
-          <Box mb="5">
-            <FormField
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              isRequired
-              placeholder="seu@email.com"
-              autoComplete="email"
-            />
-          </Box>
+                  {/* Campo Email */}
+                  <FormControl isRequired>
+                    <FormLabel color="gray.700" fontWeight="medium">
+                      Email
+                    </FormLabel>
+                    <InputGroup>
+                      <InputLeftElement pointerEvents="none">
+                        <Icon as={MdEmail} color="gray.400" />
+                      </InputLeftElement>
+                      <Input
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        size="lg"
+                        focusBorderColor="brand.500"
+                        autoComplete="email"
+                      />
+                    </InputGroup>
+                  </FormControl>
 
-          <Box mb="6">
-            <FormField
-              label="Senha"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              isRequired
-              placeholder="••••••••"
-              autoComplete="current-password"
-            />
-          </Box>
+                  {/* Campo Senha */}
+                  <FormControl isRequired>
+                    <FormLabel color="gray.700" fontWeight="medium">
+                      Senha
+                    </FormLabel>
+                    <InputGroup>
+                      <InputLeftElement pointerEvents="none">
+                        <Icon as={MdLock} color="gray.400" />
+                      </InputLeftElement>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        size="lg"
+                        focusBorderColor="brand.500"
+                        autoComplete="current-password"
+                      />
+                    </InputGroup>
+                  </FormControl>
 
-          <Button type="submit" width="full" isLoading={isLoading} size="lg" mb="6">
-            Entrar
-          </Button>
+                  {/* Botão Entrar */}
+                  <Button
+                    type="submit"
+                    colorScheme="brand"
+                    size="lg"
+                    fontSize="md"
+                    fontWeight="bold"
+                    isLoading={isLoading}
+                    loadingText="Entrando..."
+                    w="full"
+                    mt="2"
+                  >
+                    Entrar
+                  </Button>
 
-          <Text textAlign="center" fontSize="sm" color="gray.600">
-            Não tem uma conta?{' '}
-            <Link as={RouterLink} to="/register" fontWeight="medium" color="brand.600" _hover={{ color: 'brand.500' }}>
-              Criar conta
+                  {/* Divider */}
+                  <Flex align="center" py="2">
+                    <Divider />
+                    <Text px="3" color="gray.500" fontSize="sm" whiteSpace="nowrap">
+                      Não tem uma conta?
+                    </Text>
+                    <Divider />
+                  </Flex>
+
+                  {/* Link para Registro */}
+                  <Button
+                    as={RouterLink}
+                    to="/register"
+                    variant="outline"
+                    colorScheme="brand"
+                    size="lg"
+                    fontSize="md"
+                    fontWeight="medium"
+                  >
+                    Criar conta grátis
+                  </Button>
+                </VStack>
+              </form>
+            </CardBody>
+          </Card>
+
+          {/* Footer */}
+          <Text color="gray.500" fontSize="sm" textAlign="center">
+            Ao continuar, você concorda com nossos{' '}
+            <Link color="brand.600" fontWeight="medium">
+              Termos de Serviço
             </Link>
           </Text>
-        </Box>
-      </Box>
-    </Box>
+        </VStack>
+      </Container>
+    </Flex>
   );
 }
