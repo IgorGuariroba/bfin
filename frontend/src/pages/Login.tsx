@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { Box, Container, Heading, Text, Link, Alert, AlertIcon, Stack } from '@chakra-ui/react';
+import { Box, Heading, Text, Link, Alert, AlertIcon } from '@chakra-ui/react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/atoms/Button';
 import { FormField } from '../components/molecules/FormField';
@@ -30,66 +30,64 @@ export function Login() {
   }
 
   return (
-    <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="gray.50" py={12} px={{ base: 4, sm: 6, lg: 8 }}>
-      <Container maxW="md" w="full">
-        <Stack spacing={8} mx="auto" maxW="lg" py={12} px={{ base: 4, sm: 6 }}>
-          <Stack spacing={3} align="center" textAlign="center">
-            <Heading as="h1" fontSize="4xl" fontWeight="bold" color="brand.600">
-              BFIN
-            </Heading>
-            <Heading as="h2" fontSize="3xl" fontWeight="bold" color="gray.900">
-              Bem-vindo de volta
-            </Heading>
-            <Text fontSize="sm" color="gray.600">
-              Faça login para acessar sua conta
-            </Text>
-          </Stack>
+    <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="gray.50" py="12" px={{ base: "4", sm: "6", lg: "8" }}>
+      <Box maxW="md" w="full" mx="auto" py="12" px={{ base: "4", sm: "6" }}>
+        <Box mb="8">
+          <Heading as="h1" fontSize="4xl" fontWeight="bold" color="brand.600" textAlign="center" mb="2">
+            BFIN
+          </Heading>
+          <Heading as="h2" fontSize="3xl" fontWeight="bold" color="gray.900" textAlign="center" mb="2">
+            Bem-vindo de volta
+          </Heading>
+          <Text fontSize="sm" color="gray.600" textAlign="center">
+            Faça login para acessar sua conta
+          </Text>
+        </Box>
 
-          <Box as="form" onSubmit={handleSubmit}>
-            <Stack spacing={6}>
-              {error && (
-                <Alert status="error" borderRadius="md">
-                  <AlertIcon />
-                  {error}
-                </Alert>
-              )}
+        <Box as="form" onSubmit={handleSubmit}>
+          {error && (
+            <Alert status="error" borderRadius="md" mb="6">
+              <AlertIcon />
+              {error}
+            </Alert>
+          )}
 
-              <Stack spacing={5}>
-                <FormField
-                  label="Email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  isRequired
-                  placeholder="seu@email.com"
-                  autoComplete="email"
-                />
-
-                <FormField
-                  label="Senha"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  isRequired
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                />
-              </Stack>
-
-              <Button type="submit" width="full" isLoading={isLoading} size="lg">
-                Entrar
-              </Button>
-
-              <Text textAlign="center" fontSize="sm" color="gray.600">
-                Não tem uma conta?{' '}
-                <Link as={RouterLink} to="/register" fontWeight="medium" color="brand.600" _hover={{ color: 'brand.500' }}>
-                  Criar conta
-                </Link>
-              </Text>
-            </Stack>
+          <Box mb="5">
+            <FormField
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              isRequired
+              placeholder="seu@email.com"
+              autoComplete="email"
+            />
           </Box>
-        </Stack>
-      </Container>
+
+          <Box mb="6">
+            <FormField
+              label="Senha"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              isRequired
+              placeholder="••••••••"
+              autoComplete="current-password"
+            />
+          </Box>
+
+          <Button type="submit" width="full" isLoading={isLoading} size="lg" mb="6">
+            Entrar
+          </Button>
+
+          <Text textAlign="center" fontSize="sm" color="gray.600">
+            Não tem uma conta?{' '}
+            <Link as={RouterLink} to="/register" fontWeight="medium" color="brand.600" _hover={{ color: 'brand.500' }}>
+              Criar conta
+            </Link>
+          </Text>
+        </Box>
+      </Box>
     </Box>
   );
 }
