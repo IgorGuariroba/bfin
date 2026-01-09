@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { FormControl, FormLabel, FormErrorMessage, FormHelperText, Input, InputProps } from '@chakra-ui/react';
+import { Field, Input, InputProps } from '@chakra-ui/react';
 
 interface FormFieldProps extends InputProps {
   label: string;
@@ -11,12 +11,12 @@ interface FormFieldProps extends InputProps {
 export const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
   ({ label, error, helperText, isRequired, ...inputProps }, ref) => {
     return (
-      <FormControl isInvalid={!!error} isRequired={isRequired}>
-        <FormLabel>{label}</FormLabel>
+      <Field.Root invalid={!!error} required={isRequired}>
+        <Field.Label>{label}</Field.Label>
         <Input ref={ref} {...inputProps} />
-        {error && <FormErrorMessage>{error}</FormErrorMessage>}
-        {helperText && !error && <FormHelperText>{helperText}</FormHelperText>}
-      </FormControl>
+        {error && <Field.ErrorText>{error}</Field.ErrorText>}
+        {helperText && !error && <Field.HelperText>{helperText}</Field.HelperText>}
+      </Field.Root>
     );
   }
 );

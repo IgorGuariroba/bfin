@@ -38,7 +38,7 @@ export function DailyLimitPage() {
       <Box as="header" bg="var(--card)" shadow="sm">
         <Container maxW="7xl" py={4}>
           <Flex align="center" justify="space-between">
-            <HStack spacing={4}>
+            <HStack gap={4}>
               <IconButton
                 aria-label="Voltar"
                 icon={<ArrowLeft size={20} />}
@@ -55,11 +55,11 @@ export function DailyLimitPage() {
 
       {/* Main Content */}
       <Container maxW="7xl" py={8}>
-        <VStack spacing={6} align="stretch">
+        <VStack gap={6} align="stretch">
           {/* Daily Limit Summary Card */}
           {!loadingDailyLimit && !loadingAccounts && dailyLimit && dailyLimit.totalDailyLimit > 0 && (
             <Box bg="white" borderRadius="lg" shadow="md" p={6}>
-              <VStack spacing={4} align="stretch">
+              <VStack gap={4} align="stretch">
                 <Box>
                   <Text fontSize="sm" fontWeight="medium" color="gray.500" mb={2}>
                     Limite Diário Sugerido
@@ -81,7 +81,7 @@ export function DailyLimitPage() {
                   </Flex>
                   <Progress
                     value={Math.min(100, dailyLimit.percentageUsed)}
-                    colorScheme={
+                    colorPalette={
                       dailyLimit.exceeded
                         ? 'red'
                         : dailyLimit.percentageUsed > 80
@@ -114,8 +114,8 @@ export function DailyLimitPage() {
           {/* Loading State */}
           {(loadingDailyLimit || loadingAccounts) && (
             <Center py={12}>
-              <VStack spacing={4}>
-                <Spinner size="xl" color="brand.600" thickness="4px" />
+              <VStack gap={4}>
+                <Spinner size="xl" colorPalette="brand" />
                 <Text color="gray.600">Carregando informações do limite diário...</Text>
               </VStack>
             </Center>
@@ -127,7 +127,7 @@ export function DailyLimitPage() {
               {loadingHistory ? (
                 <Box bg="white" p={6} borderRadius="lg" shadow="md">
                   <Center h="200">
-                    <VStack spacing={2}>
+                    <VStack gap={2}>
                       <Spinner size="lg" color="brand.600" />
                       <Text color="gray.600" fontSize="sm">Carregando histórico...</Text>
                     </VStack>
@@ -141,11 +141,11 @@ export function DailyLimitPage() {
 
           {/* Info Section */}
           <Box bg="blue.50" borderWidth="1px" borderColor="blue.200" borderRadius="lg" p={6}>
-            <VStack spacing={3} align="stretch">
+            <VStack gap={3} align="stretch">
               <Heading size="sm" color="blue.900">
                 Como funciona o Limite Diário Sugerido?
               </Heading>
-              <Stack spacing={2} fontSize="sm" color="blue.800">
+              <Stack gap={2} fontSize="sm" color="blue.800">
                 <Text>
                   • O limite é calculado automaticamente dividindo seu saldo disponível por 30 dias
                 </Text>

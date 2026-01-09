@@ -23,8 +23,8 @@ const queryClient = new QueryClient({
 function LoadingScreen() {
   return (
     <Box minH="100vh" display="flex" alignItems="center" justifyContent="center">
-      <VStack spacing={4}>
-        <Spinner size="xl" color="brand.600" thickness="4px" speed="0.65s" />
+      <VStack gap={4}>
+        <Spinner size="xl" colorPalette="brand" />
         <Text color="gray.600">Carregando...</Text>
       </VStack>
     </Box>

@@ -14,15 +14,9 @@ import {
   Badge,
   Progress,
   IconButton,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
+  Dialog,
   Alert,
-  AlertIcon,
-  AlertTitle,
+  Stack,
 } from '@chakra-ui/react';
 import { Button } from '../components/atoms/Button';
 import { IncomeForm, FixedExpenseForm, VariableExpenseForm, CreateAccountForm } from '../components/organisms/forms';
@@ -93,11 +87,11 @@ export function Dashboard() {
       <Box as="header" bg="var(--card)" shadow="sm">
         <Container maxW="7xl" py={4}>
           <Flex align="center" justify="space-between">
-            <HStack spacing={4}>
+            <HStack gap={4}>
               <Heading size="lg" color="brand.600">BFIN</Heading>
               <Text color="gray.600">Dashboard</Text>
             </HStack>
-            <HStack spacing={4}>
+            <HStack gap={4}>
               <Text color="gray.700">Olá, {user?.full_name}</Text>
               <Box position="relative">
                 <Button
@@ -139,7 +133,7 @@ export function Dashboard() {
 
       {/* Main Content */}
       <Container maxW="7xl" py={8}>
-        <VStack spacing={6} align="stretch">
+        <VStack gap={6} align="stretch">
           {/* Daily Limit Alert */}
           {!loadingDailyLimit && !loadingAccounts && dailyLimit && dailyLimit.totalDailyLimit > 0 && (
             <Flex justify="flex-end">
@@ -151,7 +145,7 @@ export function Dashboard() {
                 transition="all 0.2s"
                 _hover={{ transform: 'translateY(-2px)', shadow: 'lg' }}
               >
-                <Alert
+                <Alert.Root
                   status={
                     dailyLimit.exceeded
                       ? 'error'
@@ -162,51 +156,49 @@ export function Dashboard() {
                   variant="outline"
                   borderRadius="lg"
                 >
-                  <AlertIcon />
-                  <Box flex="1">
-                    <AlertTitle>
-                      <VStack spacing={2} align="stretch" w="full">
-                        <Flex justify="space-between" align="center">
-                          <Text fontSize="sm" fontWeight="semibold">
-                            Limite Diário Sugerido
-                          </Text>
-                          <Text fontSize="xs" opacity={0.8}>
-                            ▶ Ver detalhes
-                          </Text>
-                        </Flex>
-                        <Flex justify="space-between" fontSize="xs" opacity={0.9}>
-                          <Text>Gasto hoje</Text>
-                          <Text fontWeight="medium">
-                            {formatCurrency(dailyLimit.totalSpentToday)} / {formatCurrency(dailyLimit.totalDailyLimit)}
-                          </Text>
-                        </Flex>
-                        <Progress
-                          value={Math.min(100, dailyLimit.percentageUsed)}
-                          colorScheme={
-                            dailyLimit.exceeded
-                              ? 'red'
-                              : dailyLimit.percentageUsed > 80
-                              ? 'yellow'
-                              : 'green'
-                          }
-                          size="sm"
-                          borderRadius="full"
-                        />
-                        <Text fontSize="xs">
-                          {dailyLimit.exceeded ? (
-                            <Text as="span" fontWeight="medium">
-                              Excedido em {formatCurrency(dailyLimit.totalSpentToday - dailyLimit.totalDailyLimit)}
-                            </Text>
-                          ) : (
-                            <Text as="span">
-                              Restam {formatCurrency(dailyLimit.totalRemaining)} hoje
-                            </Text>
-                          )}
+                  <Alert.Indicator />
+                  <Alert.Title>
+                    <VStack gap={2} align="stretch" w="full">
+                      <Flex justify="space-between" align="center">
+                        <Text fontSize="sm" fontWeight="semibold">
+                          Limite Diário Sugerido
                         </Text>
-                      </VStack>
-                    </AlertTitle>
-                  </Box>
-                </Alert>
+                        <Text fontSize="xs" opacity={0.8}>
+                          ▶ Ver detalhes
+                        </Text>
+                      </Flex>
+                      <Flex justify="space-between" fontSize="xs" opacity={0.9}>
+                        <Text>Gasto hoje</Text>
+                        <Text fontWeight="medium">
+                          {formatCurrency(dailyLimit.totalSpentToday)} / {formatCurrency(dailyLimit.totalDailyLimit)}
+                        </Text>
+                      </Flex>
+                      <Progress
+                        value={Math.min(100, dailyLimit.percentageUsed)}
+                        colorPalette={
+                          dailyLimit.exceeded
+                            ? 'red'
+                            : dailyLimit.percentageUsed > 80
+                            ? 'yellow'
+                            : 'green'
+                        }
+                        size="sm"
+                        borderRadius="full"
+                      />
+                      <Text fontSize="xs">
+                        {dailyLimit.exceeded ? (
+                          <Text as="span" fontWeight="medium">
+                            Excedido em {formatCurrency(dailyLimit.totalSpentToday - dailyLimit.totalDailyLimit)}
+                          </Text>
+                        ) : (
+                          <Text as="span">
+                            Restam {formatCurrency(dailyLimit.totalRemaining)} hoje
+                          </Text>
+                        )}
+                      </Text>
+                    </VStack>
+                  </Alert.Title>
+                </Alert.Root>
               </Box>
             </Flex>
           )}
@@ -228,11 +220,11 @@ export function Dashboard() {
                   _active={{ transform: 'scale(0.95)' }}
                   w="full"
                 >
-                  <VStack spacing={3}>
+                  <VStack gap={3}>
                     <Box bg="whiteAlpha.200" p={3} borderRadius="full">
                       <TrendingUp size={32} />
                     </Box>
-                    <VStack spacing={1}>
+                    <VStack gap={1}>
                       <Heading size="md">Nova Receita</Heading>
                       <Text fontSize="sm" color="green.100">Registrar entrada</Text>
                     </VStack>
@@ -254,11 +246,11 @@ export function Dashboard() {
                   _active={{ transform: 'scale(0.95)' }}
                   w="full"
                 >
-                  <VStack spacing={3}>
+                  <VStack gap={3}>
                     <Box bg="whiteAlpha.200" p={3} borderRadius="full">
                       <Calendar size={32} />
                     </Box>
-                    <VStack spacing={1}>
+                    <VStack gap={1}>
                       <Heading size="md">Despesa Fixa</Heading>
                       <Text fontSize="sm" color="orange.100">Conta recorrente</Text>
                     </VStack>
@@ -280,11 +272,11 @@ export function Dashboard() {
                   _active={{ transform: 'scale(0.95)' }}
                   w="full"
                 >
-                  <VStack spacing={3}>
+                  <VStack gap={3}>
                     <Box bg="whiteAlpha.200" p={3} borderRadius="full">
                       <ShoppingCart size={32} />
                     </Box>
-                    <VStack spacing={1}>
+                    <VStack gap={1}>
                       <Heading size="md">Despesa Variável</Heading>
                       <Text fontSize="sm" color="red.100">Gasto do dia</Text>
                     </VStack>
@@ -337,7 +329,7 @@ export function Dashboard() {
                 <Text color="gray.500">Nenhuma despesa agendada</Text>
               </Box>
             ) : (
-              <VStack spacing={3} align="stretch">
+              <VStack gap={3} align="stretch">
                 {upcomingExpenses.transactions.map((expense) => {
                   const dueDate = new Date(expense.due_date);
                   const today = new Date();
@@ -414,121 +406,143 @@ export function Dashboard() {
         </VStack>
       </Container>
 
-      {/* Modals */}
-      <Modal isOpen={incomeDialogOpen} onClose={() => setIncomeDialogOpen(false)}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Nova Receita</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <IncomeForm
-              onSuccess={() => setIncomeDialogOpen(false)}
-              onCancel={() => setIncomeDialogOpen(false)}
-            />
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+      {/* Dialogs */}
+      <Dialog.Root open={incomeDialogOpen} onOpenChange={(e) => setIncomeDialogOpen(e.open)}>
+        <Dialog.Backdrop />
+        <Dialog.Positioner>
+          <Dialog.Content>
+            <Dialog.Header>
+              <Dialog.Title>Nova Receita</Dialog.Title>
+            </Dialog.Header>
+            <Dialog.Body pb={6}>
+              <IncomeForm
+                onSuccess={() => setIncomeDialogOpen(false)}
+                onCancel={() => setIncomeDialogOpen(false)}
+              />
+            </Dialog.Body>
+            <Dialog.CloseTrigger />
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Dialog.Root>
 
-      <Modal isOpen={fixedExpenseDialogOpen} onClose={() => setFixedExpenseDialogOpen(false)}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Nova Despesa Fixa</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <FixedExpenseForm
-              onSuccess={() => setFixedExpenseDialogOpen(false)}
-              onCancel={() => setFixedExpenseDialogOpen(false)}
-            />
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+      <Dialog.Root open={fixedExpenseDialogOpen} onOpenChange={(e) => setFixedExpenseDialogOpen(e.open)}>
+        <Dialog.Backdrop />
+        <Dialog.Positioner>
+          <Dialog.Content>
+            <Dialog.Header>
+              <Dialog.Title>Nova Despesa Fixa</Dialog.Title>
+            </Dialog.Header>
+            <Dialog.Body pb={6}>
+              <FixedExpenseForm
+                onSuccess={() => setFixedExpenseDialogOpen(false)}
+                onCancel={() => setFixedExpenseDialogOpen(false)}
+              />
+            </Dialog.Body>
+            <Dialog.CloseTrigger />
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Dialog.Root>
 
-      <Modal isOpen={variableExpenseDialogOpen} onClose={() => setVariableExpenseDialogOpen(false)}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Nova Despesa Variável</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <VariableExpenseForm
-              onSuccess={() => setVariableExpenseDialogOpen(false)}
-              onCancel={() => setVariableExpenseDialogOpen(false)}
-            />
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+      <Dialog.Root open={variableExpenseDialogOpen} onOpenChange={(e) => setVariableExpenseDialogOpen(e.open)}>
+        <Dialog.Backdrop />
+        <Dialog.Positioner>
+          <Dialog.Content>
+            <Dialog.Header>
+              <Dialog.Title>Nova Despesa Variável</Dialog.Title>
+            </Dialog.Header>
+            <Dialog.Body pb={6}>
+              <VariableExpenseForm
+                onSuccess={() => setVariableExpenseDialogOpen(false)}
+                onCancel={() => setVariableExpenseDialogOpen(false)}
+              />
+            </Dialog.Body>
+            <Dialog.CloseTrigger />
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Dialog.Root>
 
-      <Modal isOpen={accountDialogOpen} onClose={() => setAccountDialogOpen(false)}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Criar Conta Bancária</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <CreateAccountForm
-              onSuccess={() => setAccountDialogOpen(false)}
-              onCancel={() => setAccountDialogOpen(false)}
-            />
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+      <Dialog.Root open={accountDialogOpen} onOpenChange={(e) => setAccountDialogOpen(e.open)}>
+        <Dialog.Backdrop />
+        <Dialog.Positioner>
+          <Dialog.Content>
+            <Dialog.Header>
+              <Dialog.Title>Criar Conta Bancária</Dialog.Title>
+            </Dialog.Header>
+            <Dialog.Body pb={6}>
+              <CreateAccountForm
+                onSuccess={() => setAccountDialogOpen(false)}
+                onCancel={() => setAccountDialogOpen(false)}
+              />
+            </Dialog.Body>
+            <Dialog.CloseTrigger />
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Dialog.Root>
 
       <AccountsDialog
         isOpen={manageAccountsDialogOpen}
         onClose={() => setManageAccountsDialogOpen(false)}
       />
 
-      <Modal isOpen={transactionsDialogOpen} onClose={() => setTransactionsDialogOpen(false)} size="4xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Todas as Transações</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <TransactionList />
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+      <Dialog.Root open={transactionsDialogOpen} onOpenChange={(e) => setTransactionsDialogOpen(e.open)}>
+        <Dialog.Backdrop />
+        <Dialog.Positioner>
+          <Dialog.Content maxW="4xl">
+            <Dialog.Header>
+              <Dialog.Title>Todas as Transações</Dialog.Title>
+            </Dialog.Header>
+            <Dialog.Body pb={6}>
+              <TransactionList />
+            </Dialog.Body>
+            <Dialog.CloseTrigger />
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Dialog.Root>
 
-      <Modal isOpen={emergencyReserveDialogOpen} onClose={() => setEmergencyReserveDialogOpen(false)}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
-            <HStack>
-              <Shield size={20} color="var(--chakra-colors-blue-600)" />
-              <Text>Reserva de Emergência</Text>
-            </HStack>
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <VStack spacing={4} align="stretch">
-              <Box bg="blue.50" borderWidth="1px" borderColor="blue.200" borderRadius="lg" p={4}>
-                <Text fontSize="sm" color="blue.800" mb={2}>
-                  Sua reserva de emergência é calculada automaticamente como 30% de todas as receitas recebidas.
-                </Text>
-                <Text fontSize="3xl" fontWeight="bold" color="blue.600">
-                  {loadingAccounts ? 'Carregando...' : formatCurrency(totals.emergencyReserve)}
-                </Text>
-              </Box>
+      <Dialog.Root open={emergencyReserveDialogOpen} onOpenChange={(e) => setEmergencyReserveDialogOpen(e.open)}>
+        <Dialog.Backdrop />
+        <Dialog.Positioner>
+          <Dialog.Content>
+            <Dialog.Header>
+              <HStack>
+                <Shield size={20} color="var(--chakra-colors-blue-600)" />
+                <Text>Reserva de Emergência</Text>
+              </HStack>
+            </Dialog.Header>
+            <Dialog.Body pb={6}>
+              <VStack gap={4} align="stretch">
+                <Box bg="blue.50" borderWidth="1px" borderColor="blue.200" borderRadius="lg" p={4}>
+                  <Text fontSize="sm" color="blue.800" mb={2}>
+                    Sua reserva de emergência é calculada automaticamente como 30% de todas as receitas recebidas.
+                  </Text>
+                  <Text fontSize="3xl" fontWeight="bold" color="blue.600">
+                    {loadingAccounts ? 'Carregando...' : formatCurrency(totals.emergencyReserve)}
+                  </Text>
+                </Box>
 
-              <VStack spacing={2} align="stretch" fontSize="sm" color="gray.600">
-                <Heading size="sm" color="gray.900">Para que serve?</Heading>
-                <Box as="ul" pl={6} sx={{ listStyleType: 'disc' }}>
-                  <li>Proteção financeira para imprevistos</li>
-                  <li>Cobertura para emergências médicas</li>
-                  <li>Segurança em caso de perda de renda</li>
-                  <li>Reparos urgentes em casa ou veículo</li>
+                <VStack gap={2} align="stretch" fontSize="sm" color="gray.600">
+                  <Heading size="sm" color="gray.900">Para que serve?</Heading>
+                  <Box as="ul" pl={6} sx={{ listStyleType: 'disc' }}>
+                    <li>Proteção financeira para imprevistos</li>
+                    <li>Cobertura para emergências médicas</li>
+                    <li>Segurança em caso de perda de renda</li>
+                    <li>Reparos urgentes em casa ou veículo</li>
+                  </Box>
+                </VStack>
+
+                <Box bg="gray.50" borderRadius="lg" p={4} fontSize="xs" color="gray.500">
+                  <Text fontWeight="medium" color="gray.700" mb={1}>Como funciona:</Text>
+                  <Text>
+                    A cada receita recebida, 30% é automaticamente separado para sua reserva de emergência.
+                    Os 70% restantes ficam disponíveis para seus gastos do dia a dia.
+                  </Text>
                 </Box>
               </VStack>
-
-              <Box bg="gray.50" borderRadius="lg" p={4} fontSize="xs" color="gray.500">
-                <Text fontWeight="medium" color="gray.700" mb={1}>Como funciona:</Text>
-                <Text>
-                  A cada receita recebida, 30% é automaticamente separado para sua reserva de emergência.
-                  Os 70% restantes ficam disponíveis para seus gastos do dia a dia.
-                </Text>
-              </Box>
-            </VStack>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+            </Dialog.Body>
+            <Dialog.CloseTrigger />
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Dialog.Root>
 
       <InvitationsDialog
         isOpen={invitationsDialogOpen}

@@ -3,8 +3,6 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
-  FormControl,
-  FormLabel,
   Input,
   VStack,
   Heading,
@@ -12,14 +10,13 @@ import {
   Link,
   Container,
   Alert,
-  AlertIcon,
   Card,
-  CardBody,
   InputGroup,
   InputLeftElement,
   Icon,
-  Divider,
+  Separator,
   Flex,
+  Field,
 } from '@chakra-ui/react';
 import { MdEmail, MdLock } from 'react-icons/md';
 import { useAuth } from '../contexts/AuthContext';
@@ -57,9 +54,9 @@ export function Login() {
       </Box>
 
       <Container maxW="md" py={{ base: "12", md: "24" }} px={{ base: "0", sm: "8" }}>
-        <VStack spacing="8">
+          <VStack gap="8">
           {/* Logo e Header */}
-          <VStack spacing="2">
+          <VStack gap="2">
             <Heading
               size="2xl"
               fontWeight="extrabold"
@@ -73,22 +70,22 @@ export function Login() {
           </VStack>
 
           {/* Card do Formulário */}
-          <Card w="full" shadow="xl" borderRadius="xl" bg="var(--card)">
-            <CardBody p={{ base: "6", md: "8" }}>
+          <Card.Root w="full" shadow="xl" borderRadius="xl" bg="var(--card)">
+            <Card.Body p={{ base: "6", md: "8" }}>
               <form onSubmit={handleSubmit}>
-                <VStack spacing="6" align="stretch">
+                <VStack gap="6" align="stretch">
                   {error && (
-                    <Alert status="error" borderRadius="lg" variant="subtle">
-                      <AlertIcon />
-                      {error}
-                    </Alert>
+                    <Alert.Root status="error" borderRadius="lg" variant="subtle">
+                      <Alert.Indicator />
+                      <Alert.Title>{error}</Alert.Title>
+                    </Alert.Root>
                   )}
 
                   {/* Campo Email */}
-                  <FormControl isRequired>
-                    <FormLabel color="var(--card-foreground)" fontWeight="medium">
+                  <Field.Root required>
+                    <Field.Label color="var(--card-foreground)" fontWeight="medium">
                       Email
-                    </FormLabel>
+                    </Field.Label>
                     <InputGroup>
                       <InputLeftElement pointerEvents="none">
                         <Icon as={MdEmail} color="var(--muted-foreground)" />
@@ -107,13 +104,13 @@ export function Login() {
                         autoComplete="email"
                       />
                     </InputGroup>
-                  </FormControl>
+                  </Field.Root>
 
                   {/* Campo Senha */}
-                  <FormControl isRequired>
-                    <FormLabel color="var(--card-foreground)" fontWeight="medium">
+                  <Field.Root required>
+                    <Field.Label color="var(--card-foreground)" fontWeight="medium">
                       Senha
-                    </FormLabel>
+                    </Field.Label>
                     <InputGroup>
                       <InputLeftElement pointerEvents="none">
                         <Icon as={MdLock} color="var(--muted-foreground)" />
@@ -132,7 +129,7 @@ export function Login() {
                         autoComplete="current-password"
                       />
                     </InputGroup>
-                  </FormControl>
+                  </Field.Root>
 
                   {/* Botão Entrar */}
                   <Button
@@ -151,13 +148,13 @@ export function Login() {
                     Entrar
                   </Button>
 
-                  {/* Divider */}
+                  {/* Separator */}
                   <Flex align="center" py="2">
-                    <Divider borderColor="var(--border)" />
+                    <Separator borderColor="var(--border)" />
                     <Text px="3" color="var(--muted-foreground)" fontSize="sm" whiteSpace="nowrap">
                       Não tem uma conta?
                     </Text>
-                    <Divider borderColor="var(--border)" />
+                    <Separator borderColor="var(--border)" />
                   </Flex>
 
                   {/* Link para Registro */}
@@ -176,8 +173,8 @@ export function Login() {
                   </Button>
                 </VStack>
               </form>
-            </CardBody>
-          </Card>
+            </Card.Body>
+          </Card.Root>
 
           {/* Footer */}
           <Text color="var(--foreground)" fontSize="sm" textAlign="center" opacity={0.8}>

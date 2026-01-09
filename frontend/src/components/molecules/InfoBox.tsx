@@ -1,4 +1,4 @@
-import { Alert, AlertIcon, AlertTitle, AlertDescription, Box } from '@chakra-ui/react';
+import { Alert } from '@chakra-ui/react';
 import { ReactNode } from 'react';
 
 interface InfoBoxProps {
@@ -16,12 +16,12 @@ export function InfoBox({ variant = 'info', title, children }: InfoBoxProps) {
   } as const;
 
   return (
-    <Alert status={statusMap[variant]} borderRadius="md">
-      <AlertIcon />
-      <Box>
-        {title && <AlertTitle>{title}</AlertTitle>}
-        <AlertDescription>{children}</AlertDescription>
-      </Box>
-    </Alert>
+    <Alert.Root status={statusMap[variant]} borderRadius="md">
+      <Alert.Indicator />
+      <Alert.Content>
+        {title && <Alert.Title>{title}</Alert.Title>}
+        <Alert.Description>{children}</Alert.Description>
+      </Alert.Content>
+    </Alert.Root>
   );
 }

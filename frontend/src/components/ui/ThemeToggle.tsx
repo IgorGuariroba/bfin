@@ -3,8 +3,8 @@ import {
   Button,
   Icon,
   Tooltip,
-  useColorMode,
 } from '@chakra-ui/react';
+import { useColorMode } from '../../hooks/useColorMode';
 import { Sun, Moon } from 'lucide-react';
 
 interface ThemeToggleProps {
@@ -31,18 +31,21 @@ export function ThemeToggle({
   // Variant: Icon Button (compact, for headers)
   if (variant === 'icon') {
     return (
-      <Tooltip label={tooltipLabel} hasArrow>
-        <IconButton
-          aria-label={ariaLabel}
-          icon={<Icon as={isDark ? Sun : Moon} boxSize={size === 'sm' ? 4 : 5} />}
-          onClick={toggleColorMode}
-          variant="ghost"
-          size={size}
-          borderRadius="md"
-          color="var(--foreground)"
-          _hover={{ bg: 'var(--accent)' }}
-        />
-      </Tooltip>
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>
+          <IconButton
+            aria-label={ariaLabel}
+            onClick={toggleColorMode}
+            variant="ghost"
+            size={size}
+          >
+            <Icon as={isDark ? Sun : Moon} boxSize={size === 'sm' ? 4 : 5} />
+          </IconButton>
+        </Tooltip.Trigger>
+        <Tooltip.Positioner>
+          <Tooltip.Content>{tooltipLabel}</Tooltip.Content>
+        </Tooltip.Positioner>
+      </Tooltip.Root>
     );
   }
 

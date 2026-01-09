@@ -19,22 +19,13 @@ export {
   Image,
   Link,
   Spinner,
-  Divider,
+  Separator,
   Badge,
   Card,
-  CardHeader,
-  CardBody,
-  CardFooter,
+  useDisclosure,
 } from '@chakra-ui/react';
 
-// Re-export Modal components (replacement for Dialog)
+// Re-export Dialog components (replacement for Modal)
 export {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
-  useDisclosure,
+  Dialog,
 } from '@chakra-ui/react';

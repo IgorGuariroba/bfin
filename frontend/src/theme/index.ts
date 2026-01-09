@@ -3,384 +3,81 @@
  *
  * ARQUITETURA:
  * - Todas as cores são definidas em index.css como variáveis CSS
- * - Este tema mapeia as variáveis CSS para o Chakra UI
+ * - Este tema mapeia as variáveis CSS para o Chakra UI v3
  * - Mudanças de cor devem ser feitas APENAS em index.css
  *
  * Primary: Violet Purple (#7C3AED)
  */
 
-import { extendTheme, type ThemeConfig } from '@chakra-ui/react';
-import {
-  colors,
-  fonts,
-  fontSizes,
-  fontWeights,
-  lineHeights,
-  space,
-  sizes,
-  shadows,
-  radii,
-} from './foundations';
-
-const config: ThemeConfig = {
-  initialColorMode: 'system',
-  useSystemColorMode: true,
-};
+import { createSystem, defaultConfig } from '@chakra-ui/react';
 
 /**
- * Extended Chakra UI theme
+ * Chakra UI v3 System
  * Usa variáveis CSS para cores semânticas
  */
-export const theme = extendTheme({
-  config,
+export const system = createSystem(defaultConfig, {
+  theme: {
+    tokens: {
+      colors: {
+        // Brand colors (purple)
+        'brand.50': { value: 'var(--purple-50)' },
+        'brand.100': { value: 'var(--purple-100)' },
+        'brand.200': { value: 'var(--purple-200)' },
+        'brand.300': { value: 'var(--purple-300)' },
+        'brand.400': { value: 'var(--purple-400)' },
+        'brand.500': { value: 'var(--purple-500)' },
+        'brand.600': { value: 'var(--purple-600)' },
+        'brand.700': { value: 'var(--purple-700)' },
+        'brand.800': { value: 'var(--purple-800)' },
+        'brand.900': { value: 'var(--purple-900)' },
 
-  // Color tokens - paletas e semânticas
-  colors,
-
-  // Typography tokens
-  fonts,
-  fontSizes,
-  fontWeights,
-  lineHeights,
-
-  // Spacing & sizing tokens
-  space,
-  sizes,
-
-  // Visual tokens
-  shadows,
-  radii,
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // GLOBAL STYLES
-  // Usa variáveis CSS para consistência
-  // ═══════════════════════════════════════════════════════════════════════════
-  styles: {
-    global: {
-      'html, body': {
-        bg: 'var(--background)',
-        color: 'var(--foreground)',
-      },
-      '*::selection': {
-        bg: 'var(--primary)',
-        color: 'var(--primary-foreground)',
-      },
-      // Scrollbar personalizada
-      '::-webkit-scrollbar': {
-        width: '8px',
-        height: '8px',
-      },
-      '::-webkit-scrollbar-track': {
-        bg: 'var(--muted)',
-      },
-      '::-webkit-scrollbar-thumb': {
-        bg: 'var(--border)',
-        borderRadius: '4px',
-      },
-      '::-webkit-scrollbar-thumb:hover': {
-        bg: 'var(--muted-foreground)',
+        // Semantic colors
+        'bg': { value: 'var(--background)' },
+        'fg': { value: 'var(--foreground)' },
+        'card': { value: 'var(--card)' },
+        'card.fg': { value: 'var(--card-foreground)' },
+        'border': { value: 'var(--border)' },
+        'muted': { value: 'var(--muted)' },
+        'muted.fg': { value: 'var(--muted-foreground)' },
+        'primary': { value: 'var(--primary)' },
+        'primary.fg': { value: 'var(--primary-foreground)' },
+        'secondary': { value: 'var(--secondary)' },
+        'secondary.fg': { value: 'var(--secondary-foreground)' },
+        'accent': { value: 'var(--accent)' },
+        'accent.fg': { value: 'var(--accent-foreground)' },
+        'success': { value: 'var(--success)' },
+        'success.fg': { value: 'var(--success-foreground)' },
+        'warning': { value: 'var(--warning)' },
+        'warning.fg': { value: 'var(--warning-foreground)' },
+        'error': { value: 'var(--destructive)' },
+        'error.fg': { value: 'var(--destructive-foreground)' },
+        'info': { value: 'var(--info)' },
+        'info.fg': { value: 'var(--info-foreground)' },
       },
     },
   },
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // COMPONENT STYLES
-  // Todos os componentes usam variáveis CSS
-  // ═══════════════════════════════════════════════════════════════════════════
-  components: {
-    // Button
-    Button: {
-      baseStyle: {
-        fontWeight: 'semibold',
-        borderRadius: 'var(--radius)',
-      },
-      variants: {
-        solid: {
-          bg: 'var(--primary)',
-          color: 'var(--primary-foreground)',
-          _hover: {
-            bg: 'var(--primary)',
-            opacity: 0.9,
-          },
-        },
-        outline: {
-          borderColor: 'var(--border)',
-          color: 'var(--foreground)',
-          _hover: {
-            bg: 'var(--secondary)',
-          },
-        },
-        ghost: {
-          color: 'var(--foreground)',
-          _hover: {
-            bg: 'var(--accent)',
-            color: 'var(--accent-foreground)',
-          },
-        },
-        destructive: {
-          bg: 'var(--destructive)',
-          color: 'var(--destructive-foreground)',
-          _hover: {
-            opacity: 0.9,
-          },
-        },
-      },
-      defaultProps: {
-        variant: 'solid',
-      },
+  globalCss: {
+    'html, body': {
+      bg: 'var(--background)',
+      color: 'var(--foreground)',
     },
-
-    // Input
-    Input: {
-      baseStyle: {
-        field: {
-          bg: 'var(--input)',
-          borderColor: 'var(--border)',
-          color: 'var(--foreground)',
-          _placeholder: {
-            color: 'var(--muted-foreground)',
-          },
-          _focus: {
-            borderColor: 'var(--ring)',
-            boxShadow: '0 0 0 1px var(--ring)',
-          },
-        },
-      },
-      defaultProps: {
-        variant: 'outline',
-      },
+    '*::selection': {
+      bg: 'var(--primary)',
+      color: 'var(--primary-foreground)',
     },
-
-    // Select
-    Select: {
-      baseStyle: {
-        field: {
-          bg: 'var(--input)',
-          borderColor: 'var(--border)',
-          color: 'var(--foreground)',
-        },
-      },
+    '::-webkit-scrollbar': {
+      width: '8px',
+      height: '8px',
     },
-
-    // Textarea
-    Textarea: {
-      baseStyle: {
-        bg: 'var(--input)',
-        borderColor: 'var(--border)',
-        color: 'var(--foreground)',
-        _placeholder: {
-          color: 'var(--muted-foreground)',
-        },
-        _focus: {
-          borderColor: 'var(--ring)',
-          boxShadow: '0 0 0 1px var(--ring)',
-        },
-      },
+    '::-webkit-scrollbar-track': {
+      bg: 'var(--muted)',
     },
-
-    // Card
-    Card: {
-      baseStyle: {
-        container: {
-          bg: 'var(--card)',
-          color: 'var(--card-foreground)',
-          borderColor: 'var(--border)',
-          borderRadius: 'var(--radius)',
-        },
-      },
+    '::-webkit-scrollbar-thumb': {
+      bg: 'var(--border)',
+      borderRadius: '4px',
     },
-
-    // Heading
-    Heading: {
-      baseStyle: {
-        color: 'var(--foreground)',
-      },
-    },
-
-    // Text
-    Text: {
-      baseStyle: {
-        color: 'var(--foreground)',
-      },
-    },
-
-    // FormLabel
-    FormLabel: {
-      baseStyle: {
-        color: 'var(--foreground)',
-        fontWeight: 'medium',
-      },
-    },
-
-    // Link
-    Link: {
-      baseStyle: {
-        color: 'var(--accent)',
-        _hover: {
-          color: 'var(--accent-foreground)',
-          textDecoration: 'underline',
-        },
-      },
-    },
-
-    // Divider
-    Divider: {
-      baseStyle: {
-        borderColor: 'var(--border)',
-      },
-    },
-
-    // Alert
-    Alert: {
-      variants: {
-        success: {
-          container: {
-            bg: 'var(--success)',
-            color: 'var(--success-foreground)',
-          },
-        },
-        warning: {
-          container: {
-            bg: 'var(--warning)',
-            color: 'var(--warning-foreground)',
-          },
-        },
-        error: {
-          container: {
-            bg: 'var(--destructive)',
-            color: 'var(--destructive-foreground)',
-          },
-        },
-        info: {
-          container: {
-            bg: 'var(--info)',
-            color: 'var(--info-foreground)',
-          },
-        },
-      },
-    },
-
-    // Menu / Popover
-    Menu: {
-      baseStyle: {
-        list: {
-          bg: 'var(--popover)',
-          borderColor: 'var(--border)',
-        },
-        item: {
-          bg: 'var(--popover)',
-          color: 'var(--popover-foreground)',
-          _hover: {
-            bg: 'var(--accent)',
-          },
-          _focus: {
-            bg: 'var(--accent)',
-          },
-        },
-      },
-    },
-
-    // Modal
-    Modal: {
-      baseStyle: {
-        dialog: {
-          bg: 'var(--card)',
-          color: 'var(--card-foreground)',
-        },
-        header: {
-          color: 'var(--foreground)',
-        },
-        body: {
-          color: 'var(--foreground)',
-        },
-        footer: {
-          borderTopColor: 'var(--border)',
-        },
-      },
-    },
-
-    // Tooltip
-    Tooltip: {
-      baseStyle: {
-        bg: 'var(--popover)',
-        color: 'var(--popover-foreground)',
-        borderRadius: 'var(--radius)',
-      },
-    },
-
-    // Badge
-    Badge: {
-      baseStyle: {
-        borderRadius: 'var(--radius)',
-      },
-      variants: {
-        solid: {
-          bg: 'var(--primary)',
-          color: 'var(--primary-foreground)',
-        },
-        outline: {
-          borderColor: 'var(--border)',
-          color: 'var(--foreground)',
-        },
-        subtle: {
-          bg: 'var(--muted)',
-          color: 'var(--muted-foreground)',
-        },
-      },
-    },
-
-    // Table
-    Table: {
-      variants: {
-        simple: {
-          th: {
-            borderColor: 'var(--border)',
-            color: 'var(--muted-foreground)',
-          },
-          td: {
-            borderColor: 'var(--border)',
-          },
-          tbody: {
-            tr: {
-              _hover: {
-                bg: 'var(--muted)',
-              },
-            },
-          },
-        },
-      },
-    },
-
-    // Tabs
-    Tabs: {
-      variants: {
-        line: {
-          tab: {
-            color: 'var(--muted-foreground)',
-            _selected: {
-              color: 'var(--foreground)',
-              borderColor: 'var(--primary)',
-            },
-            _hover: {
-              color: 'var(--foreground)',
-            },
-          },
-        },
-      },
-    },
-  },
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // SEMANTIC TOKENS
-  // Mapeamento para suporte a dark mode via Chakra
-  // ═══════════════════════════════════════════════════════════════════════════
-  semanticTokens: {
-    colors: {
-      // Chakra internal tokens
-      'chakra-body-bg': 'var(--background)',
-      'chakra-body-text': 'var(--foreground)',
-      'chakra-border-color': 'var(--border)',
-      'chakra-placeholder-color': 'var(--muted-foreground)',
+    '::-webkit-scrollbar-thumb:hover': {
+      bg: 'var(--muted-foreground)',
     },
   },
 });

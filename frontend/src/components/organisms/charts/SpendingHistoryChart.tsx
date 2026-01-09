@@ -92,15 +92,15 @@ const SpendingHistoryChart: React.FC<SpendingHistoryChartProps> = ({
     active,
     payload,
   }: TooltipProps<number, string>) => {
-    if (active && payload && payload.length > 0) {
-      const data = payload[0].payload as ChartDataItem;
+    if (active && payload && payload.length > 0 && payload[0]) {
+      const data = (payload[0] as any).payload as ChartDataItem;
 
       return (
         <Box bg="white" p={3} borderWidth="1px" borderColor="gray.200" borderRadius="md" shadow="lg">
           <Text fontWeight="semibold" color="gray.900" mb={2}>
             {formatFullDate(data.date)}
           </Text>
-          <Stack spacing={1}>
+          <Stack gap={1}>
             <Text fontSize="sm">
               <Text as="span" color="gray.600">Gasto: </Text>
               <Text
@@ -150,7 +150,7 @@ const SpendingHistoryChart: React.FC<SpendingHistoryChartProps> = ({
           Histórico de Gastos (Últimos {days} dias)
         </Text>
         <Center h="80">
-          <Spinner size="xl" color="brand.600" thickness="4px" />
+          <Spinner size="xl" colorPalette="brand" />
         </Center>
       </Box>
     );
@@ -163,7 +163,7 @@ const SpendingHistoryChart: React.FC<SpendingHistoryChartProps> = ({
           Histórico de Gastos (Últimos {days} dias)
         </Text>
         <Center h="80">
-          <Stack spacing={1} align="center">
+          <Stack gap={1} align="center">
             <Text fontSize="lg" fontWeight="medium" color="red.600">
               Erro ao carregar histórico
             </Text>
@@ -183,7 +183,7 @@ const SpendingHistoryChart: React.FC<SpendingHistoryChartProps> = ({
           Histórico de Gastos (Últimos {days} dias)
         </Text>
         <Center h="80">
-          <Stack spacing={3} align="center">
+          <Stack gap={3} align="center">
             <Icon as={BarChart3} boxSize={12} color="gray.400" />
             <Text fontSize="lg" fontWeight="medium" color="gray.500">
               Nenhum gasto registrado
@@ -255,7 +255,7 @@ const SpendingHistoryChart: React.FC<SpendingHistoryChartProps> = ({
 
       {data && (
         <Box mt={4} pt={4} borderTopWidth="1px" borderColor="gray.200">
-          <SimpleGrid columns={3} spacing={4} textAlign="center">
+          <SimpleGrid columns={3} gap={4} textAlign="center">
             <Box>
               <Text fontSize="sm" color="gray.600">Total Gasto</Text>
               <Text fontSize="lg" fontWeight="semibold" color="gray.900">
