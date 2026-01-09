@@ -1,5 +1,14 @@
-import { Link, useLocation, Outlet } from "react-router-dom"
-import { cn } from "@/lib/utils"
+import { Link as RouterLink, useLocation, Outlet } from "react-router-dom"
+import {
+  Box,
+  Flex,
+  Text,
+  VStack,
+  Link,
+  Heading,
+  Icon,
+} from "@chakra-ui/react"
+import { ArrowLeft } from "lucide-react"
 import { navigation } from "./navigation"
 
 export function StyleguideLayout() {
@@ -7,71 +16,98 @@ export function StyleguideLayout() {
   const pathname = location.pathname
 
   return (
-    <div className="flex min-h-screen">
+    <Flex minH="100vh">
       {/* Sidebar - Fixed */}
-      <aside className="w-64 border-r border-border bg-card p-6 flex flex-col gap-6 fixed top-0 left-0 h-screen overflow-y-auto">
-        <div>
-          <Link to="/styleguide" className="text-xl font-bold text-foreground">
-            Design System
-          </Link>
-          <p className="text-sm text-muted-foreground mt-1">BFIN Tokens</p>
-        </div>
+      <Box
+        as="aside"
+        w="64"
+        borderRight="1px"
+        borderColor="gray.200"
+        bg="white"
+        p={6}
+        position="fixed"
+        top={0}
+        left={0}
+        h="100vh"
+        overflowY="auto"
+      >
+        <VStack align="stretch" spacing={6} h="full">
+          <Box>
+            <Link as={RouterLink} to="/styleguide" _hover={{ textDecoration: "none" }}>
+              <Heading size="md" color="gray.900">
+                Design System
+              </Heading>
+            </Link>
+            <Text fontSize="sm" color="gray.500" mt={1}>
+              BFIN Tokens
+            </Text>
+          </Box>
 
-        <nav className="flex flex-col gap-6">
-          {navigation.map((section) => (
-            <div key={section.title}>
-              <h3 className="text-sm font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
-                {section.title}
-              </h3>
-              <ul className="flex flex-col gap-1">
-                {section.items.map((item) => (
-                  <li key={item.href}>
-                    <Link
-                      to={item.href}
-                      className={cn(
-                        "block px-3 py-2 rounded-md text-sm transition-colors",
-                        pathname === item.href
-                          ? "bg-primary text-primary-foreground"
-                          : "hover:bg-muted text-foreground"
-                      )}
-                    >
-                      {item.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </nav>
+          <VStack as="nav" align="stretch" spacing={6} flex={1}>
+            {navigation.map((section) => (
+              <Box key={section.title}>
+                <Text
+                  fontSize="xs"
+                  fontWeight="semibold"
+                  color="gray.500"
+                  mb={2}
+                  textTransform="uppercase"
+                  letterSpacing="wider"
+                >
+                  {section.title}
+                </Text>
+                <VStack as="ul" align="stretch" spacing={1} listStyleType="none">
+                  {section.items.map((item) => (
+                    <Box as="li" key={item.href}>
+                      <Link
+                        as={RouterLink}
+                        to={item.href}
+                        display="block"
+                        px={3}
+                        py={2}
+                        borderRadius="md"
+                        fontSize="sm"
+                        transition="all 0.2s"
+                        bg={pathname === item.href ? "purple.600" : "transparent"}
+                        color={pathname === item.href ? "white" : "gray.700"}
+                        _hover={{
+                          bg: pathname === item.href ? "purple.700" : "gray.100",
+                          textDecoration: "none",
+                        }}
+                      >
+                        {item.name}
+                      </Link>
+                    </Box>
+                  ))}
+                </VStack>
+              </Box>
+            ))}
+          </VStack>
 
-        {/* Back to App Link */}
-        <div className="mt-auto pt-6 border-t border-border">
-          <Link
-            to="/dashboard"
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          {/* Back to App Link */}
+          <Box pt={6} borderTop="1px" borderColor="gray.200" mt="auto">
+            <Link
+              as={RouterLink}
+              to="/dashboard"
+              display="flex"
+              alignItems="center"
+              gap={2}
+              fontSize="sm"
+              color="gray.500"
+              _hover={{ color: "gray.900", textDecoration: "none" }}
+              transition="colors 0.2s"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            Back to App
-          </Link>
-        </div>
-      </aside>
+              <Icon as={ArrowLeft} boxSize={4} />
+              Voltar ao App
+            </Link>
+          </Box>
+        </VStack>
+      </Box>
 
       {/* Main content - offset by sidebar width */}
-      <main className="flex-1 ml-64 overflow-auto bg-background">
+      <Box as="main" flex={1} ml="64" overflowY="auto" bg="gray.50">
         <Outlet />
-      </main>
-    </div>
+      </Box>
+    </Flex>
   )
 }

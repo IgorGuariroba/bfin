@@ -85,13 +85,13 @@ function AppRoutes() {
         }
       />
 
-      {/* 404 */}
-      <Route path="*" element={<Navigate to="/" />} />
-
       {/* Styleguide */}
       <Route path="/styleguide" element={<StyleguideLayout />}>
         <Route index element={<DesignTokensPage />} />
       </Route>
+
+      {/* 404 - Deve ser a última rota */}
+      <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
 }
