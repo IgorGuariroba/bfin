@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
+import { Button } from '../components/atoms/Button';
+import { FormField } from '../components/molecules/FormField';
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -49,22 +49,22 @@ export function Login() {
           )}
 
           <div className="space-y-4">
-            <Input
+            <FormField
               label="Email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
+              isRequired
               placeholder="seu@email.com"
               autoComplete="email"
             />
 
-            <Input
+            <FormField
               label="Senha"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
+              isRequired
               placeholder="••••••••"
               autoComplete="current-password"
             />
