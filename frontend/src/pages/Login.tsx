@@ -48,7 +48,7 @@ export function Login() {
   }
 
   return (
-    <Flex minH="100vh" align="center" justify="center" bg="gray.50">
+    <Flex minH="100vh" align="center" justify="center" bg="var(--background)">
       <Container maxW="md" py={{ base: "12", md: "24" }} px={{ base: "0", sm: "8" }}>
         <VStack spacing="8">
           {/* Logo e Header */}
@@ -56,18 +56,17 @@ export function Login() {
             <Heading
               size="2xl"
               fontWeight="extrabold"
-              bgGradient="linear(to-r, brand.600, brand.800)"
-              bgClip="text"
+              color="var(--foreground)"
             >
               BFIN
             </Heading>
-            <Text color="gray.600" fontSize="lg">
+            <Text color="var(--foreground)" fontSize="lg" opacity={0.9}>
               Bem-vindo de volta
             </Text>
           </VStack>
 
           {/* Card do Formulário */}
-          <Card w="full" shadow="xl" borderRadius="xl">
+          <Card w="full" shadow="xl" borderRadius="xl" bg="var(--card)">
             <CardBody p={{ base: "6", md: "8" }}>
               <form onSubmit={handleSubmit}>
                 <VStack spacing="6" align="stretch">
@@ -80,12 +79,12 @@ export function Login() {
 
                   {/* Campo Email */}
                   <FormControl isRequired>
-                    <FormLabel color="gray.700" fontWeight="medium">
+                    <FormLabel color="var(--card-foreground)" fontWeight="medium">
                       Email
                     </FormLabel>
                     <InputGroup>
                       <InputLeftElement pointerEvents="none">
-                        <Icon as={MdEmail} color="gray.400" />
+                        <Icon as={MdEmail} color="var(--muted-foreground)" />
                       </InputLeftElement>
                       <Input
                         type="email"
@@ -93,7 +92,11 @@ export function Login() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         size="lg"
-                        focusBorderColor="brand.500"
+                        bg="var(--input)"
+                        borderColor="var(--border)"
+                        color="var(--card-foreground)"
+                        _placeholder={{ color: "var(--muted-foreground)" }}
+                        focusBorderColor="var(--ring)"
                         autoComplete="email"
                       />
                     </InputGroup>
@@ -101,12 +104,12 @@ export function Login() {
 
                   {/* Campo Senha */}
                   <FormControl isRequired>
-                    <FormLabel color="gray.700" fontWeight="medium">
+                    <FormLabel color="var(--card-foreground)" fontWeight="medium">
                       Senha
                     </FormLabel>
                     <InputGroup>
                       <InputLeftElement pointerEvents="none">
-                        <Icon as={MdLock} color="gray.400" />
+                        <Icon as={MdLock} color="var(--muted-foreground)" />
                       </InputLeftElement>
                       <Input
                         type="password"
@@ -114,7 +117,11 @@ export function Login() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         size="lg"
-                        focusBorderColor="brand.500"
+                        bg="var(--input)"
+                        borderColor="var(--border)"
+                        color="var(--card-foreground)"
+                        _placeholder={{ color: "var(--muted-foreground)" }}
+                        focusBorderColor="var(--ring)"
                         autoComplete="current-password"
                       />
                     </InputGroup>
@@ -123,7 +130,9 @@ export function Login() {
                   {/* Botão Entrar */}
                   <Button
                     type="submit"
-                    colorScheme="brand"
+                    bg="var(--primary)"
+                    color="var(--primary-foreground)"
+                    _hover={{ opacity: 0.9 }}
                     size="lg"
                     fontSize="md"
                     fontWeight="bold"
@@ -137,11 +146,11 @@ export function Login() {
 
                   {/* Divider */}
                   <Flex align="center" py="2">
-                    <Divider />
-                    <Text px="3" color="gray.500" fontSize="sm" whiteSpace="nowrap">
+                    <Divider borderColor="var(--border)" />
+                    <Text px="3" color="var(--muted-foreground)" fontSize="sm" whiteSpace="nowrap">
                       Não tem uma conta?
                     </Text>
-                    <Divider />
+                    <Divider borderColor="var(--border)" />
                   </Flex>
 
                   {/* Link para Registro */}
@@ -149,7 +158,9 @@ export function Login() {
                     as={RouterLink}
                     to="/register"
                     variant="outline"
-                    colorScheme="brand"
+                    borderColor="var(--border)"
+                    color="var(--card-foreground)"
+                    _hover={{ bg: "var(--secondary)", borderColor: "var(--accent)" }}
                     size="lg"
                     fontSize="md"
                     fontWeight="medium"
@@ -162,9 +173,9 @@ export function Login() {
           </Card>
 
           {/* Footer */}
-          <Text color="gray.500" fontSize="sm" textAlign="center">
+          <Text color="var(--foreground)" fontSize="sm" textAlign="center" opacity={0.8}>
             Ao continuar, você concorda com nossos{' '}
-            <Link color="brand.600" fontWeight="medium">
+            <Link color="var(--accent)" fontWeight="medium">
               Termos de Serviço
             </Link>
           </Text>
