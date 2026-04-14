@@ -1,0 +1,33 @@
+{
+  "name": "bfin",
+  "version": "1.0.0",
+  "description": "Financial Assistant API",
+  "main": "dist/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "drizzle-orm": "^0.41.0",
+    "fastify": "^5.2.2",
+    "pino": "^9.6.0",
+    "postgres": "^3.4.5"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "^11.14.0",
+    "@types/node": "^22.14.1",
+    "drizzle-kit": "^0.30.6",
+    "testcontainers": "^10.24.2",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1"
+  }
+}

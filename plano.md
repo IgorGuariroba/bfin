@@ -2,6 +2,62 @@
 
 > Motor de previsão financeira para contas compartilhadas com rastreabilidade de transações, recálculo dinâmico de projeções e indicadores de saúde patrimonial.
 
+ ---                                                                                                                                                                                                
+Etapa 1 — Fundação e Infraestrutura
+
+- Setup do projeto (Fastify, Drizzle, Pino, Docker + PostgreSQL)
+- Padronização de respostas e erros (seção 10)
+- Middleware de requestId
+- Docker Compose (API + banco)
+- Estrutura de testes de integração ("No Mocks")
+
+Etapa 2 — Autenticação e Usuários
+
+- Integração OIDC (openid-client)
+- Auth Guard (validação de Bearer Token)
+- Provisionamento automático de usuário no primeiro acesso
+- Campo is_admin e lógica de papéis globais
+
+Etapa 3 — Categorias e Contas
+
+- CRUD de Categorias (restrito a admin) — seção 5.2
+- CRUD de Contas Financeiras — seção 5.3
+- Associação Usuário ↔ Conta (RBAC contextual: owner/viewer)
+- Middleware de autorização por conta
+
+Etapa 4 — Movimentações
+
+- CRUD de Movimentações (receitas/despesas) — seção 5.4
+- Validação de tipo vs. categoria
+- Lógica de recorrência (recorrente, data_fim, cancelamento)
+- Listagem com filtros e paginação
+
+Etapa 5 — Dívidas e Parcelas
+
+- CRUD de Dívidas — seção 5.5
+- Geração automática de parcelas com arredondamento
+- Confirmação de pagamento (gera despesa automática)
+- Regras de deleção (bloqueio se parcela paga)
+- Ciclo de vida completo da dívida
+
+Etapa 6 — Motor de Projeção e Indicadores
+
+- Motor de projeção dia-a-dia — seção 7
+- Cascata lazy com cache (PostgreSQL)
+- Invalidação em cascata (status: invalidada/atualizada)
+- Sistema de eventos (EventEmitter) — seção 8
+- Indicador de Reserva (verde/amarelo/vermelho)
+- Meta de Reserva de Emergência — seção 5.6
+- Limite Diário de Gasto — seção 5.7
+
+Etapa 7 — Produção e Integração MCP
+
+- PM2 Cluster Mode
+- Clinic.js (diagnóstico de performance)
+- OpenAPI 3.x / Swagger UI
+- Integração MCP (STDIO + JSON-RPC)
+
+---
 ---
 
 ## Sumário
