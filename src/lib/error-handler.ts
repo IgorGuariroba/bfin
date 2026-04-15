@@ -25,6 +25,10 @@ export function registerErrorHandler(app: FastifyInstance): void {
       statusCode = 400;
       code = "VALIDATION_ERROR";
       message = error.message;
+    } else if (hasStatusCode(error) && error.statusCode !== 500) {
+      statusCode = error.statusCode;
+      code = (error as { code?: string }).code ?? "INTERNAL_ERROR";
+      message = error.message;
     }
 
     if (statusCode === 500) {
@@ -50,5 +54,16 @@ function isValidationError(error: unknown): error is FastifyError {
     (error as { statusCode: number }).statusCode === 400 &&
     "code" in error &&
     (error as { code: string }).code === "FST_ERR_VALIDATION"
+  );
+}
+
+function hasStatusCode(error: unknown): error is { statusCode: number; message: string } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "statusCode" in error &&
+    typeof (error as { statusCode: number }).statusCode === "number" &&
+    "message" in error &&
+    typeof (error as { message: string }).message === "string"
   );
 }

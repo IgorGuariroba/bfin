@@ -1,0 +1,39 @@
+# Production override for docker compose
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Required environment variables (inject via secrets manager / orchestrator):
+#   DATABASE_URL    - Postgres connection string
+#   NODE_ENV        - should be "production"
+#   PORT            - application port (default 3000)
+#   CORS_ORIGIN     - optional, CORS allowed origin
+#   RATE_LIMIT_MAX  - optional, max requests per window (default 100)
+#   RATE_LIMIT_WINDOW - optional, rate limit window in ms (default 60000)
+#   MIGRATE_ON_BOOT - optional, "true" to run migrations on startup (default false)
+#   LOG_LEVEL       - optional, pino log level (default info)
+#   DB_POOL_MAX     - optional, max db pool connections (default 10)
+#   DB_POOL_IDLE_TIMEOUT - optional, idle timeout in seconds (default 30)
+#   DB_POOL_CONNECT_TIMEOUT - optional, connect timeout in seconds (default 10)
+
+services:
+  api:
+    env_file: !reset []
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  db:
+    ports: !reset []
+    env_file: !reset []
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

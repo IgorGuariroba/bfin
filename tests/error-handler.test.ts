@@ -1,4 +1,4 @@
-import { describe, beforeAll, afterAll, beforeEach, afterEach, it, expect } from "vitest";
+import { describe, beforeAll, afterAll, afterEach, it, expect } from "vitest";
 import { createTestApp, type TestApp } from "./helpers/setup.js";
 import {
   BusinessRuleError,
@@ -37,12 +37,8 @@ afterAll(async () => {
   await testApp.teardown();
 });
 
-beforeEach(async () => {
-  await testApp.beginTransaction();
-});
-
 afterEach(async () => {
-  await testApp.rollbackTransaction();
+  await testApp.truncateAll();
 });
 
 describe("Error handler", () => {

@@ -5,7 +5,8 @@
   "main": "dist/server.js",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "docker compose up",
+    "dev:down": "docker compose down",
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "vitest run",
@@ -16,10 +17,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@fastify/cors": "^11.2.0",
+    "@fastify/helmet": "^13.0.2",
+    "@fastify/rate-limit": "^10.3.0",
     "drizzle-orm": "^0.41.0",
     "fastify": "^5.2.2",
+    "fastify-metrics": "^13.2.0",
     "pino": "^9.6.0",
-    "postgres": "^3.4.5"
+    "postgres": "^3.4.5",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@testcontainers/postgresql": "^11.14.0",
