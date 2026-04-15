@@ -10,7 +10,11 @@ import { registerErrorHandler } from "../src/lib/error-handler.js";
 let testApp: TestApp;
 
 beforeAll(async () => {
-  testApp = await createTestApp();
+  testApp = await createTestApp({
+    validateToken: async () => {
+      throw new Error("Should not be called");
+    },
+  });
   await testApp.app.ready();
 });
 

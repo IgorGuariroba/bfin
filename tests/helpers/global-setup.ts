@@ -12,6 +12,7 @@ export async function setup(): Promise<void> {
   process.env.DATABASE_URL = databaseUrl;
   process.env.NODE_ENV = "test";
   process.env.LOG_LEVEL = process.env.LOG_LEVEL ?? "error";
+  process.env.OIDC_ISSUER_URL = "https://test-issuer.example.com";
 
   // Propagate to test workers
   process.env.TEST_DATABASE_URL = databaseUrl;

@@ -17,7 +17,7 @@ describe("loadConfig", () => {
   });
 
   it("applies default values for optional envs", () => {
-    const cfg = loadConfig({ DATABASE_URL: "postgres://fake" });
+    const cfg = loadConfig({ DATABASE_URL: "postgres://fake", OIDC_ISSUER_URL: "https://test" });
     expect(cfg.port).toBe(3000);
     expect(cfg.nodeEnv).toBe("development");
     expect(cfg.logLevel).toBe("info");
@@ -28,6 +28,7 @@ describe("loadConfig", () => {
   it("coerces numeric envs", () => {
     const cfg = loadConfig({
       DATABASE_URL: "postgres://fake",
+      OIDC_ISSUER_URL: "https://test",
       PORT: "8080",
       RATE_LIMIT_MAX: "50",
     });

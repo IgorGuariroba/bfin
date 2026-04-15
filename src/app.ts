@@ -7,11 +7,17 @@ import metricsPlugin from "fastify-metrics";
 type MetricsPluginOptions = { endpoint?: string };
 const metrics = metricsPlugin as unknown as FastifyPluginCallback<MetricsPluginOptions>;
 import { healthRoutes } from "./routes/health.js";
+import { meRoutes } from "./routes/me.js";
 import { generateRequestId } from "./plugins/request-id.js";
 import { registerErrorHandler } from "./lib/error-handler.js";
+import { authGuard, AuthGuardOptions } from "./plugins/auth-guard.js";
 import { config } from "./config.js";
 
-export function buildApp(): FastifyInstance {
+export interface BuildAppOptions {
+  authGuardOptions?: AuthGuardOptions;
+}
+
+export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   const app = fastify({
     logger: {
       level: config.logLevel,
@@ -71,7 +77,9 @@ export function buildApp(): FastifyInstance {
     app.log.warn("Metrics endpoint disabled: set METRICS_TOKEN to enable in production");
   }
 
+  void app.register(authGuard, options.authGuardOptions ?? {});
   void app.register(healthRoutes);
+  void app.register(meRoutes);
 
   return app;
 }

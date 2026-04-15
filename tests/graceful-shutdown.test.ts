@@ -38,6 +38,7 @@ describe("Graceful shutdown", () => {
         PORT: "34567",
         NODE_ENV: "test",
         LOG_LEVEL: "info",
+        OIDC_ISSUER_URL: "https://accounts.google.com",
       },
       stdio: ["ignore", "pipe", "pipe"],
       cwd: path.resolve("."),

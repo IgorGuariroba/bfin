@@ -1,0 +1,14 @@
+services:
+  api:
+    image: bfin-api-test:latest
+    build:
+      context: .
+      target: test
+    user: root
+    environment:
+      - NODE_ENV=test
+      - LOG_LEVEL=error
+      - OIDC_ISSUER_URL=https://test-issuer.example.com
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: ["npm", "test"]

@@ -15,7 +15,13 @@ type ErrorBody = {
 let testApp: TestApp;
 
 beforeAll(async () => {
-  testApp = await createTestApp();
+  testApp = await createTestApp({
+    validateToken: async () => ({
+      sub: "test-user",
+      email: "test@example.com",
+      name: "Test User",
+    }),
+  });
 
   testApp.app.get("/test-business-error", async () => {
     throw new BusinessRuleError("Valor deve ser positivo");
@@ -46,6 +52,7 @@ describe("Error handler", () => {
     const response = await testApp.app.inject({
       method: "GET",
       url: "/test-business-error",
+      headers: { authorization: "Bearer dummy" },
     });
 
     expect(response.statusCode).toBe(422);
@@ -60,6 +67,7 @@ describe("Error handler", () => {
     const response = await testApp.app.inject({
       method: "GET",
       url: "/test-not-found",
+      headers: { authorization: "Bearer dummy" },
     });
 
     expect(response.statusCode).toBe(404);
@@ -74,6 +82,7 @@ describe("Error handler", () => {
     const response = await testApp.app.inject({
       method: "GET",
       url: "/test-unexpected",
+      headers: { authorization: "Bearer dummy" },
     });
 
     expect(response.statusCode).toBe(500);
@@ -90,6 +99,7 @@ describe("Error handler", () => {
       url: "/test-request-id",
       headers: {
         "X-Request-Id": "custom-req-id-123",
+        authorization: "Bearer dummy",
       },
     });
 

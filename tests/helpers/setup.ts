@@ -2,6 +2,7 @@ import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import type { FastifyInstance } from "fastify";
 import { register } from "prom-client";
+import type { TokenValidator } from "../../src/plugins/oidc.js";
 
 export interface TestApp {
   app: FastifyInstance;
@@ -11,7 +12,11 @@ export interface TestApp {
   teardown(): Promise<void>;
 }
 
-export async function createTestApp(): Promise<TestApp> {
+export interface CreateTestAppOptions {
+  validateToken?: TokenValidator;
+}
+
+export async function createTestApp(options: CreateTestAppOptions = {}): Promise<TestApp> {
   const databaseUrl = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
   if (!databaseUrl) {
     throw new Error("TEST_DATABASE_URL not set — did globalSetup run?");
@@ -23,7 +28,7 @@ export async function createTestApp(): Promise<TestApp> {
   register.clear();
 
   const { buildApp } = await import("../../src/app.js");
-  const app = buildApp();
+  const app = buildApp({ authGuardOptions: { validateToken: options.validateToken } });
 
   const client = postgres(databaseUrl, { max: 1 });
   const db = drizzle({ client });

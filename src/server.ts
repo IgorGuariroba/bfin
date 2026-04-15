@@ -3,11 +3,17 @@ import { ConfigError, config } from "./config.js";
 import { client } from "./db/index.js";
 import { waitForDatabase } from "./db/retry.js";
 import { runMigrations } from "./db/migrate.js";
+import { initOidc } from "./plugins/oidc.js";
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
 async function main(): Promise<void> {
   const app = buildApp();
+
+  // Initialize OIDC before accepting requests
+  app.log.info("Initializing OIDC...");
+  await initOidc();
+  app.log.info("OIDC initialized");
 
   // Boot readiness probe
   app.log.info("Waiting for database...");

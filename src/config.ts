@@ -13,6 +13,8 @@ const configSchema = z.object({
   DB_POOL_IDLE_TIMEOUT: z.coerce.number().int().nonnegative().default(30),
   DB_POOL_CONNECT_TIMEOUT: z.coerce.number().int().nonnegative().default(10),
   METRICS_TOKEN: z.preprocess((val) => (val === "" ? undefined : val), z.string().optional()),
+  OIDC_ISSUER_URL: z.string().min(1, "OIDC_ISSUER_URL cannot be empty"),
+  OIDC_AUDIENCE: z.preprocess((val) => (val === "" ? undefined : val), z.string().optional()),
 });
 
 export type Config = {
@@ -28,6 +30,8 @@ export type Config = {
   dbPoolIdleTimeout: number;
   dbPoolConnectTimeout: number;
   metricsToken: string | undefined;
+  oidcIssuerUrl: string;
+  oidcAudience: string | undefined;
 };
 
 export class ConfigError extends Error {
@@ -58,6 +62,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     dbPoolIdleTimeout: v.DB_POOL_IDLE_TIMEOUT,
     dbPoolConnectTimeout: v.DB_POOL_CONNECT_TIMEOUT,
     metricsToken: v.METRICS_TOKEN,
+    oidcIssuerUrl: v.OIDC_ISSUER_URL,
+    oidcAudience: v.OIDC_AUDIENCE,
   };
 }
 

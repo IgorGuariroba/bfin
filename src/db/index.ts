@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { config } from "../config.js";
+import * as schema from "./schema.js";
 
 export const client = postgres(config.databaseUrl, {
   max: config.dbPoolMax,
@@ -8,4 +9,4 @@ export const client = postgres(config.databaseUrl, {
   connect_timeout: config.dbPoolConnectTimeout,
 });
 
-export const db = drizzle({ client });
+export const db = drizzle({ client, schema });
