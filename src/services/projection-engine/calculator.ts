@@ -15,7 +15,6 @@ import type {
   IndicadorReserva,
   ProjecaoMensal,
   ProjecaoMovimentacaoInput,
-  ProjecaoParcelaInput,
   ResumoMes,
 } from "./types.js";
 

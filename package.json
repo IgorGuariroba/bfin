@@ -12,6 +12,8 @@
     "test": "docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from api",
     "test:down": "docker compose -f docker-compose.test.yml down --remove-orphans",
     "test:vitest": "vitest run",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"
   },
@@ -34,9 +36,12 @@
     "@testcontainers/postgresql": "^11.14.0",
     "@types/node": "^22.14.1",
     "drizzle-kit": "^0.31.10",
+    "eslint": "^10.2.0",
+    "eslint-plugin-sonarjs": "^4.0.3",
     "testcontainers": "^11.14.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3",
+    "typescript-eslint": "^8.58.2",
     "vitest": "^3.1.1"
   },
   "overrides": {

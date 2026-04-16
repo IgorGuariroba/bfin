@@ -25,6 +25,6 @@ services:
       - TESTCONTAINERS_HOST_OVERRIDE=localhost
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: ["npm", "run", "test:vitest"]
+    command: ["sh", "-c", "npm run lint && npm run test:vitest"]
     mem_limit: 1g
     cpus: 2.0

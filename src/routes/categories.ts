@@ -4,7 +4,6 @@ import { requireAdmin } from "../plugins/auth-guard.js";
 import {
   createCategory,
   findAllCategories,
-  findCategoryById,
   updateCategory,
   deleteCategory,
 } from "../services/category-service.js";

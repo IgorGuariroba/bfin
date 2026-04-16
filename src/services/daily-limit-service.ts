@@ -1,4 +1,4 @@
-import { and, eq, gte, lte, isNull, or, lt, sql, inArray } from "drizzle-orm";
+import { and, eq, gte, lte, isNull, or, inArray } from "drizzle-orm";
 import { db } from "../db/index.js";
 import {
   contas,

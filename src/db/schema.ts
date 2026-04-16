@@ -1,6 +1,5 @@
 // Base schema file — prepared for future entities
 import { pgTable, uuid, timestamp, varchar, boolean, numeric, pgEnum, unique, integer, date, jsonb } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
 
 export const healthCheck = pgTable("health_check", {
   id: uuid("id").primaryKey().defaultRandom(),

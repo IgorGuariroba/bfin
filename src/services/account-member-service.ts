@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { usuarios, contaUsuarios } from "../db/schema.js";
 import { NotFoundError, DuplicateError, isDuplicateKeyError } from "../lib/errors.js";
