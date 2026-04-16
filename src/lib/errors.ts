@@ -46,3 +46,15 @@ export class DuplicateError extends AppError {
     super(message, 409, "DUPLICATE_RESOURCE");
   }
 }
+
+export function isDuplicateKeyError(err: unknown): boolean {
+  const getCode = (e: unknown): string | undefined => {
+    if (typeof e === "object" && e !== null) {
+      return (e as { code?: string }).code;
+    }
+    return undefined;
+  };
+
+  const code = getCode(err) ?? getCode((err as { cause?: unknown })?.cause);
+  return code === "23505";
+}

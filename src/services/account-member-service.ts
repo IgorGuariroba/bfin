@@ -1,7 +1,7 @@
 import { eq, and } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { usuarios, contaUsuarios } from "../db/schema.js";
-import { NotFoundError, DuplicateError } from "../lib/errors.js";
+import { NotFoundError, DuplicateError, isDuplicateKeyError } from "../lib/errors.js";
 
 export interface AddMemberInput {
   contaId: string;
@@ -25,8 +25,7 @@ export async function addMember(input: AddMemberInput) {
       papel: input.papel,
     });
   } catch (err) {
-    const error = err as { code?: string };
-    if (error.code === "23505") {
+    if (isDuplicateKeyError(err)) {
       throw new DuplicateError("User is already associated with this account");
     }
     throw err;

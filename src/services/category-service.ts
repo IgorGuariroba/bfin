@@ -1,7 +1,7 @@
 import { eq, and, ilike, sql, count } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { categorias, tipoCategorias } from "../db/schema.js";
-import { NotFoundError, BusinessRuleError, DuplicateError } from "../lib/errors.js";
+import { NotFoundError, BusinessRuleError, DuplicateError, isDuplicateKeyError } from "../lib/errors.js";
 
 export interface CreateCategoryInput {
   nome: string;
@@ -88,8 +88,7 @@ export async function createCategory(input: CreateCategoryInput) {
       createdAt: created.createdAt,
     };
   } catch (err) {
-    const error = err as { code?: string };
-    if (error.code === "23505") {
+    if (isDuplicateKeyError(err)) {
       throw new DuplicateError("Category with this name and type already exists");
     }
     throw err;
@@ -195,8 +194,7 @@ export async function updateCategory(id: string, input: UpdateCategoryInput) {
       createdAt: updated.createdAt,
     };
   } catch (err) {
-    const error = err as { code?: string };
-    if (error.code === "23505") {
+    if (isDuplicateKeyError(err)) {
       throw new DuplicateError("Category with this name and type already exists");
     }
     throw err;
