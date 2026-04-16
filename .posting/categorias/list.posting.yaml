@@ -1,0 +1,10 @@
+name: List Categorias
+method: GET
+url: http://127.0.0.1:3000/categorias
+query:
+  - name: tipo
+    value: receita
+  - name: page
+    value: "1"
+  - name: limit
+    value: "10"

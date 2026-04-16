@@ -1,0 +1,14 @@
+name: Add Member to Conta
+method: POST
+url: http://127.0.0.1:3000/contas/{{contaId}}/usuarios
+headers:
+  - name: Content-Type
+    value: application/json
+  - name: Authorization
+    value: Bearer <token>
+body:
+  content: |
+    {
+      "email": "convidado-teste@example.com",
+      "papel": "viewer"
+    }
