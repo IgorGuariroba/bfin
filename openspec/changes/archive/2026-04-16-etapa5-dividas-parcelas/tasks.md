@@ -45,5 +45,5 @@
 
 - [x] 6.1 Rodar `docker compose exec api npm run test` garantindo que a suíte inteira passa (inclui a regressão de `transactions.test.ts`)
 - [x] 6.2 Rodar `docker compose exec api npm run lint` e `npm run typecheck`
-- [ ] 6.3 Adicionar requests manuais à coleção `.posting/` cobrindo: criar dívida, listar dívidas, confirmar pagamento de parcela, tentar deletar dívida com parcela paga, deletar dívida sem parcelas pagas
-- [ ] 6.4 Executar skill `run-manual-tests` para validar o fluxo fim-a-fim com token real
+- [x] 6.3 Adicionar requests manuais à coleção `.posting/` cobrindo: criar dívida, listar dívidas, confirmar pagamento de parcela, tentar deletar dívida com parcela paga, deletar dívida sem parcelas pagas
+- [x] 6.4 Executar skill `run-manual-tests` para validar o fluxo fim-a-fim com token real
