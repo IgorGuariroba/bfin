@@ -360,7 +360,7 @@ describe("Categories CRUD", () => {
     testApp = await createTestApp({ validateToken });
     await testApp.truncateAll();
     await seedTipoCategorias(testApp);
-    await createUser(testApp, "admin-user", "admin@example.com", true);
+    const adminId = await createUser(testApp, "admin-user", "admin@example.com", true);
 
     const token = await signTestToken(keyPair, {
       sub: "admin-user",
@@ -376,14 +376,14 @@ describe("Categories CRUD", () => {
     });
     const created = JSON.parse(createRes.payload);
 
-    await testApp.client`
-      CREATE TABLE IF NOT EXISTS movimentacoes (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        categoria_id uuid NOT NULL
-      )
+    const [conta] = await testApp.client`
+      INSERT INTO contas (nome, saldo_inicial)
+      VALUES ('Conta Temp', 0)
+      RETURNING id
     `;
     await testApp.client`
-      INSERT INTO movimentacoes (categoria_id) VALUES (${created.id})
+      INSERT INTO movimentacoes (conta_id, usuario_id, categoria_id, valor, data)
+      VALUES (${conta.id}, ${adminId}, ${created.id}, 100, '2024-01-01')
     `;
 
     const res = await testApp.app.inject({
@@ -391,8 +391,6 @@ describe("Categories CRUD", () => {
       url: `/categorias/${created.id}`,
       headers: { authorization: `Bearer ${token}` },
     });
-
-    await testApp.client`DROP TABLE IF EXISTS movimentacoes`;
 
     expect(res.statusCode).toBe(422);
     const body = JSON.parse(res.payload);

@@ -29,6 +29,20 @@
       "when": 1776294460000,
       "tag": "0003_seed_tipo_categorias",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776313815990,
+      "tag": "0004_next_loners",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776337809146,
+      "tag": "0005_friendly_gorgon",
+      "breakpoints": true
     }
   ]
 }

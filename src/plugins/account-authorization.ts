@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { contas, contaUsuarios } from "../db/schema.js";
 import { NotFoundError, ForbiddenError } from "../lib/errors.js";
+import { uuidSchema } from "../lib/validation.js";
 
 export type AccountRole = "owner" | "viewer";
 
@@ -41,10 +42,19 @@ export function requireAccountRole(options: RequireAccountRoleOptions) {
     }
 
     if (!contaId) {
-      return reply.status(400).send({
+      return reply.status(422).send({
         timestamp: new Date().toISOString(),
         requestId: request.id,
         message: "contaId is required",
+        code: "VALIDATION_ERROR",
+      });
+    }
+
+    if (!uuidSchema.safeParse(contaId).success) {
+      return reply.status(422).send({
+        timestamp: new Date().toISOString(),
+        requestId: request.id,
+        message: "contaId must be a valid UUID",
         code: "VALIDATION_ERROR",
       });
     }

@@ -1,10 +1,14 @@
 import { FastifyInstance } from "fastify";
+import { z } from "zod";
 import { requireAccountRole } from "../plugins/account-authorization.js";
 import {
   createAccount,
   findAccountsByUser,
   updateAccount,
 } from "../services/account-service.js";
+import { parseOrThrow, uuidSchema } from "../lib/validation.js";
+
+const contaParamsSchema = z.object({ contaId: uuidSchema });
 
 export async function accountRoutes(app: FastifyInstance): Promise<void> {
   app.post("/contas", async (request, reply) => {
@@ -42,7 +46,7 @@ export async function accountRoutes(app: FastifyInstance): Promise<void> {
     "/contas/:contaId",
     { onRequest: [requireAccountRole({ minRole: "owner" })] },
     async (request, reply) => {
-      const { contaId } = request.params as { contaId: string };
+      const { contaId } = parseOrThrow(contaParamsSchema, request.params, "params");
       const body = request.body as { nome?: string; saldo_inicial?: number };
       const account = await updateAccount(contaId, {
         nome: body.nome,

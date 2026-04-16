@@ -47,6 +47,30 @@ export class DuplicateError extends AppError {
   }
 }
 
+export class SystemGeneratedResourceError extends AppError {
+  constructor(message: string) {
+    super(message, 422, "SYSTEM_GENERATED_RESOURCE");
+  }
+}
+
+export class AlreadyPaidError extends AppError {
+  constructor(message: string) {
+    super(message, 422, "ALREADY_PAID");
+  }
+}
+
+export class DebtHasPaymentsError extends AppError {
+  constructor(message: string) {
+    super(message, 422, "DEBT_HAS_PAYMENTS");
+  }
+}
+
+export class ValidationError extends AppError {
+  constructor(message: string) {
+    super(message, 422, "VALIDATION_ERROR");
+  }
+}
+
 export function isDuplicateKeyError(err: unknown): boolean {
   const getCode = (e: unknown): string | undefined => {
     if (typeof e === "object" && e !== null) {

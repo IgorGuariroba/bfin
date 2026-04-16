@@ -1,5 +1,5 @@
 // Base schema file — prepared for future entities
-import { pgTable, uuid, timestamp, varchar, boolean, numeric, pgEnum, unique } from "drizzle-orm/pg-core";
+import { pgTable, uuid, timestamp, varchar, boolean, numeric, pgEnum, unique, integer, date } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const healthCheck = pgTable("health_check", {
@@ -54,3 +54,45 @@ export const contaUsuarios = pgTable("conta_usuarios", {
 }, (table) => [
   unique("conta_usuarios_conta_usuario_unique").on(table.contaId, table.usuarioId),
 ]);
+
+export const dividas = pgTable("dividas", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contaId: uuid("conta_id").notNull().references(() => contas.id, { onDelete: "cascade" }),
+  usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id),
+  categoriaId: uuid("categoria_id").notNull().references(() => categorias.id),
+  descricao: varchar("descricao", { length: 255 }).notNull(),
+  valorTotal: numeric("valor_total", { precision: 12, scale: 2 }).notNull(),
+  totalParcelas: integer("total_parcelas").notNull(),
+  valorParcela: numeric("valor_parcela", { precision: 12, scale: 2 }).notNull(),
+  dataInicio: date("data_inicio", { mode: "date" }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const parcelasDivida = pgTable("parcelas_divida", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  dividaId: uuid("divida_id").notNull().references(() => dividas.id, { onDelete: "cascade" }),
+  numeroParcela: integer("numero_parcela").notNull(),
+  valor: numeric("valor", { precision: 12, scale: 2 }).notNull(),
+  dataVencimento: date("data_vencimento", { mode: "date" }).notNull(),
+  dataPagamento: date("data_pagamento", { mode: "date" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  unique("parcelas_divida_divida_numero_unique").on(table.dividaId, table.numeroParcela),
+]);
+
+export const movimentacoes = pgTable("movimentacoes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contaId: uuid("conta_id").notNull().references(() => contas.id, { onDelete: "cascade" }),
+  usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id),
+  categoriaId: uuid("categoria_id").notNull().references(() => categorias.id),
+  descricao: varchar("descricao", { length: 255 }),
+  valor: numeric("valor", { precision: 12, scale: 2 }).notNull(),
+  data: timestamp("data", { withTimezone: true, mode: "date" }).notNull(),
+  recorrente: boolean("recorrente").notNull().default(false),
+  dataFim: timestamp("data_fim", { withTimezone: true, mode: "date" }),
+  parcelaDividaId: uuid("parcela_divida_id").references(() => parcelasDivida.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});

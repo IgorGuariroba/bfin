@@ -11,6 +11,8 @@ import { meRoutes } from "./routes/me.js";
 import { categoryRoutes } from "./routes/categories.js";
 import { accountRoutes } from "./routes/accounts.js";
 import { accountMemberRoutes } from "./routes/account-members.js";
+import { transactionRoutes } from "./routes/transactions.js";
+import { debtRoutes } from "./routes/debts.js";
 import { generateRequestId } from "./plugins/request-id.js";
 import { registerErrorHandler } from "./lib/error-handler.js";
 import { authGuard, AuthGuardOptions } from "./plugins/auth-guard.js";
@@ -86,6 +88,8 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   void app.register(categoryRoutes);
   void app.register(accountRoutes);
   void app.register(accountMemberRoutes);
+  void app.register(transactionRoutes);
+  void app.register(debtRoutes);
 
   return app;
 }

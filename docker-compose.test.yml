@@ -1,14 +1,30 @@
+# Test environment — NEVER use in production.
+# Docker socket is required by testcontainers for spinning up PostgreSQL.
+# Runs as root because vitest needs write access to /app (files are COPY'd as root).
+# network_mode: host: testcontainers launches sibling containers (Postgres, Ryuk)
+# on the host's default Docker network via the mounted socket; without host
+# networking the api container can't reach those siblings.
+# build.network: host: ensures npm ci during image build has working DNS.
+# TESTCONTAINERS_HOST_OVERRIDE=localhost: testcontainers auto-detects the docker
+# bridge gateway (172.17.0.1) as the host, but host iptables don't forward
+# published ports to that gateway IP — so connections to Reaper/Postgres fail.
+# Forcing localhost uses the loopback that network_mode: host already shares.
 services:
   api:
-    image: bfin-api-test:latest
     build:
       context: .
       target: test
+      network: host
     user: root
+    read_only: false
+    network_mode: host
     environment:
       - NODE_ENV=test
       - LOG_LEVEL=error
       - OIDC_ISSUER_URL=https://test-issuer.example.com
+      - TESTCONTAINERS_HOST_OVERRIDE=localhost
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: ["npm", "test"]
+    command: ["npm", "run", "test:vitest"]
+    mem_limit: 1g
+    cpus: 2.0

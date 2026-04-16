@@ -1,4 +1,5 @@
 import { FastifyInstance } from "fastify";
+import { z } from "zod";
 import { requireAdmin } from "../plugins/auth-guard.js";
 import {
   createCategory,
@@ -7,6 +8,9 @@ import {
   updateCategory,
   deleteCategory,
 } from "../services/category-service.js";
+import { parseOrThrow, uuidSchema } from "../lib/validation.js";
+
+const categoriaParamsSchema = z.object({ categoriaId: uuidSchema });
 
 export async function categoryRoutes(app: FastifyInstance): Promise<void> {
   app.post(
@@ -44,7 +48,7 @@ export async function categoryRoutes(app: FastifyInstance): Promise<void> {
     "/categorias/:categoriaId",
     { onRequest: [requireAdmin()] },
     async (request, reply) => {
-      const { categoriaId } = request.params as { categoriaId: string };
+      const { categoriaId } = parseOrThrow(categoriaParamsSchema, request.params, "params");
       const body = request.body as { nome: string; tipo: string };
       const category = await updateCategory(categoriaId, {
         nome: body.nome,
@@ -58,7 +62,7 @@ export async function categoryRoutes(app: FastifyInstance): Promise<void> {
     "/categorias/:categoriaId",
     { onRequest: [requireAdmin()] },
     async (request, reply) => {
-      const { categoriaId } = request.params as { categoriaId: string };
+      const { categoriaId } = parseOrThrow(categoriaParamsSchema, request.params, "params");
       await deleteCategory(categoriaId);
       return reply.status(200).send({ ok: true });
     }
