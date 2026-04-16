@@ -12,5 +12,10 @@ export default defineConfig({
         singleFork: true,
       },
     },
+    coverage: {
+      provider: "istanbul",
+      reporter: ["lcov"],
+      reportsDirectory: "coverage/lcov",
+    },
   },
 });

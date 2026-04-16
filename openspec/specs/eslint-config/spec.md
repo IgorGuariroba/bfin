@@ -30,7 +30,7 @@ A configuração SHALL integrar `eslint-plugin-sonarjs` habilitando as regras `r
 - **THEN** o lint reporta erro `sonarjs/no-duplicated-branches`
 
 ### Requirement: Scripts de lint
-O `package.json` SHALL conter scripts `lint` e `lint:fix`.
+O `package.json` SHALL conter scripts `lint`, `lint:fix`, e `test:coverage`.
 
 #### Scenario: Script lint
 - **WHEN** `npm run lint` é executado
@@ -39,6 +39,10 @@ O `package.json` SHALL conter scripts `lint` e `lint:fix`.
 #### Scenario: Script lint:fix
 - **WHEN** `npm run lint:fix` é executado
 - **THEN** o ESLint corrige automaticamente os problemas que podem ser auto-corrigidos
+
+#### Scenario: Script test:coverage
+- **WHEN** `npm run test:coverage` é executado
+- **THEN** o Vitest executa os testes com coverage habilitado e gera relatório LCOV em `coverage/lcov/`
 
 ### Requirement: Ignore de arquivos gerados
 A configuração SHALL ignorar `dist/`, `node_modules/` e `drizzle/` da análise.

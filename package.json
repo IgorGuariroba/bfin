@@ -12,6 +12,7 @@
     "test": "docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from api",
     "test:down": "docker compose -f docker-compose.test.yml down --remove-orphans",
     "test:vitest": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "db:generate": "drizzle-kit generate",
@@ -35,6 +36,7 @@
   "devDependencies": {
     "@testcontainers/postgresql": "^11.14.0",
     "@types/node": "^22.14.1",
+    "@vitest/coverage-istanbul": "^3.2.4",
     "drizzle-kit": "^0.31.10",
     "eslint": "^10.2.0",
     "eslint-plugin-sonarjs": "^4.0.3",
