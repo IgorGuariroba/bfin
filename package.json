@@ -16,7 +16,10 @@
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "profile:doctor": "CLINIC_TOOL=doctor docker compose -f docker-compose.yml -f docker-compose.profile.yml up --build",
+    "profile:bubbleprof": "CLINIC_TOOL=bubbleprof docker compose -f docker-compose.yml -f docker-compose.profile.yml up --build",
+    "profile:heap": "CLINIC_TOOL=heapprofiler docker compose -f docker-compose.yml -f docker-compose.profile.yml up --build"
   },
   "keywords": [],
   "author": "",
@@ -37,6 +40,7 @@
     "@testcontainers/postgresql": "^11.14.0",
     "@types/node": "^22.14.1",
     "@vitest/coverage-istanbul": "^3.2.4",
+    "clinic": "^13.0.0",
     "drizzle-kit": "^0.31.10",
     "eslint": "^10.2.0",
     "eslint-plugin-sonarjs": "^4.0.3",

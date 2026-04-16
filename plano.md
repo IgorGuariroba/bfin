@@ -52,7 +52,6 @@ Etapa 6 — Motor de Projeção e Indicadores
 
 Etapa 7 — Produção e Integração MCP
 
-- PM2 Cluster Mode
 - Clinic.js (diagnóstico de performance)
 - OpenAPI 3.x / Swagger UI
 - Integração MCP (STDIO + JSON-RPC)

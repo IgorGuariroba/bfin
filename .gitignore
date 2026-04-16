@@ -81,5 +81,8 @@ docker-data/
 .cursor/
 .aider*
 
+# Profiling
+.clinic/
+
 # Local test tools
 .posting/
