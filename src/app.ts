@@ -8,6 +8,9 @@ type MetricsPluginOptions = { endpoint?: string };
 const metrics = metricsPlugin as unknown as FastifyPluginCallback<MetricsPluginOptions>;
 import { healthRoutes } from "./routes/health.js";
 import { meRoutes } from "./routes/me.js";
+import { categoryRoutes } from "./routes/categories.js";
+import { accountRoutes } from "./routes/accounts.js";
+import { accountMemberRoutes } from "./routes/account-members.js";
 import { generateRequestId } from "./plugins/request-id.js";
 import { registerErrorHandler } from "./lib/error-handler.js";
 import { authGuard, AuthGuardOptions } from "./plugins/auth-guard.js";
@@ -80,6 +83,9 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   void app.register(authGuard, options.authGuardOptions ?? {});
   void app.register(healthRoutes);
   void app.register(meRoutes);
+  void app.register(categoryRoutes);
+  void app.register(accountRoutes);
+  void app.register(accountMemberRoutes);
 
   return app;
 }

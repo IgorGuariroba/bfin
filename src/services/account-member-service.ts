@@ -1,0 +1,40 @@
+import { eq, and } from "drizzle-orm";
+import { db } from "../db/index.js";
+import { usuarios, contaUsuarios } from "../db/schema.js";
+import { NotFoundError, DuplicateError } from "../lib/errors.js";
+
+export interface AddMemberInput {
+  contaId: string;
+  email: string;
+  papel: "owner" | "viewer";
+}
+
+export async function addMember(input: AddMemberInput) {
+  const usuario = await db.query.usuarios.findFirst({
+    where: eq(usuarios.email, input.email),
+  });
+
+  if (!usuario) {
+    throw new NotFoundError("User not found");
+  }
+
+  try {
+    await db.insert(contaUsuarios).values({
+      contaId: input.contaId,
+      usuarioId: usuario.id,
+      papel: input.papel,
+    });
+  } catch (err) {
+    const error = err as { code?: string };
+    if (error.code === "23505") {
+      throw new DuplicateError("User is already associated with this account");
+    }
+    throw err;
+  }
+
+  return {
+    usuarioId: usuario.id,
+    email: usuario.email,
+    papel: input.papel,
+  };
+}

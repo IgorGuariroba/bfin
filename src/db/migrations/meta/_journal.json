@@ -15,6 +15,20 @@
       "when": 1776252596177,
       "tag": "0001_spooky_firebird",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776294457872,
+      "tag": "0002_clear_freak",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776294460000,
+      "tag": "0003_seed_tipo_categorias",
+      "breakpoints": true
     }
   ]
 }
