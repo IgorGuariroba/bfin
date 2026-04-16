@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Define a capability de confirmação de pagamento de parcelas de dívidas: registro de pagamento com data, geração automática de movimentação vinculada, proteção contra pagamento duplicado, e invalidação síncrona de projeções persistidas. Apenas `owner` pode confirmar pagamentos.
+Define a capability de confirmação de pagamento de parcelas de dívidas: registro de pagamento com data, geração automática de movimentação vinculada, proteção contra pagamento duplicado, invalidação síncrona de projeções persistidas, e emissão de evento `projecao:recalcular` para recálculo assíncrono pelo motor de projeção. Apenas `owner` pode confirmar pagamentos.
 
 ## Requirements
 
@@ -44,7 +44,7 @@ Quando um pagamento é confirmado, o sistema MUST inserir um novo registro em `m
 - **THEN** a `movimentacao_gerada` registra o `usuario_id` do `owner` que confirmou, não do criador da dívida
 
 ### Requirement: Invalidação de projeção após pagamento
-O sistema SHALL marcar projeções como `invalidada` de forma síncrona após confirmar pagamento, cobrindo tanto o mês de `data_pagamento` quanto o mês de `data_vencimento` — invalidando a partir do menor deles e todos os meses posteriores. Se a tabela `projecao` ainda não existir, o erro PostgreSQL `42P01` MUST ser tratado como no-op.
+O sistema SHALL marcar projeções como `invalidada` de forma síncrona após confirmar pagamento, cobrindo tanto o mês de `data_pagamento` quanto o mês de `data_vencimento` — invalidando a partir do menor deles e todos os meses posteriores. Se a tabela `projecao` ainda não existir, o erro PostgreSQL `42P01` MUST ser tratado como no-op. Após a invalidação síncrona e o retorno da resposta HTTP com sucesso, o sistema MUST emitir `projecao:recalcular` via `eventBus` com payload `{ contaId, mesInicial }`, onde `mesInicial` é o menor mês entre `data_pagamento` e `data_vencimento` em formato `YYYY-MM`.
 
 #### Scenario: Pagamento no mesmo mês do vencimento
 - **WHEN** uma parcela com `data_vencimento: "2024-02-15"` recebe pagamento em `"2024-02-20"`
@@ -57,3 +57,11 @@ O sistema SHALL marcar projeções como `invalidada` de forma síncrona após co
 #### Scenario: Tabela projecao inexistente
 - **WHEN** um pagamento é confirmado antes da tabela `projecao` existir
 - **THEN** o sistema conclui a operação normalmente retornando `200 OK`
+
+#### Scenario: Emissão de projecao:recalcular após pagamento
+- **WHEN** uma parcela com `data_vencimento: "2024-02-15"` é paga em `2024-02-20`
+- **THEN** o sistema emite `projecao:recalcular` com `{ contaId, mesInicial: "2024-02" }` após a resposta HTTP
+
+#### Scenario: Emissão com pagamento antecipado
+- **WHEN** uma parcela com `data_vencimento: "2024-03-15"` é paga em `"2024-02-28"`
+- **THEN** o sistema emite `projecao:recalcular` com `mesInicial: "2024-02"` (menor mês entre `data_pagamento` e `data_vencimento`)

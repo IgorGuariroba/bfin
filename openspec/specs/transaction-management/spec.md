@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Define a capability de movimentações financeiras (receitas e despesas): CRUD completo vinculado a contas e categorias, com validação de consistência entre tipo da movimentação e tipo da categoria, filtros e paginação na listagem, e invalidação síncrona de projeções persistidas após mutações. Apenas `owner` pode criar/editar/excluir; `viewer` tem acesso somente leitura via listagem.
+Define a capability de movimentações financeiras (receitas e despesas): CRUD completo vinculado a contas e categorias, com validação de consistência entre tipo da movimentação e tipo da categoria, filtros e paginação na listagem, invalidação síncrona de projeções persistidas após mutações, e emissão de evento `projecao:recalcular` para recálculo assíncrono pelo motor de projeção. Apenas `owner` pode criar/editar/excluir; `viewer` tem acesso somente leitura via listagem.
 
 ## Requirements
 
@@ -98,7 +98,7 @@ O sistema SHALL listar movimentações de uma conta com paginação e filtros, a
 - **THEN** o sistema retorna `200 OK` contendo apenas movimentações cuja descrição corresponda parcialmente à busca (case-insensitive)
 
 ### Requirement: Invalidação de projeção após mutação
-O sistema SHALL marcar projeções persistidas como `invalidada` (valor do campo `status` na tabela `projecao`) após criação, atualização ou exclusão de movimentações, de forma síncrona, antes de responder ao cliente. A emissão do evento `projecao:recalcular` e o recálculo assíncrono são responsabilidade do motor de projeção (Etapa 6) e não fazem parte desta capability.
+O sistema SHALL marcar projeções persistidas como `invalidada` (valor do campo `status` na tabela `projecao`) após criação, atualização ou exclusão de movimentações, de forma síncrona, antes de responder ao cliente. Após concluir a invalidação síncrona e a resposta HTTP de sucesso, o sistema MUST emitir o evento `projecao:recalcular` via `eventBus` (singleton `EventEmitter`) com payload `{ contaId, mesInicial }` onde `mesInicial` é o menor mês afetado no formato `YYYY-MM`. A emissão do evento MUST ocorrer mesmo que a tabela `projecao` ainda não exista (o listener do motor decidirá se recalcula). A execução do listener (recálculo assíncrono) é responsabilidade do motor de projeção e não bloqueia a resposta HTTP.
 
 #### Scenario: Projeção invalidada após criar movimentação
 - **WHEN** uma movimentação é criada com sucesso na data `YYYY-MM-DD`
@@ -111,3 +111,15 @@ O sistema SHALL marcar projeções persistidas como `invalidada` (valor do campo
 #### Scenario: Invalidação quando a tabela projecao ainda não existe
 - **WHEN** uma movimentação é criada antes da Etapa 6 ter criado a tabela `projecao`
 - **THEN** o sistema trata o erro `42P01` (undefined_table) do PostgreSQL como no-op e conclui a mutação com sucesso (`201 Created`)
+
+#### Scenario: Emissão de projecao:recalcular após criar movimentação
+- **WHEN** uma movimentação é criada com sucesso na data `2024-03-15` para a conta `X`
+- **THEN** o sistema emite, após a invalidação síncrona, o evento `projecao:recalcular` com payload `{ contaId: X, mesInicial: "2024-03" }`
+
+#### Scenario: Emissão de projecao:recalcular após atualizar data
+- **WHEN** uma movimentação tem sua `data` alterada de `2024-05-10` para `2024-03-15`
+- **THEN** o sistema emite o evento `projecao:recalcular` com `mesInicial: "2024-03"` (menor dos dois meses)
+
+#### Scenario: Emissão de projecao:recalcular após deletar movimentação
+- **WHEN** uma movimentação com `data=2024-04-10` é deletada com sucesso
+- **THEN** o sistema emite `projecao:recalcular` com `mesInicial: "2024-04"`
