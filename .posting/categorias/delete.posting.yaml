@@ -1,6 +1,0 @@
-name: Delete Categoria
-method: DELETE
-url: http://127.0.0.1:3000/categorias/{{categoriaId}}
-headers:
-  - name: Authorization
-    value: Bearer <token>
