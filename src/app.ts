@@ -13,9 +13,12 @@ import { accountRoutes } from "./routes/accounts.js";
 import { accountMemberRoutes } from "./routes/account-members.js";
 import { transactionRoutes } from "./routes/transactions.js";
 import { debtRoutes } from "./routes/debts.js";
+import { projectionRoutes } from "./routes/projections.js";
+import { goalRoutes } from "./routes/goals.js";
 import { generateRequestId } from "./plugins/request-id.js";
 import { registerErrorHandler } from "./lib/error-handler.js";
 import { authGuard, AuthGuardOptions } from "./plugins/auth-guard.js";
+import { registerProjectionListener } from "./services/projection-engine/index.js";
 import { config } from "./config.js";
 
 export interface BuildAppOptions {
@@ -90,6 +93,10 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   void app.register(accountMemberRoutes);
   void app.register(transactionRoutes);
   void app.register(debtRoutes);
+  void app.register(projectionRoutes);
+  void app.register(goalRoutes);
+
+  registerProjectionListener({ logger: app.log });
 
   return app;
 }

@@ -6,6 +6,7 @@ import {
   findAccountsByUser,
   updateAccount,
 } from "../services/account-service.js";
+import { calcularLimiteDiario } from "../services/daily-limit-service.js";
 import { parseOrThrow, uuidSchema } from "../lib/validation.js";
 
 const contaParamsSchema = z.object({ contaId: uuidSchema });
@@ -53,6 +54,16 @@ export async function accountRoutes(app: FastifyInstance): Promise<void> {
         saldoInicial: body.saldo_inicial,
       });
       return reply.status(200).send(account);
+    }
+  );
+
+  app.get(
+    "/contas/:contaId/limite-diario",
+    { onRequest: [requireAccountRole({ minRole: "viewer" })] },
+    async (request, reply) => {
+      const { contaId } = parseOrThrow(contaParamsSchema, request.params, "params");
+      const result = await calcularLimiteDiario({ contaId });
+      return reply.status(200).send({ contaId, ...result });
     }
   );
 }

@@ -852,48 +852,35 @@ describe("Debts CRUD", () => {
     const categoriaId = await createCategory(testApp, "Cartão", "divida");
     const token = await makeToken(keyPair, "d-user19", "d-user19@example.com");
 
-    await testApp.client.unsafe(`
-      CREATE TABLE IF NOT EXISTS projecao (
-        conta_id UUID NOT NULL,
-        mes TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'atualizada',
-        PRIMARY KEY (conta_id, mes)
-      )
-    `);
+    await testApp.client`
+      INSERT INTO projecao (conta_id, mes, dados, status) VALUES
+        (${contaId}, '2024-01', '{}'::jsonb, 'atualizada'),
+        (${contaId}, '2024-02', '{}'::jsonb, 'atualizada'),
+        (${contaId}, '2024-03', '{}'::jsonb, 'atualizada')
+    `;
 
-    try {
-      await testApp.client`
-        INSERT INTO projecao (conta_id, mes, status) VALUES
-          (${contaId}, '2024-01', 'atualizada'),
-          (${contaId}, '2024-02', 'atualizada'),
-          (${contaId}, '2024-03', 'atualizada')
-      `;
+    const res = await testApp.app.inject({
+      method: "POST",
+      url: "/dividas",
+      headers: { authorization: `Bearer ${token}` },
+      payload: {
+        contaId,
+        categoriaId,
+        descricao: "Invalida projeção",
+        valorTotal: 300,
+        totalParcelas: 3,
+        dataInicio: "2024-02-10",
+      },
+    });
 
-      const res = await testApp.app.inject({
-        method: "POST",
-        url: "/dividas",
-        headers: { authorization: `Bearer ${token}` },
-        payload: {
-          contaId,
-          categoriaId,
-          descricao: "Invalida projeção",
-          valorTotal: 300,
-          totalParcelas: 3,
-          dataInicio: "2024-02-10",
-        },
-      });
+    expect(res.statusCode).toBe(201);
 
-      expect(res.statusCode).toBe(201);
-
-      const projecoes = await testApp.client<{ mes: string; status: string }[]>`
-        SELECT mes, status FROM projecao WHERE conta_id = ${contaId} ORDER BY mes
-      `;
-      const byMes = Object.fromEntries(projecoes.map((p) => [p.mes, p.status]));
-      expect(byMes["2024-01"]).toBe("atualizada");
-      expect(byMes["2024-02"]).toBe("invalidada");
-      expect(byMes["2024-03"]).toBe("invalidada");
-    } finally {
-      await testApp.client.unsafe(`DROP TABLE IF EXISTS projecao`);
-    }
+    const projecoes = await testApp.client<{ mes: string; status: string }[]>`
+      SELECT mes, status FROM projecao WHERE conta_id = ${contaId} ORDER BY mes
+    `;
+    const byMes = Object.fromEntries(projecoes.map((p) => [p.mes, p.status]));
+    expect(byMes["2024-01"]).toBe("atualizada");
+    expect(byMes["2024-02"]).toBe("invalidada");
+    expect(byMes["2024-03"]).toBe("invalidada");
   });
 });

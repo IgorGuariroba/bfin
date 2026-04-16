@@ -43,6 +43,13 @@
       "when": 1776337809146,
       "tag": "0005_friendly_gorgon",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776359621329,
+      "tag": "0006_elite_cable",
+      "breakpoints": true
     }
   ]
 }

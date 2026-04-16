@@ -833,55 +833,42 @@ describe("Transactions CRUD", () => {
     const contaId = await createAccount(testApp, userId, "Conta T");
     const categoriaId = await createCategory(testApp, "Alimentação", "despesa");
 
-    await testApp.client.unsafe(`
-      CREATE TABLE IF NOT EXISTS projecao (
-        conta_id UUID NOT NULL,
-        mes TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'valida',
-        PRIMARY KEY (conta_id, mes)
-      )
-    `);
+    await testApp.client`
+      INSERT INTO projecao (conta_id, mes, dados, status) VALUES
+        (${contaId}, '2023-12', '{}'::jsonb, 'atualizada'),
+        (${contaId}, '2024-01', '{}'::jsonb, 'atualizada'),
+        (${contaId}, '2024-02', '{}'::jsonb, 'atualizada')
+    `;
 
-    try {
-      await testApp.client`
-        INSERT INTO projecao (conta_id, mes, status) VALUES
-          (${contaId}, '2023-12', 'valida'),
-          (${contaId}, '2024-01', 'valida'),
-          (${contaId}, '2024-02', 'valida')
-      `;
+    const token = await signTestToken(keyPair, {
+      sub: "user18",
+      email: "user18@example.com",
+      name: "User18",
+    });
 
-      const token = await signTestToken(keyPair, {
-        sub: "user18",
-        email: "user18@example.com",
-        name: "User18",
-      });
+    const res = await testApp.app.inject({
+      method: "POST",
+      url: "/movimentacoes",
+      headers: { authorization: `Bearer ${token}` },
+      payload: {
+        contaId,
+        tipo: "despesa",
+        categoriaId,
+        valor: 100,
+        data: "2024-01-15",
+      },
+    });
 
-      const res = await testApp.app.inject({
-        method: "POST",
-        url: "/movimentacoes",
-        headers: { authorization: `Bearer ${token}` },
-        payload: {
-          contaId,
-          tipo: "despesa",
-          categoriaId,
-          valor: 100,
-          data: "2024-01-15",
-        },
-      });
+    expect(res.statusCode).toBe(201);
 
-      expect(res.statusCode).toBe(201);
+    const projections = await testApp.client<{ mes: string; status: string }[]>`
+      SELECT mes, status FROM projecao WHERE conta_id = ${contaId} ORDER BY mes
+    `;
 
-      const projections = await testApp.client<{ mes: string; status: string }[]>`
-        SELECT mes, status FROM projecao WHERE conta_id = ${contaId} ORDER BY mes
-      `;
-
-      const statusByMes = Object.fromEntries(projections.map((p) => [p.mes, p.status]));
-      expect(statusByMes["2023-12"]).toBe("valida");
-      expect(statusByMes["2024-01"]).toBe("invalidada");
-      expect(statusByMes["2024-02"]).toBe("invalidada");
-    } finally {
-      await testApp.client.unsafe(`DROP TABLE IF EXISTS projecao`);
-    }
+    const statusByMes = Object.fromEntries(projections.map((p) => [p.mes, p.status]));
+    expect(statusByMes["2023-12"]).toBe("atualizada");
+    expect(statusByMes["2024-01"]).toBe("invalidada");
+    expect(statusByMes["2024-02"]).toBe("invalidada");
   });
 
   it("invalidates projections from earliest month when transaction date moves backwards", async () => {
@@ -914,47 +901,34 @@ describe("Transactions CRUD", () => {
     });
     const created = JSON.parse(createRes.payload);
 
-    await testApp.client.unsafe(`
-      CREATE TABLE IF NOT EXISTS projecao (
-        conta_id UUID NOT NULL,
-        mes TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'valida',
-        PRIMARY KEY (conta_id, mes)
-      )
-    `);
+    await testApp.client`
+      INSERT INTO projecao (conta_id, mes, dados, status) VALUES
+        (${contaId}, '2024-02', '{}'::jsonb, 'atualizada'),
+        (${contaId}, '2024-03', '{}'::jsonb, 'atualizada'),
+        (${contaId}, '2024-04', '{}'::jsonb, 'atualizada'),
+        (${contaId}, '2024-05', '{}'::jsonb, 'atualizada'),
+        (${contaId}, '2024-06', '{}'::jsonb, 'atualizada')
+    `;
 
-    try {
-      await testApp.client`
-        INSERT INTO projecao (conta_id, mes, status) VALUES
-          (${contaId}, '2024-02', 'valida'),
-          (${contaId}, '2024-03', 'valida'),
-          (${contaId}, '2024-04', 'valida'),
-          (${contaId}, '2024-05', 'valida'),
-          (${contaId}, '2024-06', 'valida')
-      `;
+    const res = await testApp.app.inject({
+      method: "PUT",
+      url: `/movimentacoes/${created.id}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { data: "2024-03-15" },
+    });
 
-      const res = await testApp.app.inject({
-        method: "PUT",
-        url: `/movimentacoes/${created.id}`,
-        headers: { authorization: `Bearer ${token}` },
-        payload: { data: "2024-03-15" },
-      });
+    expect(res.statusCode).toBe(200);
 
-      expect(res.statusCode).toBe(200);
+    const projections = await testApp.client<{ mes: string; status: string }[]>`
+      SELECT mes, status FROM projecao WHERE conta_id = ${contaId} ORDER BY mes
+    `;
 
-      const projections = await testApp.client<{ mes: string; status: string }[]>`
-        SELECT mes, status FROM projecao WHERE conta_id = ${contaId} ORDER BY mes
-      `;
-
-      const statusByMes = Object.fromEntries(projections.map((p) => [p.mes, p.status]));
-      expect(statusByMes["2024-02"]).toBe("valida");
-      expect(statusByMes["2024-03"]).toBe("invalidada");
-      expect(statusByMes["2024-04"]).toBe("invalidada");
-      expect(statusByMes["2024-05"]).toBe("invalidada");
-      expect(statusByMes["2024-06"]).toBe("invalidada");
-    } finally {
-      await testApp.client.unsafe(`DROP TABLE IF EXISTS projecao`);
-    }
+    const statusByMes = Object.fromEntries(projections.map((p) => [p.mes, p.status]));
+    expect(statusByMes["2024-02"]).toBe("atualizada");
+    expect(statusByMes["2024-03"]).toBe("invalidada");
+    expect(statusByMes["2024-04"]).toBe("invalidada");
+    expect(statusByMes["2024-05"]).toBe("invalidada");
+    expect(statusByMes["2024-06"]).toBe("invalidada");
   });
 
   it("treats missing projecao table as no-op and still creates transaction", async () => {
@@ -963,31 +937,49 @@ describe("Transactions CRUD", () => {
     testApp = await createTestApp({ validateToken });
     await testApp.truncateAll();
     await testApp.client.unsafe(`DROP TABLE IF EXISTS projecao`);
-    await seedTipoCategorias(testApp);
-    const userId = await createUser(testApp, "user20", "user20@example.com");
-    const contaId = await createAccount(testApp, userId, "Conta V");
-    const categoriaId = await createCategory(testApp, "Alimentação", "despesa");
+    try {
+      await seedTipoCategorias(testApp);
+      const userId = await createUser(testApp, "user20", "user20@example.com");
+      const contaId = await createAccount(testApp, userId, "Conta V");
+      const categoriaId = await createCategory(testApp, "Alimentação", "despesa");
 
-    const token = await signTestToken(keyPair, {
-      sub: "user20",
-      email: "user20@example.com",
-      name: "User20",
-    });
+      const token = await signTestToken(keyPair, {
+        sub: "user20",
+        email: "user20@example.com",
+        name: "User20",
+      });
 
-    const res = await testApp.app.inject({
-      method: "POST",
-      url: "/movimentacoes",
-      headers: { authorization: `Bearer ${token}` },
-      payload: {
-        contaId,
-        tipo: "despesa",
-        categoriaId,
-        valor: 100,
-        data: "2024-01-20",
-      },
-    });
+      const res = await testApp.app.inject({
+        method: "POST",
+        url: "/movimentacoes",
+        headers: { authorization: `Bearer ${token}` },
+        payload: {
+          contaId,
+          tipo: "despesa",
+          categoriaId,
+          valor: 100,
+          data: "2024-01-20",
+        },
+      });
 
-    expect(res.statusCode).toBe(201);
+      expect(res.statusCode).toBe(201);
+    } finally {
+      await testApp.client.unsafe(`
+        CREATE TABLE IF NOT EXISTS projecao (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+          conta_id uuid NOT NULL,
+          mes varchar(7) NOT NULL,
+          dados jsonb NOT NULL,
+          status projecao_status DEFAULT 'atualizada' NOT NULL,
+          recalculado_em timestamp with time zone DEFAULT now() NOT NULL,
+          created_at timestamp with time zone DEFAULT now() NOT NULL,
+          updated_at timestamp with time zone DEFAULT now() NOT NULL,
+          CONSTRAINT projecao_conta_mes_unique UNIQUE(conta_id, mes),
+          CONSTRAINT projecao_conta_id_contas_id_fk
+            FOREIGN KEY (conta_id) REFERENCES contas(id) ON DELETE CASCADE
+        )
+      `);
+    }
   });
 
   it("returns 422 SYSTEM_GENERATED_RESOURCE when deleting movimentacao generated by debt payment", async () => {

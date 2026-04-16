@@ -1,5 +1,5 @@
 // Base schema file — prepared for future entities
-import { pgTable, uuid, timestamp, varchar, boolean, numeric, pgEnum, unique, integer, date } from "drizzle-orm/pg-core";
+import { pgTable, uuid, timestamp, varchar, boolean, numeric, pgEnum, unique, integer, date, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const healthCheck = pgTable("health_check", {
@@ -93,6 +93,29 @@ export const movimentacoes = pgTable("movimentacoes", {
   recorrente: boolean("recorrente").notNull().default(false),
   dataFim: timestamp("data_fim", { withTimezone: true, mode: "date" }),
   parcelaDividaId: uuid("parcela_divida_id").references(() => parcelasDivida.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const projecaoStatusEnum = pgEnum("projecao_status", ["atualizada", "invalidada"]);
+
+export const projecao = pgTable("projecao", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contaId: uuid("conta_id").notNull().references(() => contas.id, { onDelete: "cascade" }),
+  mes: varchar("mes", { length: 7 }).notNull(),
+  dados: jsonb("dados").notNull(),
+  status: projecaoStatusEnum("status").notNull().default("atualizada"),
+  recalculadoEm: timestamp("recalculado_em", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  unique("projecao_conta_mes_unique").on(table.contaId, table.mes),
+]);
+
+export const meta = pgTable("meta", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contaId: uuid("conta_id").notNull().unique().references(() => contas.id, { onDelete: "cascade" }),
+  porcentagemReserva: numeric("porcentagem_reserva", { precision: 5, scale: 2 }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

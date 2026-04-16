@@ -2,6 +2,12 @@ import { eq, and, ilike, count, desc } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { contas, contaUsuarios } from "../db/schema.js";
 import { NotFoundError } from "../lib/errors.js";
+import {
+  invalidateAllProjections,
+  getEarliestPersistedMonth,
+} from "./projection-invalidation.js";
+import { eventBus } from "../lib/event-bus.js";
+import { monthKey } from "../lib/month.js";
 
 export interface CreateAccountInput {
   nome: string;
@@ -136,6 +142,14 @@ export async function updateAccount(contaId: string, input: UpdateAccountInput) 
     throw new NotFoundError("Conta not found");
   }
 
+  const saldoInicialChanged =
+    input.saldoInicial !== undefined &&
+    String(input.saldoInicial) !== existing.saldoInicial;
+
+  if (saldoInicialChanged) {
+    await invalidateAllProjections(contaId);
+  }
+
   const [updated] = await db
     .update(contas)
     .set({
@@ -145,6 +159,12 @@ export async function updateAccount(contaId: string, input: UpdateAccountInput) 
     })
     .where(eq(contas.id, contaId))
     .returning();
+
+  if (saldoInicialChanged) {
+    const earliest = await getEarliestPersistedMonth(contaId);
+    const mesInicial = earliest ?? monthKey(new Date());
+    eventBus.emit("projecao:recalcular", { contaId, mesInicial });
+  }
 
   return {
     id: updated.id,
