@@ -1,137 +1,148 @@
 ## Why
 
-Hoje o MCP (`src/mcp/server.ts`) só expõe transporte **STDIO** — os clientes MCP precisam rodar `node dist/mcp/server.js` localmente e colar um `MCP_SERVICE_ACCOUNT_TOKEN` (JWT emitido manualmente) nas variáveis de ambiente do seu config. Isso limita o uso a Claude Desktop, Claude Code e outros clientes instalados localmente, com três problemas operacionais críticos:
+Hoje o MCP (`src/mcp/server.ts`) só expõe transporte **STDIO** — os clientes MCP precisam rodar `node dist/mcp/server.js` localmente, ter acesso direto ao Postgres (`DATABASE_URL`), e colar um `MCP_SERVICE_ACCOUNT_TOKEN` estático nas variáveis de ambiente do seu config.
 
-1. **Dor operacional**: cada máquina (notebook de casa, do trabalho, outro colaborador) precisa clonar o repo, instalar deps, buildar e configurar o JSON do cliente com token + `DATABASE_URL` + `OIDC_ISSUER_URL`. Tokens expirados quebram silenciosamente.
-2. **Rotação manual**: o token vive em arquivo de config local. Sem um fluxo OAuth, revogação/rotação é manual e propensa a erro.
-3. **Não suporta Conectores do Claude** (claude.ai/settings/connectors) nem ChatGPT Apps/Custom GPTs nem nenhum cliente Remote MCP. Esses clientes exigem **HTTP + SSE + OAuth 2.1** com Dynamic Client Registration (DCR) e descoberta via Protected Resource Metadata (PRM, RFC 9728).
+Esse modelo **não atende ao objetivo do projeto**: queremos que o BFin funcione como um **Conector do Claude** (claude.ai → Settings → Connectors) e em outros clientes Remote-MCP (ChatGPT Apps, Cursor web, mobile, etc.), onde o usuário:
 
-O objetivo desta mudança é **permitir que o MCP do BFin seja plugado como Remote Connector em qualquer LLM moderna** (claude.ai web, mobile, ChatGPT, Cursor, etc.) via fluxo OAuth padrão, sem comprometer o uso STDIO local existente (para quem ainda quiser).
+1. Cola uma URL pública do connector no cliente LLM
+2. É redirecionado pro fluxo OAuth, faz login (Google), autoriza escopos
+3. Começa a usar — sem instalar nada, sem receber credencial do banco, sem config local
+
+O transporte STDIO atual é **incompatível com esse fluxo** porque:
+
+- Exige Node, git, repo clonado, build e reinício manual do cliente em cada máquina do usuário
+- Exige credencial direta do Postgres no lado cliente (risco de segurança)
+- Não tem fluxo OAuth — token é colado manualmente e expira silenciosamente
+- Só funciona com clientes instalados localmente (Desktop/Code/Cursor). `claude.ai` web, mobile, ChatGPT e qualquer Remote-MCP ficam de fora
+
+Esta mudança **substitui** o transporte STDIO pelo HTTP+SSE com OAuth 2.1, atendendo o spec MCP Auth (`2025-06-18`) que os conectores do Claude implementam.
 
 ## What Changes
 
-### Novo transporte HTTP+SSE para o MCP
+### Substituição do transporte: STDIO → HTTP+SSE
 
-- Adiciona `StreamableHTTPServerTransport` do `@modelcontextprotocol/sdk` como segundo transporte do MCP, ao lado do STDIO atual.
-- Cria um novo entrypoint `src/mcp/http-server.ts` que:
-  - Inicia um servidor Fastify dedicado (ou monta sob o Fastify existente) expondo `POST /mcp` e `GET /mcp/sse`.
-  - Valida JWT OAuth em cada conexão e resolve a identidade do chamador para o mesmo `ServiceAccount` usado hoje pelo STDIO.
-  - Mantém um ciclo de vida de sessão por conexão SSE (Model Context Protocol session IDs).
-- O entrypoint STDIO (`src/mcp/server.ts`) permanece inalterado em comportamento externo (usuários que já usam MCP local seguem com o mesmo fluxo; a mudança de auth do STDIO fica fora do escopo).
+- O arquivo `src/mcp/server.ts` (entrypoint STDIO) é **removido** junto com os scripts `mcp:dev`/`mcp:start` do `package.json`.
+- A tool registry (`src/mcp/tools/*`), a camada de autorização (`src/mcp/authz.ts`), o contexto (`src/mcp/context.ts`) e o `buildMcpServer` (`src/mcp/rpc.ts`) são **reutilizados** sem mudança — só troca o transporte.
+- Novo transporte: `StreamableHTTPServerTransport` do `@modelcontextprotocol/sdk`, montado como plugin Fastify na API HTTP existente.
 
-### OAuth 2.1 Resource Server conforme MCP Auth Spec
+### Servidor MCP como OAuth 2.1 Resource Server
 
-O MCP Auth Spec (`2025-06-18`) exige que o servidor MCP atue como **OAuth 2.1 Resource Server** e delegue a emissão de tokens a um Authorization Server externo. Escolhemos **Auth0** como AS:
+O MCP Auth Spec (`2025-06-18`) exige que o servidor MCP atue como Resource Server e delegue a emissão de tokens a um Authorization Server externo. Usaremos **Auth0** como AS:
 
-- `GET /.well-known/oauth-protected-resource` — metadata do Resource Server (RFC 9728) apontando para o AS do Auth0.
-- `WWW-Authenticate: Bearer resource_metadata="..."` em `401` para clientes descobrirem o AS.
-- Aceita apenas Bearer tokens no header `Authorization: Bearer <jwt>`; nunca na query string.
-- Valida JWT contra JWKS do Auth0; exige claims `aud`, `iss`, `exp`, `scope`.
-- Mapeia `scope` OAuth (espaço-separado, formato `resource:action`) para o `ReadonlySet<string>` usado em `src/mcp/context.ts` e nos handlers de tool.
+- `GET /mcp/.well-known/oauth-protected-resource` — metadata do Resource Server (RFC 9728) apontando pro AS do Auth0
+- `WWW-Authenticate: Bearer resource_metadata="..."` em `401` para clientes descobrirem o AS
+- Aceita apenas Bearer tokens em `Authorization: Bearer <jwt>` (nunca query string)
+- Valida JWT contra JWKS do Auth0; exige claims `aud`, `iss`, `exp`, `scope`
+- Mapeia `scope` OAuth (espaço-separado, formato `resource:action`) pro `ReadonlySet<string>` usado em `src/mcp/context.ts` e nos handlers de tool
 
 ### Dynamic Client Registration (DCR)
 
-Conectores do Claude usam DCR (RFC 7591) para se registrarem automaticamente no AS. **Auth0 suporta DCR nativamente** (ligar em *Tenant Settings → OIDC Dynamic Application Registration*). Não precisaremos implementar o endpoint — apenas configurar.
+Conectores do Claude usam DCR (RFC 7591) pra se registrarem automaticamente no AS. **Auth0 suporta DCR nativamente** (ligar em *Tenant Settings → OIDC Dynamic Application Registration*). Não implementamos o endpoint — apenas configuramos no Auth0.
 
-### Mapeamento de identidade por token
+### Login Google dentro do Auth0
 
-Hoje o MCP tem um único `MCP_SUBJECT_USER_ID` fixo em env. No modo HTTP, cada conexão representa um usuário diferente:
+O Auth0 fica configurado com Google como Identity Provider social — o usuário clica "Continuar com Google" no consent screen do Auth0 e volta autenticado. Reusa o OAuth Client já criado em `accounts.google.com` pra este projeto.
 
-- A claim `sub` do JWT vira o `subject` do `ServiceAccount`.
-- A API mantém uma tabela `usuarios.id_provedor` → `usuarios.id`. Se o `sub` não existir, o primeiro acesso **provisiona** o usuário (nome/email vêm de claims adicionais `name`, `email` — opcional).
-- `actingUserId` é resolvido dinamicamente por conexão em vez de carregado no bootstrap.
+### Identidade por request + provisionamento automático
+
+Hoje o MCP tem um `MCP_SUBJECT_USER_ID` fixo em env. No modo HTTP, cada conexão representa um usuário diferente:
+
+- A claim `sub` do JWT vira o `subject` do `ServiceAccount`
+- Mantemos a tabela `usuarios.id_provedor` → `usuarios.id`. Se `sub` não existir, o primeiro acesso **provisiona** o usuário (nome/email de claims `name`, `email`)
+- `actingUserId` é resolvido dinamicamente por conexão
+- Allowlist de emails (`MCP_PROVISIONING_ALLOWED_EMAILS`) controla quem pode ser provisionado automaticamente
 
 ### Escopos customizados no Auth0
 
-A API do Auth0 é criada com os mesmos escopos que o MCP já usa (`accounts:read`, `transactions:write`, etc. — ver `docs/mcp.md`). Usuários autorizam esses escopos no consent screen do Auth0 ao plugar o connector.
-
-### Login social via Google dentro do Auth0
-
-O Auth0 fica configurado com Google como Identity Provider social — usuários clicam "Login with Google" no consent screen do Auth0 e voltam autenticados. Isso reutiliza o credencial Google que já foi criada em `accounts.google.com` para este projeto.
-
-### Modo STDIO preservado
-
-- Entrypoint `src/mcp/server.ts` (scripts `mcp:dev`/`mcp:start`) segue funcionando com `MCP_SERVICE_ACCOUNT_TOKEN` estático.
-- `loadServiceAccount` em `src/mcp/identity.ts` é refatorado para aceitar dois modos: (a) token do env (STDIO, comportamento atual) e (b) token de request HTTP (novo modo).
+A API do Auth0 é criada com os mesmos escopos que o MCP já usa (`accounts:read`, `transactions:write`, etc. — ver `docs/mcp.md`). Usuários autorizam esses escopos no consent screen ao plugar o connector.
 
 ### Deploy
 
-- A API HTTP (Fastify) já está em produção via Traefik em `https://api.bfincont.com.br/v2/*`. As rotas MCP serão montadas sob `/v2/mcp/*` (path-based routing existente, zero mudança de infra).
-- **URL final do Connector**: `https://api.bfincont.com.br/v2/mcp` (endpoint `POST`) e `https://api.bfincont.com.br/v2/mcp/sse` (stream GET).
+- A API Fastify (`src/server.ts`) já está em produção via Traefik em `https://api.bfincont.com.br/v2/*`
+- As rotas MCP são montadas como plugin Fastify sob `/mcp/*`, ficando publicamente acessíveis em `https://api.bfincont.com.br/v2/mcp/*`
+- **URL final do Connector (o que o usuário cola em claude.ai):** `https://api.bfincont.com.br/v2/mcp`
 
 ## Capabilities
 
 ### New Capabilities
 
-- `mcp-http-transport`: servidor MCP acessível via HTTP+SSE (`StreamableHTTPServerTransport`) como segundo transporte, permitindo uso como Remote Connector em LLMs que suportem MCP Auth Spec (2025-06-18).
-- `mcp-oauth-resource-server`: endpoints de metadata (RFC 9728), validação Bearer JWT contra Authorization Server externo (Auth0), e rejeição consistente com `WWW-Authenticate`.
-- `mcp-per-request-identity`: resolução dinâmica de `ServiceAccount`/`actingUserId` por token JWT em cada request HTTP, com provisionamento automático na primeira entrada.
+- `mcp-http-transport`: servidor MCP acessível via HTTP+SSE (`StreamableHTTPServerTransport`) como plugin Fastify na API existente, permitindo uso como Remote Connector em LLMs que suportem MCP Auth Spec (`2025-06-18`).
+- `mcp-oauth-resource-server`: endpoints de metadata (RFC 9728), validação Bearer JWT contra Authorization Server externo (Auth0), rejeição consistente com `WWW-Authenticate` e mapeamento de scopes OAuth pro modelo interno.
+- `mcp-per-request-identity`: resolução dinâmica de `ServiceAccount`/`actingUserId` por token JWT em cada request, com provisionamento automático controlado por allowlist.
 
 ### Modified Capabilities
 
-- `mcp-server`: ganha um segundo entrypoint HTTP (`src/mcp/http-server.ts`) e scripts `mcp:http:dev`/`mcp:http:start`. Comportamento STDIO preservado.
-- `mcp-service-account`: refatoração de `loadServiceAccount` para aceitar token via env (STDIO) ou via request (HTTP). Cria-se `loadServiceAccountFromToken(token)` reutilizado pelos dois modos.
-- `oidc-integration`: `src/plugins/oidc.ts` é estendido para expor um helper `validateBearerForMcp(token)` que valida audience/scope MCP (distinta da audience da API HTTP existente).
+- `mcp-server`: transporte muda de STDIO (removido) pra HTTP+SSE (único). `src/mcp/server.ts` deixa de existir; entrypoint vira o Fastify principal com plugin MCP registrado.
+- `mcp-service-account`: `loadServiceAccount` passa a receber token da request em vez de ler de env. A assinatura vira `loadServiceAccountFromToken({ token, validator, provisioning })`. Env vars `MCP_SERVICE_ACCOUNT_TOKEN` e `MCP_SUBJECT_USER_ID` deixam de ser necessárias.
+- `oidc-integration`: `src/plugins/oidc.ts` é estendido com helper `validateBearerForMcp(token)` (audience MCP distinta da audience da API HTTP). Nada na validação da API HTTP existente muda.
 
 ## Impact
 
 ### Novos arquivos
 
-- `src/mcp/http-server.ts` — entrypoint HTTP do MCP.
-- `src/mcp/http-transport.ts` — wrapper em torno de `StreamableHTTPServerTransport` com auth middleware.
-- `src/mcp/oauth/metadata.ts` — handler do `/.well-known/oauth-protected-resource`.
+- `src/plugins/mcp-http.ts` — plugin Fastify que registra as rotas MCP e o transporte HTTP+SSE.
 - `src/mcp/oauth/bearer-auth.ts` — extração e validação Bearer JWT.
-- `src/mcp/oauth/provisioning.ts` — lógica de criar-se-não-existe para `usuarios` baseado em claim `sub`.
-- `docs/mcp-http.md` — guia de deploy e de como plugar em Claude/ChatGPT como connector.
+- `src/mcp/oauth/metadata.ts` — handler do `/.well-known/oauth-protected-resource`.
+- `src/mcp/oauth/provisioning.ts` — lógica de criar-se-não-existe pra `usuarios` baseado em claim `sub`.
+- `src/mcp/session-store.ts` — gerenciamento de sessões MCP (in-memory Map<sessionId, transport>) com TTL.
+- `docs/mcp.md` — reescrita: remove instruções STDIO, adiciona guia de plugar no claude.ai como connector.
 
 ### Arquivos alterados
 
-- `src/mcp/identity.ts` — split em `loadServiceAccountFromEnv` (STDIO) e `loadServiceAccountFromToken` (HTTP) reutilizando o mesmo core.
-- `src/mcp/server.ts` — sem mudança funcional; permanece STDIO.
-- `src/plugins/oidc.ts` — adiciona helper para audience MCP.
-- `src/config.ts` — adiciona schema `httpMcpConfigSchema` com `MCP_HTTP_PORT`, `MCP_HTTP_BASE_URL`, `MCP_AUDIENCE_HTTP`, `OIDC_ISSUER_URL` (já existe).
-- `src/server.ts` (API HTTP) — opcional: montar as rotas MCP sob o mesmo servidor Fastify em `/mcp/*` em vez de processo separado (decisão no task 2.x).
-- `package.json` — novos scripts `mcp:http:dev` e `mcp:http:start`; dependência `@modelcontextprotocol/sdk` já existe.
-- `docker-compose.yml` e `docker-compose.prod.yml` — expor porta adicional para MCP HTTP se rodar processo separado (se montar no Fastify existente, sem mudança).
-- `docs/mcp.md` — link para `docs/mcp-http.md` e nota sobre quando usar cada transporte.
+- `src/mcp/identity.ts` — `loadServiceAccount` assina apenas `{ token, validator, provisioning }`; remove leitura de `MCP_SERVICE_ACCOUNT_TOKEN`/`MCP_SUBJECT_USER_ID` do env.
+- `src/plugins/oidc.ts` — adiciona helper pra audience MCP.
+- `src/config.ts` — remove `mcpConfigSchema` STDIO (`MCP_OIDC_AUDIENCE`, `MCP_SERVICE_ACCOUNT_TOKEN`, `MCP_SUBJECT_USER_ID`), adiciona `httpMcpConfigSchema` (`MCP_HTTP_ENABLED`, `MCP_HTTP_BASE_URL`, `MCP_AUDIENCE_HTTP`, `MCP_AUTH_SERVER_URL`, `MCP_PROVISIONING_ALLOWED_EMAILS`).
+- `src/server.ts` — registra o plugin `mcp-http` após plugins existentes.
+- `package.json` — remove scripts `mcp:dev` e `mcp:start`.
+
+### Arquivos removidos
+
+- `src/mcp/server.ts` — entrypoint STDIO.
 
 ### Novas variáveis de ambiente
 
-| Variável | Obrigatória no modo HTTP | Descrição |
+| Variável | Obrigatória | Descrição |
 |---|---|---|
-| `MCP_HTTP_ENABLED` | opcional | `true` para subir o transporte HTTP (default `false`). Permite gate por ambiente. |
-| `MCP_HTTP_BASE_URL` | ✓ | URL pública onde o MCP HTTP está acessível (ex.: `https://api.bfincont.com.br/v2/mcp`). Usado no `resource` da metadata RFC 9728. |
-| `MCP_AUDIENCE_HTTP` | ✓ | Audience esperado nos tokens OAuth (ex.: `https://mcp.bfincont.com.br`). Configurado no Auth0 como API Identifier. |
+| `MCP_HTTP_ENABLED` | opcional | `true` para registrar o plugin MCP HTTP (default `true` em produção). Gate por ambiente. |
+| `MCP_HTTP_BASE_URL` | ✓ | URL pública onde o MCP está acessível (ex.: `https://api.bfincont.com.br/v2/mcp`). Usado no `resource` da metadata RFC 9728. |
+| `MCP_AUDIENCE_HTTP` | ✓ | Audience esperada nos tokens OAuth (ex.: `https://mcp.bfincont.com.br`). Configurada no Auth0 como API Identifier. |
 | `MCP_AUTH_SERVER_URL` | ✓ | URL do Authorization Server (Auth0), ex.: `https://bfin.us.auth0.com`. |
-| `MCP_PROVISIONING_ALLOWED_EMAILS` | opcional | Lista (CSV ou regex) de emails autorizados a serem provisionados. Se vazio, provisionamento automático é desabilitado e `sub` precisa já existir. |
+| `MCP_PROVISIONING_ALLOWED_EMAILS` | opcional | Lista (CSV ou regex) de emails autorizados a serem provisionados automaticamente. Se vazio, provisionamento é desabilitado (o `sub` precisa já existir em `usuarios`). |
+
+### Variáveis de ambiente removidas
+
+- `MCP_OIDC_AUDIENCE`
+- `MCP_SERVICE_ACCOUNT_TOKEN`
+- `MCP_SUBJECT_USER_ID`
 
 ### Infra
 
-- Nenhuma mudança em Traefik (path `/v2/mcp/*` já roteado pela API HTTP existente).
+- Nenhuma mudança em Traefik (path `/v2/mcp/*` já roteado pela API HTTP via path-based routing do override `docker-compose.traefik.yml`).
 - Nova API no Auth0: `Bfin MCP` com `Audience = https://mcp.bfincont.com.br` e permissions = lista de escopos do MCP.
 - Dynamic Client Registration habilitado no tenant Auth0.
-- Google como Social Connection no Auth0 (reusa OAuth Client já criado em Google Cloud).
+- Google como Social Connection no Auth0.
 
 ### Segurança
 
-- Sem impacto em produção atual: API HTTP segue funcionando com OIDC Google como está. Os tokens OAuth do MCP são emitidos pelo Auth0 (separado). A validação MCP usa audience própria, não vaza acesso pra API HTTP.
-- Provisionamento automático é um risco — por isso `MCP_PROVISIONING_ALLOWED_EMAILS` ou desabilitado por padrão. Em produção, provisionar usuários apenas via backoffice e exigir que `sub` já exista.
-- Tokens OAuth têm `exp` respeitado; revogação via Auth0 console.
+- **Usuários não recebem credencial do banco** — toda comunicação passa pelo servidor, que valida escopos antes de qualquer query.
+- Sem impacto na API HTTP existente: segue funcionando com OIDC Google como está. Os tokens OAuth do MCP são emitidos pelo Auth0 (audience própria, sem cross-scope com a API HTTP).
+- Provisionamento automático controlado por `MCP_PROVISIONING_ALLOWED_EMAILS`. Se vazio, admin precisa inserir o `usuarios` manualmente antes do primeiro login.
+- Tokens respeitam `exp`; revogação via Auth0 console (revoga o grant → próxima request do cliente volta 401 → Claude força reauth).
 
-### Sem impacto
+### Breaking changes
 
-- Clientes STDIO existentes (Claude Desktop/Code com config local) seguem funcionando sem mudança.
-- Demais rotas da API HTTP (`/accounts`, `/transactions`, etc.) não tocam no novo código OAuth MCP.
-- Banco: sem migrations novas; reusa `usuarios` existente.
+- Quem usa MCP STDIO hoje (se houver usuário ativo nesse modo) **perde esse modo**. Considerando que o projeto ainda não está em produção como connector, o impacto é zero em relação à base ativa.
+- Variáveis `MCP_OIDC_AUDIENCE`, `MCP_SERVICE_ACCOUNT_TOKEN`, `MCP_SUBJECT_USER_ID` deixam de ser lidas — remover do `.env` em deploys existentes (sem erro, só ficam ignoradas).
 
 ## Ordem de execução sugerida
 
-1. Configuração Auth0 (criar tenant, API `Bfin MCP`, permissions, DCR, Google social).
-2. Fundação de código (split de `identity.ts`, novos módulos OAuth, metadata endpoint).
-3. Transporte HTTP no Fastify existente, por trás de flag `MCP_HTTP_ENABLED`.
-4. Testes locais com `curl` + `mcp-inspector`.
-5. Deploy em VPS (rebuild imagem, atualizar `.env`).
-6. Plugar no Claude (claude.ai/settings/connectors) e validar fluxo completo.
-7. Documentar em `docs/mcp-http.md` + revisão final.
+1. Configuração Auth0 (tenant, API `Bfin MCP`, permissions, DCR, Google social)
+2. Fundação de código OAuth (bearer-auth, metadata, provisioning, validator)
+3. Plugin Fastify `mcp-http` com transporte HTTP+SSE e sessões
+4. Remoção do STDIO (`src/mcp/server.ts`, scripts, env vars antigas)
+5. Testes locais com MCP Inspector + token Auth0 de dev
+6. Deploy na VPS (rebuild imagem, atualizar `.env`)
+7. Plugar no claude.ai (connectors) e validar fluxo completo
+8. Documentação (`docs/mcp.md` reescrita)
 
 Detalhamento em `tasks.md`.
