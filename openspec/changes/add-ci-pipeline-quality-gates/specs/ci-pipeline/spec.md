@@ -23,15 +23,19 @@ O workflow `ci.yml` SHALL declarar jobs independentes que executam em paralelo e
 - **THEN** os jobs `typecheck`, `test`, `coverage-sonar` e `build` continuam sua execução independentemente e reportam seu resultado individual
 
 ### Requirement: Composite action de setup compartilhada
-O repositório SHALL fornecer uma composite action local em `.github/actions/setup-node-deps/action.yml` que encapsula checkout, configuração de Node 22 com cache npm e instalação de dependências via `npm ci`.
+O repositório SHALL fornecer uma composite action local em `.github/actions/setup-node-deps/action.yml` que encapsula a configuração de Node 22 com cache npm e a instalação de dependências via `npm ci`. O checkout do repositório é responsabilidade do job chamador (pré-requisito do GitHub Actions para resolver composite actions locais), e cada job executa `actions/checkout@v4` antes de invocar a composite action.
 
 #### Scenario: Reutilização por todos os jobs
 - **WHEN** um job do `ci.yml` precisa preparar o ambiente Node
-- **THEN** ele usa `uses: ./.github/actions/setup-node-deps` em vez de duplicar os steps de checkout/setup/install
+- **THEN** ele faz `uses: actions/checkout@v4` e em seguida `uses: ./.github/actions/setup-node-deps`, em vez de duplicar os steps de setup/install
 
 #### Scenario: Alteração centralizada
 - **WHEN** a versão do Node precisa ser atualizada
 - **THEN** a mudança é feita apenas em `.github/actions/setup-node-deps/action.yml` e propaga para todos os jobs automaticamente
+
+#### Scenario: Parametrização de checkout por job
+- **WHEN** um job precisa de histórico completo (ex.: `coverage-sonar` para blame no SonarCloud)
+- **THEN** ele declara `fetch-depth: 0` no próprio step de checkout, sem precisar mudar a composite action
 
 ### Requirement: Job lint
 O job `lint` SHALL executar `npm run lint` e falhar caso o ESLint reporte erros.

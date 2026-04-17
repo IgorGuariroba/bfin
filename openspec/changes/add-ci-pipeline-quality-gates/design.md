@@ -30,9 +30,11 @@ A mudança introduz o pipeline completo de CI com jobs desacoplados e proteção
 **Alternativa considerada:** um workflow por gate (`lint.yml`, `test.yml`, etc.). Descartado por duplicar os triggers e dificultar a exigência conjunta na Branch Protection.
 
 ### Decisão 2: Composite action local para setup vs. copiar steps
-**Escolhido:** `.github/actions/setup-node-deps/action.yml` com os steps de checkout + setup-node + `npm ci`.
+**Escolhido:** `.github/actions/setup-node-deps/action.yml` com os steps de setup-node + `npm ci`. Cada job faz `actions/checkout` como primeiro passo antes de invocar a composite action.
 
-**Rationale:** Mantém baixo acoplamento entre jobs (cada um chama `uses: ./.github/actions/setup-node-deps`) sem duplicar ~8 linhas de YAML por job. Se a versão de Node mudar ou o cache precisar de ajuste, altera-se em um lugar.
+**Rationale:** Mantém baixo acoplamento entre jobs (cada um chama `uses: ./.github/actions/setup-node-deps`) sem duplicar os steps de setup/install. Se a versão de Node mudar ou o cache precisar de ajuste, altera-se em um lugar.
+
+**Restrição técnica:** o GitHub só consegue resolver `uses: ./caminho` depois que a action está em disco. Isso obriga o checkout a ficar no job (antes da invocação da composite), não dentro da action. O trade-off é repetir uma linha por job, mas isso permite também que cada job controle parâmetros específicos do checkout (ex.: `coverage-sonar` usa `fetch-depth: 0` para o SonarCloud).
 
 **Alternativa:** reusable workflow (`workflow_call`). Mais pesado para algo tão simples; composite actions são a ferramenta idiomática para este caso.
 

@@ -16,6 +16,10 @@ The API will be available at `http://127.0.0.1:3000`.
 
 See [docs/deploy.md](docs/deploy.md) for environment variables, production compose usage, migration behavior, and smoke tests.
 
+## CI & Branch Protection
+
+The CI pipeline, quality gates and branch protection workflow are documented in [docs/ci.md](docs/ci.md).
+
 ## MCP server
 
 BFin also ships a second entrypoint — an MCP (Model Context Protocol) server over
