@@ -125,9 +125,40 @@
   - Valida `Mcp-Session-Id` no header
   - Chama `tools/list` e confere que `mcp.whoami` aparece
 
-## 7. Deploy na VPS
+## 7. Operação: CORS, rate limit, erros, auditoria, sessões
 
-- [ ] 7.1 Atualizar `/home/deploy/bfin-new/.env`:
+- [ ] 7.0 **CORS**: o cliente claude.ai é `https://claude.ai`. Registrar `@fastify/cors` (se ainda não estiver) com allowlist explícita `["https://claude.ai", "https://app.claude.com", "http://localhost:*"]` aplicada **apenas** às rotas `/mcp/*`. Sem CORS correto, o browser do Claude não consegue sequer fazer o preflight. Incluir `OPTIONS /mcp` e `OPTIONS /mcp/sse`
+- [ ] 7.1 **Rate limit**: `@fastify/rate-limit` com buckets diferentes:
+  - `/mcp/.well-known/*`: 60 req/min por IP (público)
+  - `/mcp` e `/mcp/sse` autenticados: 120 tool calls/min **por `sub` do JWT** (não por IP, para não punir usuários atrás do mesmo NAT)
+- [ ] 7.2 **Mapeamento de erros de negócio → JSON-RPC**: criar `src/mcp/errors.ts` que traduz:
+  - `BusinessRuleError` → `{ code: -32602, message }` (Invalid params)
+  - `NotFoundError` → `{ code: -32001, message, data: { type: "not_found" } }`
+  - `SystemGeneratedResourceError` → `{ code: -32003, message }`
+  - Qualquer outro → `{ code: -32603, message: "Internal error" }` (e loga o erro cru em stderr)
+  - Ligar no `rpc.ts` via interceptor que envolve `handler()` de cada tool
+- [ ] 7.3 **Audit log** (obrigatório em projeto financeiro): cada chamada de tool registra em `pino` (nível `info`) um evento estruturado:
+  - `ts`, `userId`, `sub`, `tool`, `scope`, `sessionId`, `durationMs`, `outcome` (success/error), `errorCode` (se houver), `inputHash` (hash SHA256 do payload, não o payload cru — evita logar CPF, valores, etc.)
+  - Em `docs/mcp.md`, explicar como buscar por `userId` no `docker logs`
+- [ ] 7.4 **Session store Redis** (o Redis já roda no compose existente `bfin-redis-1`): criar `src/mcp/session-store-redis.ts` implementando a mesma interface de `session-store.ts`; habilitado por `MCP_SESSION_STORE=redis` (default `memory` em dev, `redis` em prod). Sessões resistem a restart e permitem escalar horizontalmente se a VPS crescer
+- [ ] 7.5 **Descrições de scopes no Auth0**: em cada permission criada no step 1.5, preencher o campo **Description** com texto amigável em português (ex.: `accounts:read` → "Ver suas contas bancárias e cartões"). Isso aparece no consent screen do Auth0 que o usuário vê ao conectar — é a última chance de deixar claro o que o connector acessa
+- [ ] 7.6 **Métricas Prometheus**: estender `/metrics` (autenticado via `METRICS_TOKEN`) com:
+  - `bfin_mcp_tool_calls_total{tool, outcome}`
+  - `bfin_mcp_tool_duration_seconds{tool}` (histogram)
+  - `bfin_mcp_active_sessions`
+  - `bfin_mcp_auth_failures_total{reason}` (token ausente, expirado, inválido, user não provisionado)
+- [ ] 7.7 **LGPD/GDPR — direito ao esquecimento**: adicionar comando `npm run mcp:delete-user -- --email=<email>` que:
+  - Encontra `usuarios.id_provedor = email`
+  - Remove user do Auth0 via Management API
+  - Deleta `usuarios` e tudo em cascade (ou bloqueia se tiver `contas` com coproprietários)
+  - Registra ação no audit log
+- [ ] 7.8 **Revogação**: documentar em `docs/mcp.md` o fluxo:
+  - Usuário quer desconectar → remove connector no claude.ai
+  - Admin quer revogar → Auth0 Dashboard → Applications → deleta o app criado via DCR; ou Users → Revoke Grants
+
+## 8. Deploy na VPS
+
+- [ ] 8.1 Atualizar `/home/deploy/bfin-new/.env`:
   - Remover `MCP_OIDC_AUDIENCE`, `MCP_SERVICE_ACCOUNT_TOKEN`, `MCP_SUBJECT_USER_ID`
   - Adicionar:
     ```
@@ -136,16 +167,20 @@
     MCP_AUDIENCE_HTTP=https://mcp.bfincont.com.br
     MCP_AUTH_SERVER_URL=https://bfin.us.auth0.com
     MCP_PROVISIONING_ALLOWED_EMAILS=1g0r.guari@gmail.com
+    MCP_SESSION_STORE=redis
+    REDIS_URL=redis://redis:6379
     ```
-- [ ] 7.2 Rebuild: `docker compose -f docker-compose.yml -f docker-compose.traefik.yml up -d --build`
-- [ ] 7.3 Validar metadata: `curl -s https://api.bfincont.com.br/v2/mcp/.well-known/oauth-protected-resource | jq`
-- [ ] 7.4 Validar 401 sem token: `curl -i -X POST https://api.bfincont.com.br/v2/mcp -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"initialize"}'` — conferir status 401 e header `WWW-Authenticate`
-- [ ] 7.5 Checar logs: `docker logs bfin-new-api-1 --tail 50` — sem erros de subida do plugin
+- [ ] 8.2 Rebuild: `docker compose -f docker-compose.yml -f docker-compose.traefik.yml up -d --build`
+- [ ] 8.3 Validar metadata: `curl -s https://api.bfincont.com.br/v2/mcp/.well-known/oauth-protected-resource | jq`
+- [ ] 8.4 Validar 401 sem token: `curl -i -X POST https://api.bfincont.com.br/v2/mcp -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"initialize"}'` — conferir status 401 e header `WWW-Authenticate`
+- [ ] 8.5 Validar CORS preflight: `curl -i -X OPTIONS https://api.bfincont.com.br/v2/mcp -H 'Origin: https://claude.ai' -H 'Access-Control-Request-Method: POST'` — conferir headers `Access-Control-Allow-Origin` e `Access-Control-Allow-Methods`
+- [ ] 8.6 Checar logs: `docker logs bfin-new-api-1 --tail 50` — sem erros de subida do plugin
+- [ ] 8.7 Validar que Redis tem sessões ativas após um teste E2E: `docker exec redis redis-cli KEYS 'mcp:session:*'`
 
-## 8. Integração com clientes MCP
+## 9. Integração com clientes MCP
 
-- [ ] 8.1 **MCP Inspector (debug)**: `npx @modelcontextprotocol/inspector`, adicionar connector URL `https://api.bfincont.com.br/v2/mcp`, token do step 6.6, validar `tools/list`
-- [ ] 8.2 **claude.ai Connectors** (fluxo principal):
+- [ ] 9.1 **MCP Inspector (debug)**: `npx @modelcontextprotocol/inspector`, adicionar connector URL `https://api.bfincont.com.br/v2/mcp`, token do step 6.6, validar `tools/list`
+- [ ] 9.2 **claude.ai Connectors** (fluxo principal):
   - claude.ai → Settings → Connectors → **Add custom connector**
   - URL: `https://api.bfincont.com.br/v2/mcp`
   - Claude detecta metadata (RFC 9728) → inicia OAuth Authorization Code + PKCE
@@ -154,17 +189,17 @@
   - Consent screen mostra escopos solicitados → **Authorize**
   - Connector aparece como **Connected**
   - Em uma conversa: ativa o connector, testa `list my transactions from last month`
-- [ ] 8.3 Validar revogação:
+- [ ] 9.3 Validar revogação:
   - Auth0 Dashboard → Applications → remover o app criado via DCR
   - Próxima request do Claude retorna 401 → Claude reinicia OAuth flow
-- [ ] 8.4 Validar com segundo usuário (opcional):
+- [ ] 9.4 Validar com segundo usuário (opcional):
   - Adicionar segundo email em `MCP_PROVISIONING_ALLOWED_EMAILS`
   - Rebuild/restart
   - Testar que ele consegue conectar e suas actions vão como identidade própria
 
-## 9. Documentação
+## 10. Documentação
 
-- [ ] 9.1 Reescrever `docs/mcp.md` do zero:
+- [ ] 10.1 Reescrever `docs/mcp.md` do zero:
   - Arquitetura (MCP como Resource Server OAuth, Auth0 como AS, login Google)
   - URL pública: `https://api.bfincont.com.br/v2/mcp`
   - Passo-a-passo de adição em claude.ai/settings/connectors (com prints se possível)
@@ -174,15 +209,15 @@
     - Automaticamente via `MCP_PROVISIONING_ALLOWED_EMAILS`
     - Manualmente via SQL (exemplo de `INSERT INTO usuarios`)
   - Troubleshooting: 401 (token ausente/inválido), 403 (user not found), session expirada
-- [ ] 9.2 Atualizar `README.md` com linha destacando: "BFin expõe um Remote MCP em `https://api.bfincont.com.br/v2/mcp` — pluggável em Claude/ChatGPT via OAuth"
-- [ ] 9.3 Adicionar seção no `README.md` em "Deploy" referenciando o plugin MCP HTTP e suas env vars
+- [ ] 10.2 Atualizar `README.md` com linha destacando: "BFin expõe um Remote MCP em `https://api.bfincont.com.br/v2/mcp` — pluggável em Claude/ChatGPT via OAuth"
+- [ ] 10.3 Adicionar seção no `README.md` em "Deploy" referenciando o plugin MCP HTTP e suas env vars
 
-## 10. Limpeza e PR
+## 11. Limpeza e PR
 
-- [ ] 10.1 Rodar `npm run lint && npm run typecheck && npm test` localmente — tudo verde
-- [ ] 10.2 Abrir PR pra `master` com título `feat(mcp): replace STDIO transport with HTTP+SSE OAuth for Claude Connectors`
-- [ ] 10.3 Aguardar CI verde (pipeline de `openspec/changes/add-ci-pipeline-quality-gates` já existente) e aprovar
-- [ ] 10.4 Após merge, arquivar este change movendo pra `openspec/changes/archive/<data>-add-mcp-http-oauth-transport/` (convenção existente)
+- [ ] 11.1 Rodar `npm run lint && npm run typecheck && npm test` localmente — tudo verde
+- [ ] 11.2 Abrir PR pra `master` com título `feat(mcp): replace STDIO transport with HTTP+SSE OAuth for Claude Connectors`
+- [ ] 11.3 Aguardar CI verde (pipeline de `openspec/changes/add-ci-pipeline-quality-gates` já existente) e aprovar
+- [ ] 11.4 Após merge, arquivar este change movendo pra `openspec/changes/archive/<data>-add-mcp-http-oauth-transport/` (convenção existente)
 
 ## Referências técnicas
 

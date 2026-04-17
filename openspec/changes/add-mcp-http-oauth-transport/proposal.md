@@ -69,6 +69,9 @@ A API do Auth0 é criada com os mesmos escopos que o MCP já usa (`accounts:read
 - `mcp-http-transport`: servidor MCP acessível via HTTP+SSE (`StreamableHTTPServerTransport`) como plugin Fastify na API existente, permitindo uso como Remote Connector em LLMs que suportem MCP Auth Spec (`2025-06-18`).
 - `mcp-oauth-resource-server`: endpoints de metadata (RFC 9728), validação Bearer JWT contra Authorization Server externo (Auth0), rejeição consistente com `WWW-Authenticate` e mapeamento de scopes OAuth pro modelo interno.
 - `mcp-per-request-identity`: resolução dinâmica de `ServiceAccount`/`actingUserId` por token JWT em cada request, com provisionamento automático controlado por allowlist.
+- `mcp-error-translation`: mapeamento de erros de domínio (`BusinessRuleError`, `NotFoundError`, `SystemGeneratedResourceError`) para códigos JSON-RPC padronizados que o Claude consegue exibir de forma amigável.
+- `mcp-audit-log`: registro estruturado de cada tool call (usuário, scope, tool, duração, outcome, hash do input) para fins de debug e rastreabilidade em projeto financeiro.
+- `mcp-session-store`: persistência de sessões SSE em Redis (com fallback em memória em dev), tornando o MCP resiliente a restart do processo e permitindo escalar horizontalmente.
 
 ### Modified Capabilities
 
@@ -84,7 +87,10 @@ A API do Auth0 é criada com os mesmos escopos que o MCP já usa (`accounts:read
 - `src/mcp/oauth/bearer-auth.ts` — extração e validação Bearer JWT.
 - `src/mcp/oauth/metadata.ts` — handler do `/.well-known/oauth-protected-resource`.
 - `src/mcp/oauth/provisioning.ts` — lógica de criar-se-não-existe pra `usuarios` baseado em claim `sub`.
-- `src/mcp/session-store.ts` — gerenciamento de sessões MCP (in-memory Map<sessionId, transport>) com TTL.
+- `src/mcp/session-store.ts` — interface de sessões (in-memory default).
+- `src/mcp/session-store-redis.ts` — implementação Redis (produção).
+- `src/mcp/errors.ts` — mapeamento de erros de domínio pra códigos JSON-RPC.
+- `scripts/delete-mcp-user.ts` — comando LGPD/GDPR pra remover usuário do banco e revogar no Auth0.
 - `docs/mcp.md` — reescrita: remove instruções STDIO, adiciona guia de plugar no claude.ai como connector.
 
 ### Arquivos alterados
@@ -108,6 +114,8 @@ A API do Auth0 é criada com os mesmos escopos que o MCP já usa (`accounts:read
 | `MCP_AUDIENCE_HTTP` | ✓ | Audience esperada nos tokens OAuth (ex.: `https://mcp.bfincont.com.br`). Configurada no Auth0 como API Identifier. |
 | `MCP_AUTH_SERVER_URL` | ✓ | URL do Authorization Server (Auth0), ex.: `https://bfin.us.auth0.com`. |
 | `MCP_PROVISIONING_ALLOWED_EMAILS` | opcional | Lista (CSV ou regex) de emails autorizados a serem provisionados automaticamente. Se vazio, provisionamento é desabilitado (o `sub` precisa já existir em `usuarios`). |
+| `MCP_SESSION_STORE` | opcional | `memory` (default em dev) ou `redis` (recomendado em prod). |
+| `REDIS_URL` | ✓ se `MCP_SESSION_STORE=redis` | URL do Redis (já existe no compose: `redis://redis:6379`). |
 
 ### Variáveis de ambiente removidas
 
