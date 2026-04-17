@@ -87,3 +87,32 @@ export const config: Config = new Proxy({} as Config, {
     return prop in cachedConfig;
   },
 });
+
+const mcpConfigSchema = z.object({
+  MCP_OIDC_AUDIENCE: z.string().min(1, "MCP_OIDC_AUDIENCE cannot be empty"),
+  MCP_SERVICE_ACCOUNT_TOKEN: z.string().min(1, "MCP_SERVICE_ACCOUNT_TOKEN cannot be empty"),
+  MCP_SUBJECT_USER_ID: z.string().uuid("MCP_SUBJECT_USER_ID must be a UUID"),
+});
+
+export type McpConfig = {
+  oidcAudience: string;
+  serviceAccountToken: string;
+  subjectUserId: string;
+};
+
+export function loadMcpConfig(env: NodeJS.ProcessEnv = process.env): McpConfig {
+  const parsed = mcpConfigSchema.safeParse(env);
+
+  if (!parsed.success) {
+    const issues = parsed.error.issues
+      .map((issue) => `  - ${issue.path.join(".")}: ${issue.message}`)
+      .join("\n");
+    throw new ConfigError(`Invalid MCP environment variables:\n${issues}`);
+  }
+
+  return {
+    oidcAudience: parsed.data.MCP_OIDC_AUDIENCE,
+    serviceAccountToken: parsed.data.MCP_SERVICE_ACCOUNT_TOKEN,
+    subjectUserId: parsed.data.MCP_SUBJECT_USER_ID,
+  };
+}

@@ -1,16 +1,11 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { eq, and } from "drizzle-orm";
-import { db } from "../db/index.js";
-import { contas, contaUsuarios } from "../db/schema.js";
-import { NotFoundError, ForbiddenError } from "../lib/errors.js";
+import {
+  assertAccountRole,
+  type AccountRole,
+} from "../lib/account-authorization.js";
 import { uuidSchema } from "../lib/validation.js";
 
-export type AccountRole = "owner" | "viewer";
-
-function roleSufficient(userRole: AccountRole, requiredRole: AccountRole): boolean {
-  if (requiredRole === "viewer") return true;
-  return userRole === "owner";
-}
+export type { AccountRole } from "../lib/account-authorization.js";
 
 export interface RequireAccountRoleOptions {
   minRole: AccountRole;
@@ -59,24 +54,6 @@ export function requireAccountRole(options: RequireAccountRoleOptions) {
       });
     }
 
-    const conta = await db.query.contas.findFirst({
-      where: eq(contas.id, contaId),
-    });
-
-    if (!conta) {
-      throw new NotFoundError("Conta not found");
-    }
-
-    const association = await db.query.contaUsuarios.findFirst({
-      where: and(eq(contaUsuarios.contaId, contaId), eq(contaUsuarios.usuarioId, user.id)),
-    });
-
-    if (!association) {
-      throw new ForbiddenError("You do not have access to this account");
-    }
-
-    if (!roleSufficient(association.papel, minRole)) {
-      throw new ForbiddenError("Insufficient permissions for this account");
-    }
+    await assertAccountRole(user.id, contaId, minRole);
   };
 }
