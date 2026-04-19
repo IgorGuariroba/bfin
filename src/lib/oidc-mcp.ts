@@ -49,9 +49,7 @@ export async function createMcpJwtVerifier(params: {
     issuer: inner.issuer,
     async verify(token: string): Promise<McpClaims> {
       const payload = await inner.verify(token);
-      const sub = (typeof payload.sub === "string" ? payload.sub : undefined) as
-        | string
-        | undefined;
+      const sub = typeof payload.sub === "string" ? payload.sub : undefined;
       if (!sub) {
         throw new JwtValidationError("Token missing 'sub' claim", "TOKEN_INVALID");
       }

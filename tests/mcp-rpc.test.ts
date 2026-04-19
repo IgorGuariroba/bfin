@@ -6,7 +6,7 @@ import { buildMcpServer } from "../src/mcp/rpc.js";
 import type { ServiceAccount } from "../src/mcp/identity.js";
 import type { ToolRegistry, McpToolAny } from "../src/mcp/tool-types.js";
 import { z } from "zod";
-import { NotFoundError, ForbiddenError, BusinessRuleError } from "../src/lib/errors.js";
+import { NotFoundError, ForbiddenError, BusinessRuleError, ValidationError, SystemGeneratedResourceError, AppError } from "../src/lib/errors.js";
 
 function makeSa(scopes: string[] = ["test:read", "test:write"]): ServiceAccount {
   return Object.freeze({
@@ -217,6 +217,84 @@ describe("buildMcpServer (unit)", () => {
 
     const res = await client.callTool({ name: "no-scope-tool", arguments: {} });
     expect(res.isError).not.toBe(true);
+    await close();
+  });
+
+  it("SystemGeneratedResourceError maps to -32004", async () => {
+    const sysErrTool: McpToolAny = {
+      name: "sys-err-tool",
+      description: "Throws SystemGeneratedResourceError",
+      requiredScope: "test:read",
+      inputSchema: z.object({}),
+      handler: async () => {
+        throw new SystemGeneratedResourceError("Cannot modify system resource");
+      },
+    };
+    const localRegistry = mockRegistry([sysErrTool]);
+    const sa = makeSa(["test:read"]);
+    const log = captureLogger();
+    const { client, close } = await connect(localRegistry, sa, log);
+
+    const res = await client.callTool({ name: "sys-err-tool", arguments: {} });
+    expect(res.isError).toBe(true);
+    const content = (res.content as Array<{ type: string; text: string }>)[0];
+    expect(content.text).toContain("-32004");
+    await close();
+  });
+
+  it("generic AppError maps to -32602", async () => {
+    const appErrTool: McpToolAny = {
+      name: "app-err-tool",
+      description: "Throws generic AppError",
+      requiredScope: "test:read",
+      inputSchema: z.object({}),
+      handler: async () => {
+        throw new AppError("Something went wrong", 500, "INTERNAL_ERROR");
+      },
+    };
+    const localRegistry = mockRegistry([appErrTool]);
+    const sa = makeSa(["test:read"]);
+    const log = captureLogger();
+    const { client, close } = await connect(localRegistry, sa, log);
+
+    const res = await client.callTool({ name: "app-err-tool", arguments: {} });
+    expect(res.isError).toBe(true);
+    const content = (res.content as Array<{ type: string; text: string }>)[0];
+    expect(content.text).toContain("-32602");
+    await close();
+  });
+
+  it("unexpected error maps to -32603", async () => {
+    const crashTool: McpToolAny = {
+      name: "crash-tool",
+      description: "Throws unexpected error",
+      requiredScope: "test:read",
+      inputSchema: z.object({}),
+      handler: async () => {
+        throw new Error("unexpected crash");
+      },
+    };
+    const localRegistry = mockRegistry([crashTool]);
+    const sa = makeSa(["test:read"]);
+    const log = captureLogger();
+    const { client, close } = await connect(localRegistry, sa, log);
+
+    const res = await client.callTool({ name: "crash-tool", arguments: {} });
+    expect(res.isError).toBe(true);
+    const content = (res.content as Array<{ type: string; text: string }>)[0];
+    expect(content.text).toContain("-32603");
+    await close();
+  });
+
+  it("tool with scope missing returns authorization error", async () => {
+    const sa = makeSa([]);
+    const log = captureLogger();
+    const { client, close } = await connect(registry, sa, log);
+
+    const res = await client.callTool({ name: "echo", arguments: { msg: "hi" } });
+    expect(res.isError).toBe(true);
+    const content = (res.content as Array<{ type: string; text: string }>)[0];
+    expect(content.text).toContain("-32003");
     await close();
   });
 });
