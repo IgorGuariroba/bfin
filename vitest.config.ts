@@ -6,6 +6,7 @@ export default defineConfig({
     hookTimeout: 120000,
     include: ["tests/**/*.test.ts"],
     globalSetup: ["tests/helpers/global-setup.ts"],
+    setupFiles: ["tests/helpers/vitest-setup.ts"],
     pool: "forks",
     poolOptions: {
       forks: {
