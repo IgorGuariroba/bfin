@@ -45,7 +45,6 @@ async function createClientServer(
     async close() {
       await client.close();
       await server.close();
-      await testApp.teardown();
     },
   };
 }
