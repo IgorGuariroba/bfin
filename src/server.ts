@@ -8,12 +8,13 @@ import { initOidc } from "./plugins/oidc.js";
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
 async function main(): Promise<void> {
-  const app = buildApp();
+  // Initialize OIDC first — buildApp needs the validator for auth-guard
+  const validateToken = await initOidc();
 
-  // Initialize OIDC before accepting requests
-  app.log.info("Initializing OIDC...");
-  await initOidc();
-  app.log.info("OIDC initialized");
+  const app = buildApp({
+    authGuardOptions: { validateToken },
+    mcpHttpOptions: {},
+  });
 
   // Boot readiness probe
   app.log.info("Waiting for database...");

@@ -2,8 +2,11 @@ import { z } from "zod";
 import {
   createDebt,
   findDebtsByAccount,
+  findDebtById,
   confirmInstallmentPayment,
 } from "../../services/debt-service.js";
+import { assertAccountRole } from "../../lib/account-authorization.js";
+import { NotFoundError } from "../../lib/errors.js";
 import type { McpTool } from "../tool-types.js";
 
 const isoDate = z.string().datetime({ offset: true }).transform((v) => new Date(v));
@@ -63,7 +66,6 @@ export const debtsPayInstallment: McpTool<{
   name: "debts.pay-installment",
   description: "Confirm payment of a specific installment; emits a transaction.",
   requiredScope: "debts:write",
-  minRole: "owner",
   inputSchema: z.object({
     dividaId: z.string().uuid(),
     parcelaId: z.string().uuid(),
@@ -71,6 +73,10 @@ export const debtsPayInstallment: McpTool<{
     dataPagamento: isoDate,
   }),
   async handler({ input, actingUserId }) {
+    const debt = await findDebtById(input.dividaId);
+    if (!debt) throw new NotFoundError("Debt not found");
+    await assertAccountRole(actingUserId, debt.conta_id, "owner");
+
     return await confirmInstallmentPayment(
       input.dividaId,
       input.parcelaId,

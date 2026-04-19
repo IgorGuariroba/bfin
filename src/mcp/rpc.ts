@@ -5,16 +5,16 @@ import {
   type CallToolResult,
   type ListToolsResult,
 } from "@modelcontextprotocol/sdk/types.js";
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import { ZodError } from "zod";
 import type { Logger } from "pino";
 import {
   AppError,
-  BusinessRuleError,
-  ForbiddenError,
-  NotFoundError,
   ValidationError,
 } from "../lib/errors.js";
+import { mapDomainError } from "./errors.js";
+import { mcpToolCallsTotal, mcpToolDurationSeconds } from "./metrics.js";
 import { mcpLogger } from "./logger.js";
 import type { ServiceAccount } from "./identity.js";
 import type { ToolRegistry, McpToolAny } from "./tool-types.js";
@@ -60,7 +60,7 @@ function mapErrorToResult(err: unknown, logger: Logger): CallToolResult {
   if (err instanceof ToolAuthorizationError) {
     logger.warn({ reason: err.reason }, "tool authorization denied");
     return textResult(
-      `Unauthorized: ${err.message}`,
+      `[-32003] Unauthorized: ${err.message}`,
       true
     );
   }
@@ -68,30 +68,19 @@ function mapErrorToResult(err: unknown, logger: Logger): CallToolResult {
     const first = err.issues[0];
     const path = first.path.length > 0 ? first.path.join(".") : "<root>";
     logger.warn({ zodIssue: first }, "tool input validation failed");
-    return textResult(`Invalid input: ${path}: ${first.message}`, true);
+    return textResult(`[-32600] Invalid input: ${path}: ${first.message}`, true);
   }
   if (err instanceof ValidationError) {
     logger.warn({ code: err.code }, "tool validation error");
-    return textResult(`Invalid input: ${err.message}`, true);
+    return textResult(`[-32600] Invalid input: ${err.message}`, true);
   }
-  if (err instanceof NotFoundError) {
-    logger.warn({ code: err.code }, "tool resource not found");
-    return textResult(`Not found: ${err.message}`, true);
-  }
-  if (err instanceof ForbiddenError) {
-    logger.warn({ code: err.code }, "tool forbidden");
-    return textResult(`Forbidden: ${err.message}`, true);
-  }
-  if (err instanceof BusinessRuleError) {
-    logger.warn({ code: err.code }, "tool business rule violation");
-    return textResult(`Business rule violation: ${err.message}`, true);
-  }
-  if (err instanceof AppError) {
-    logger.warn({ code: err.code }, "tool domain error");
-    return textResult(err.message, true);
+  const domain = mapDomainError(err);
+  if (domain) {
+    logger.warn({ code: domain.code }, "tool domain error");
+    return textResult(`[${domain.code}] ${domain.message}`, true);
   }
   logger.error({ err }, "unexpected tool error");
-  return textResult("Internal error while executing tool.", true);
+  return textResult("[-32603] Internal error", true);
 }
 
 export function buildMcpServer(params: BuildMcpServerParams): Server {
@@ -137,6 +126,16 @@ export function buildMcpServer(params: BuildMcpServerParams): Server {
       requestedBy,
     });
 
+    const inputHash = createHash("sha256")
+      .update(JSON.stringify(args ?? {}))
+      .digest("hex")
+      .slice(0, 16);
+
+    const auditBase = {
+      sub: sa.subject,
+      input_hash: inputHash,
+    };
+
     try {
       const parsedInput = tool.inputSchema.parse(args ?? {});
 
@@ -156,16 +155,22 @@ export function buildMcpServer(params: BuildMcpServerParams): Server {
 
       const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
       invocationLogger.info(
-        { outcome: "success", duration_ms: durationMs },
+        { ...auditBase, outcome: "ok", duration_ms: durationMs },
         "tool call succeeded"
       );
+      mcpToolCallsTotal.inc({ tool: tool.name, outcome: "ok" });
+      mcpToolDurationSeconds.observe({ tool: tool.name }, durationMs / 1000);
 
       return textResult(JSON.stringify(result));
     } catch (err) {
       const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
       const mapped = mapErrorToResult(err, invocationLogger);
+      mcpToolCallsTotal.inc({ tool: tool.name, outcome: "error" });
+      mcpToolDurationSeconds.observe({ tool: tool.name }, durationMs / 1000);
+      const errorCode =
+        err instanceof AppError ? err.code : undefined;
       invocationLogger.info(
-        { outcome: "error", duration_ms: durationMs },
+        { ...auditBase, outcome: "error", duration_ms: durationMs, error_code: errorCode },
         "tool call finished with error"
       );
       return mapped;

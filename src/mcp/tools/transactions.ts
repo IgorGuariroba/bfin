@@ -4,7 +4,10 @@ import {
   updateTransaction,
   deleteTransaction,
   findTransactionsByAccount,
+  findTransactionById,
 } from "../../services/transaction-service.js";
+import { assertAccountRole } from "../../lib/account-authorization.js";
+import { NotFoundError } from "../../lib/errors.js";
 import type { McpTool } from "../tool-types.js";
 
 const isoDate = z.string().datetime({ offset: true }).transform((v) => new Date(v));
@@ -81,7 +84,6 @@ export const transactionsUpdate: McpTool<{
   name: "transactions.update",
   description: "Update an existing transaction.",
   requiredScope: "transactions:write",
-  minRole: "owner",
   inputSchema: z.object({
     id: z.string().uuid(),
     contaId: z.string().uuid(),
@@ -93,8 +95,21 @@ export const transactionsUpdate: McpTool<{
     recorrente: z.boolean().optional(),
     dataFim: isoDate.nullable().optional(),
   }),
-  async handler({ input }) {
-    const { id, ...rest } = input;
+  async handler({ input, actingUserId }) {
+    const tx = await findTransactionById(input.id);
+    if (!tx) throw new NotFoundError("Transaction not found");
+    await assertAccountRole(actingUserId, tx.contaId, "owner");
+
+    const { id } = input;
+    const rest = {
+      tipo: input.tipo,
+      categoriaId: input.categoriaId,
+      descricao: input.descricao,
+      valor: input.valor,
+      data: input.data,
+      recorrente: input.recorrente,
+      dataFim: input.dataFim,
+    };
     return await updateTransaction(id, rest);
   },
 };
@@ -103,12 +118,15 @@ export const transactionsDelete: McpTool<{ id: string; contaId: string }> = {
   name: "transactions.delete",
   description: "Delete an existing transaction.",
   requiredScope: "transactions:write",
-  minRole: "owner",
   inputSchema: z.object({
     id: z.string().uuid(),
     contaId: z.string().uuid(),
   }),
-  async handler({ input }) {
+  async handler({ input, actingUserId }) {
+    const tx = await findTransactionById(input.id);
+    if (!tx) throw new NotFoundError("Transaction not found");
+    await assertAccountRole(actingUserId, tx.contaId, "owner");
+
     await deleteTransaction(input.id);
     return { deleted: true, id: input.id };
   },

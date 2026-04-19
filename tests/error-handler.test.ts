@@ -15,28 +15,29 @@ type ErrorBody = {
 let testApp: TestApp;
 
 beforeAll(async () => {
-  testApp = await createTestApp({
-    validateToken: async () => ({
-      sub: "test-user",
-      email: "test@example.com",
-      name: "Test User",
-    }),
-  });
-
-  testApp.app.get("/test-business-error", async () => {
-    throw new BusinessRuleError("Valor deve ser positivo");
-  });
-  testApp.app.get("/test-not-found", async () => {
-    throw new NotFoundError("Recurso não encontrado");
-  });
-  testApp.app.get("/test-unexpected", async () => {
-    throw new TypeError("Algo quebrou internamente");
-  });
-  testApp.app.get("/test-request-id", async () => {
-    throw new BusinessRuleError("Erro de teste");
-  });
-
-  await testApp.app.ready();
+  testApp = await createTestApp(
+    {
+      validateToken: async () => ({
+        sub: "test-user",
+        email: "test@example.com",
+        name: "Test User",
+      }),
+    },
+    (app) => {
+      app.get("/test-business-error", async () => {
+        throw new BusinessRuleError("Valor deve ser positivo");
+      });
+      app.get("/test-not-found", async () => {
+        throw new NotFoundError("Recurso não encontrado");
+      });
+      app.get("/test-unexpected", async () => {
+        throw new TypeError("Algo quebrou internamente");
+      });
+      app.get("/test-request-id", async () => {
+        throw new BusinessRuleError("Erro de teste");
+      });
+    }
+  );
 });
 
 afterAll(async () => {

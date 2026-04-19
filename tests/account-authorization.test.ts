@@ -8,6 +8,24 @@ import {
 } from "./helpers/auth.js";
 import { requireAccountRole } from "../src/plugins/account-authorization.js";
 
+function registerTestRoutes(app: TestApp["app"]) {
+  app.get(
+    "/contas/:contaId/owner-only",
+    { onRequest: [requireAccountRole({ minRole: "owner" })] },
+    async () => ({ ok: true })
+  );
+  app.get(
+    "/contas/:contaId/resource",
+    { onRequest: [requireAccountRole({ minRole: "viewer" })] },
+    async () => ({ ok: true })
+  );
+  app.get(
+    "/contas/:contaId/viewer-ok",
+    { onRequest: [requireAccountRole({ minRole: "viewer" })] },
+    async () => ({ ok: true })
+  );
+}
+
 describe("Account Authorization Middleware", () => {
   let testApp: TestApp;
 
@@ -53,7 +71,7 @@ describe("Account Authorization Middleware", () => {
   it("allows owner to access route requiring owner", async () => {
     const keyPair = await generateTestKeyPair();
     const validateToken = await createTestJwksProvider(keyPair);
-    testApp = await createTestApp({ validateToken });
+    testApp = await createTestApp({ validateToken }, registerTestRoutes);
     await testApp.truncateAll();
 
     const userId = await createUser(testApp, "owner-user", "owner@example.com");
@@ -65,12 +83,6 @@ describe("Account Authorization Middleware", () => {
       email: "owner@example.com",
       name: "Owner User",
     });
-
-    testApp.app.get(
-      "/contas/:contaId/owner-only",
-      { onRequest: [requireAccountRole({ minRole: "owner" })] },
-      async () => ({ ok: true })
-    );
 
     const res = await testApp.app.inject({
       method: "GET",
@@ -84,7 +96,7 @@ describe("Account Authorization Middleware", () => {
   it("blocks viewer from accessing route requiring owner", async () => {
     const keyPair = await generateTestKeyPair();
     const validateToken = await createTestJwksProvider(keyPair);
-    testApp = await createTestApp({ validateToken });
+    testApp = await createTestApp({ validateToken }, registerTestRoutes);
     await testApp.truncateAll();
 
     const userId = await createUser(testApp, "viewer-user", "viewer@example.com");
@@ -96,12 +108,6 @@ describe("Account Authorization Middleware", () => {
       email: "viewer@example.com",
       name: "Viewer User",
     });
-
-    testApp.app.get(
-      "/contas/:contaId/owner-only",
-      { onRequest: [requireAccountRole({ minRole: "owner" })] },
-      async () => ({ ok: true })
-    );
 
     const res = await testApp.app.inject({
       method: "GET",
@@ -117,7 +123,7 @@ describe("Account Authorization Middleware", () => {
   it("blocks user without association", async () => {
     const keyPair = await generateTestKeyPair();
     const validateToken = await createTestJwksProvider(keyPair);
-    testApp = await createTestApp({ validateToken });
+    testApp = await createTestApp({ validateToken }, registerTestRoutes);
     await testApp.truncateAll();
 
     await createUser(testApp, "unrelated-user", "unrelated@example.com");
@@ -128,12 +134,6 @@ describe("Account Authorization Middleware", () => {
       email: "unrelated@example.com",
       name: "Unrelated User",
     });
-
-    testApp.app.get(
-      "/contas/:contaId/resource",
-      { onRequest: [requireAccountRole({ minRole: "viewer" })] },
-      async () => ({ ok: true })
-    );
 
     const res = await testApp.app.inject({
       method: "GET",
@@ -147,7 +147,7 @@ describe("Account Authorization Middleware", () => {
   it("returns 404 for non-existent conta", async () => {
     const keyPair = await generateTestKeyPair();
     const validateToken = await createTestJwksProvider(keyPair);
-    testApp = await createTestApp({ validateToken });
+    testApp = await createTestApp({ validateToken }, registerTestRoutes);
     await testApp.truncateAll();
 
     await createUser(testApp, "any-user", "any@example.com");
@@ -157,12 +157,6 @@ describe("Account Authorization Middleware", () => {
       email: "any@example.com",
       name: "Any User",
     });
-
-    testApp.app.get(
-      "/contas/:contaId/resource",
-      { onRequest: [requireAccountRole({ minRole: "viewer" })] },
-      async () => ({ ok: true })
-    );
 
     const res = await testApp.app.inject({
       method: "GET",
@@ -178,7 +172,7 @@ describe("Account Authorization Middleware", () => {
   it("allows owner on route requiring viewer", async () => {
     const keyPair = await generateTestKeyPair();
     const validateToken = await createTestJwksProvider(keyPair);
-    testApp = await createTestApp({ validateToken });
+    testApp = await createTestApp({ validateToken }, registerTestRoutes);
     await testApp.truncateAll();
 
     const userId = await createUser(testApp, "owner2-user", "owner2@example.com");
@@ -190,12 +184,6 @@ describe("Account Authorization Middleware", () => {
       email: "owner2@example.com",
       name: "Owner2 User",
     });
-
-    testApp.app.get(
-      "/contas/:contaId/viewer-ok",
-      { onRequest: [requireAccountRole({ minRole: "viewer" })] },
-      async () => ({ ok: true })
-    );
 
     const res = await testApp.app.inject({
       method: "GET",
@@ -209,7 +197,7 @@ describe("Account Authorization Middleware", () => {
   it("allows viewer on route requiring viewer", async () => {
     const keyPair = await generateTestKeyPair();
     const validateToken = await createTestJwksProvider(keyPair);
-    testApp = await createTestApp({ validateToken });
+    testApp = await createTestApp({ validateToken }, registerTestRoutes);
     await testApp.truncateAll();
 
     const userId = await createUser(testApp, "viewer2-user", "viewer2@example.com");
@@ -221,12 +209,6 @@ describe("Account Authorization Middleware", () => {
       email: "viewer2@example.com",
       name: "Viewer2 User",
     });
-
-    testApp.app.get(
-      "/contas/:contaId/viewer-ok",
-      { onRequest: [requireAccountRole({ minRole: "viewer" })] },
-      async () => ({ ok: true })
-    );
 
     const res = await testApp.app.inject({
       method: "GET",

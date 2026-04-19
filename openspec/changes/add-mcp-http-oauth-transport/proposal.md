@@ -58,9 +58,10 @@ A API do Auth0 é criada com os mesmos escopos que o MCP já usa (`accounts:read
 
 ### Deploy
 
-- A API Fastify (`src/server.ts`) já está em produção via Traefik em `https://api.bfincont.com.br/v2/*`
-- As rotas MCP são montadas como plugin Fastify sob `/mcp/*`, ficando publicamente acessíveis em `https://api.bfincont.com.br/v2/mcp/*`
-- **URL final do Connector (o que o usuário cola em claude.ai):** `https://api.bfincont.com.br/v2/mcp`
+- O projeto sobe em uma **nova VPS**, com **Caddy** como reverse proxy (auto-HTTPS via Let's Encrypt, HTTP/2+HTTP/3, defaults seguros). Traefik não é usado.
+- Na fase inicial, apenas as rotas `/mcp/*` são expostas publicamente em `https://api.bfincont.com.br` — as demais rotas da API HTTP ficam internas (acessíveis via rede do compose, mas sem roteamento público). Conforme novos consumidores surgirem, o Caddyfile é estendido.
+- Novo arquivo `docker-compose.yml` enxuto (api + postgres + redis + caddy) dedicado a essa VPS.
+- **URL final do Connector (o que o usuário cola em claude.ai):** `https://api.bfincont.com.br/mcp`
 
 ## Capabilities
 
@@ -110,7 +111,7 @@ A API do Auth0 é criada com os mesmos escopos que o MCP já usa (`accounts:read
 | Variável | Obrigatória | Descrição |
 |---|---|---|
 | `MCP_HTTP_ENABLED` | opcional | `true` para registrar o plugin MCP HTTP (default `true` em produção). Gate por ambiente. |
-| `MCP_HTTP_BASE_URL` | ✓ | URL pública onde o MCP está acessível (ex.: `https://api.bfincont.com.br/v2/mcp`). Usado no `resource` da metadata RFC 9728. |
+| `MCP_HTTP_BASE_URL` | ✓ | URL pública onde o MCP está acessível (ex.: `https://api.bfincont.com.br/mcp`). Usado no `resource` da metadata RFC 9728. |
 | `MCP_AUDIENCE_HTTP` | ✓ | Audience esperada nos tokens OAuth (ex.: `https://mcp.bfincont.com.br`). Configurada no Auth0 como API Identifier. |
 | `MCP_AUTH_SERVER_URL` | ✓ | URL do Authorization Server (Auth0), ex.: `https://bfin.us.auth0.com`. |
 | `MCP_PROVISIONING_ALLOWED_EMAILS` | opcional | Lista (CSV ou regex) de emails autorizados a serem provisionados automaticamente. Se vazio, provisionamento é desabilitado (o `sub` precisa já existir em `usuarios`). |
@@ -125,7 +126,8 @@ A API do Auth0 é criada com os mesmos escopos que o MCP já usa (`accounts:read
 
 ### Infra
 
-- Nenhuma mudança em Traefik (path `/v2/mcp/*` já roteado pela API HTTP via path-based routing do override `docker-compose.traefik.yml`).
+- **Nova VPS** com stack dedicada: `docker-compose.yml` novo contendo api + postgres + redis + Caddy. Caddyfile roteia apenas `/mcp/*` → container da API na fase inicial.
+- Caddy gerencia TLS automaticamente via Let's Encrypt (ACME); certificado renovado sem intervenção. DNS `api.bfincont.com.br` precisa apontar para o IP da nova VPS antes do primeiro `caddy run`.
 - Nova API no Auth0: `Bfin MCP` com `Audience = https://mcp.bfincont.com.br` e permissions = lista de escopos do MCP.
 - Dynamic Client Registration habilitado no tenant Auth0.
 - Google como Social Connection no Auth0.

@@ -1,36 +1,47 @@
 # MCP server (Model Context Protocol)
 
-BFin expõe um segundo entrypoint — um servidor MCP sobre **STDIO + JSON-RPC 2.0** —
-que permite a clientes MCP (Claude Desktop, Claude Code, etc.) usar as
-capacidades financeiras do domínio como ferramentas.
+BFin expõe um servidor MCP remoto sobre **HTTP+SSE** com autenticação **OAuth 2.1**, permitindo que usuários o utilizem como um **Connector** diretamente no `claude.ai`, ChatGPT Apps, Cursor web, e qualquer cliente MCP compatível com o spec MCP Auth (`2025-06-18`).
 
-O servidor MCP **não** passa pela API HTTP: ele reutiliza os mesmos services
-in-process, mas com uma identidade separada de *service account* autenticada por
-token OIDC e restringida por escopos finos.
+O servidor MCP reutiliza a mesma camada de services da API HTTP, mas com um modelo de identidade e autorização próprio: cada request carrega um Bearer token OAuth emitido pelo Auth0, com escopos finos que determinam quais tools o usuário pode invocar.
 
 ## Arquitetura em uma frase
 
-> O cliente MCP spawna `node dist/mcp/server.js`; o servidor valida o token OIDC
-> da service account contra o mesmo provedor da API HTTP (porém com audiência
-> distinta), descobre seus escopos, resolve o `userId` alvo das writes e então
-> começa a atender `initialize`/`tools/list`/`tools/call` via stdin/stdout
-> (logs sempre em stderr).
+> O BFin MCP atua como **OAuth 2.1 Resource Server**; o Auth0 é o **Authorization Server** (DCR, login Google, consent, refresh, revogação); o cliente descobre o AS via metadata RFC 9728 em `/.well-known/oauth-protected-resource` e então troca JSON-RPC 2.0 sobre HTTP+SSE.
+
+## URL pública do Connector
+
+```
+https://api.bfincont.com.br/mcp
+```
+
+Essa é a URL que o usuário cola no cliente LLM (ex.: `claude.ai → Settings → Connectors → Add custom connector`).
 
 ## Variáveis de ambiente
 
 | Variável | Obrigatória | Descrição |
 |---|---|---|
-| `OIDC_ISSUER_URL` | ✓ (já usada pela API HTTP) | Issuer do provedor OIDC — usado para descoberta JWKS. |
-| `MCP_OIDC_AUDIENCE` | ✓ | Audiência esperada do token da SA. **Deve ser distinta** de `OIDC_AUDIENCE` (API HTTP). |
-| `MCP_SERVICE_ACCOUNT_TOKEN` | ✓ | JWT emitido pelo provedor OIDC para a service account, com claims `sub`, `scope`, `aud`, `exp`. |
-| `MCP_SUBJECT_USER_ID` | ✓ | UUID do usuário em `usuarios` ao qual todas as writes serão atribuídas. O registro precisa existir antes do bootstrap. |
+| `MCP_HTTP_ENABLED` | opcional | `true` para registrar o plugin MCP HTTP (default `false`; use `true` em produção). |
+| `MCP_HTTP_BASE_URL` | ✓ | URL pública onde o MCP está acessível (ex.: `https://api.bfincont.com.br/mcp`). |
+| `MCP_AUDIENCE_HTTP` | ✓ | Audience esperada nos tokens OAuth (ex.: `https://mcp.bfincont.com.br`). |
+| `MCP_AUTH_SERVER_URL` | ✓ | URL do Authorization Server (Auth0), ex.: `https://bfin.us.auth0.com`. |
+| `MCP_PROVISIONING_ALLOWED_EMAILS` | opcional | Lista CSV ou regex de emails autorizados a serem provisionados automaticamente. Se vazio, o `sub` precisa já existir em `usuarios`. |
+| `MCP_SESSION_STORE` | opcional | `memory` (default em dev) ou `redis` (recomendado em prod). |
+| `REDIS_URL` | ✓ se `redis` | URL do Redis (ex.: `redis://redis:6379`). |
 | `DATABASE_URL` | ✓ | Mesma string de conexão Postgres da API. |
-| `LOG_LEVEL` | opcional | `info` por default. Todos os logs vão para **stderr**. |
+| `LOG_LEVEL` | opcional | `info` por default. |
+| `METRICS_TOKEN` | opcional | Token para autenticar o endpoint `/metrics` (Prometheus). |
+
+### Variáveis removidas (modo STDIO antigo)
+
+As variáveis abaixo não são mais lidas. Remova-as do `.env`:
+
+- `MCP_OIDC_AUDIENCE`
+- `MCP_SERVICE_ACCOUNT_TOKEN`
+- `MCP_SUBJECT_USER_ID`
 
 ## Escopos suportados
 
-O token da SA carrega escopos no formato `resource:action` (claim `scope` do JWT,
-padrão OAuth 2.0, separados por espaço):
+O token OAuth carrega escopos no formato `resource:action` (padrão OAuth 2.0, separados por espaço):
 
 | Escopo | Tools habilitadas |
 |---|---|
@@ -38,116 +49,120 @@ padrão OAuth 2.0, separados por espaço):
 | `accounts:write` | `accounts.create` |
 | `account-members:read` | `account-members.list` |
 | `categories:read` | `categories.list` |
-| `categories:write` | `categories.create` (exige `owner` da conta) |
-| `transactions:read` | `transactions.list` (viewer) |
-| `transactions:write` | `transactions.create/update/delete` (owner) |
-| `debts:read` | `debts.list` (viewer) |
-| `debts:write` | `debts.create`, `debts.pay-installment` (owner) |
-| `goals:read` | `goals.list` (viewer) |
-| `goals:write` | `goals.create`, `goals.update` (owner) |
-| `daily-limit:read` | `daily-limit.get` (viewer) |
-| `daily-limit:write` | `daily-limit.set` (owner) |
-| `projections:read` | `projections.get` (viewer) |
+| `categories:write` | `categories.create` |
+| `transactions:read` | `transactions.list` |
+| `transactions:write` | `transactions.create/update/delete` |
+| `debts:read` | `debts.list` |
+| `debts:write` | `debts.create`, `debts.pay-installment` |
+| `goals:read` | `goals.list` |
+| `goals:write` | `goals.create`, `goals.update` |
+| `daily-limit:read` | `daily-limit.get` |
+| `daily-limit:write` | `daily-limit.set` |
+| `projections:read` | `projections.get` |
 
-A tool `mcp.whoami` é sempre exposta (sem `requiredScope`) e é útil para
-debugging — retorna o subject, escopos, actingUserId e `tokenExp` da SA.
+A tool `mcp.whoami` é sempre exposta (sem `requiredScope`) e retorna o subject, escopos, `actingUserId` e `tokenExp` da sessão.
 
-### Recomendação: conceda o mínimo
+## Como conectar no Claude.ai
 
-- Se o assistente só precisa ler, conceda apenas `*:read`.
-- Para escrita, comece com escopos de um único domínio (`transactions:write`).
-- **Nunca** ao conceder todos os `*:*` sem necessidade clara.
+1. Acesse [claude.ai](https://claude.ai) e faça login.
+2. Vá em **Settings → Connectors → Add custom connector**.
+3. Cole a URL: `https://api.bfincont.com.br/mcp`.
+4. O Claude detectará o metadata RFC 9728 e iniciará o fluxo OAuth (Authorization Code + PKCE).
+5. Você será redirecionado para o Auth0, onde deverá clicar em **"Continuar com Google"**.
+6. No consent screen, revise os escopos solicitados e clique em **Authorize**.
+7. O connector aparecerá como **Connected**.
+8. Em uma conversa, ative o connector e teste: *"list my transactions from last month"*.
 
-## Provisionamento passo a passo
+## Provisionamento de usuários
 
-1. **Criar o usuário SA** na base (`usuarios`) — `MCP_SUBJECT_USER_ID` precisa ser
-   um UUID existente. Exemplo:
-   ```sql
-   INSERT INTO usuarios (id_provedor, nome, email)
-   VALUES ('sa-mcp', 'BFin MCP SA', 'mcp-sa@internal.example')
-   RETURNING id;
-   ```
-2. **Associar às contas** que a SA pode operar (`conta_usuarios`) com papel
-   adequado (`owner` para writes, `viewer` para somente leitura):
-   ```sql
-   INSERT INTO conta_usuarios (conta_id, usuario_id, papel)
-   VALUES ('<conta-uuid>', '<sa-user-uuid>', 'owner');
-   ```
-3. **Emitir o token da SA no provedor OIDC** com:
-   - `aud = <valor de MCP_OIDC_AUDIENCE>` (distinta da API HTTP).
-   - `scope = "transactions:read transactions:write ..."` (lista de escopos concedidos).
-   - Expiração razoável (ex.: 7 dias) — veja "Rotação" abaixo.
-4. **Build**: `npm run build` (produz `dist/mcp/server.js`).
-5. **Registrar no cliente MCP** (exemplo Claude Desktop):
-   ```json
-   {
-     "mcpServers": {
-       "bfin": {
-         "command": "node",
-         "args": ["/caminho/absoluto/para/bfin/dist/mcp/server.js"],
-         "env": {
-           "DATABASE_URL": "postgres://...",
-           "OIDC_ISSUER_URL": "https://login.example.com",
-           "MCP_OIDC_AUDIENCE": "bfin-mcp",
-           "MCP_SERVICE_ACCOUNT_TOKEN": "eyJhbGciOi...",
-           "MCP_SUBJECT_USER_ID": "<sa-user-uuid>"
-         }
-       }
-     }
-   }
-   ```
+### Automático (recomendado para onboarding)
 
-Durante desenvolvimento, o operador pode usar `npm run mcp:dev` que roda
-`tsx src/mcp/server.ts` — lembrando que o servidor MCP é invocado diretamente
-pelo cliente MCP, não roda como serviço em Docker Compose.
+Defina `MCP_PROVISIONING_ALLOWED_EMAILS` com uma lista de emails permitidos:
 
-## `meta.requestedBy` — rastreabilidade, não autorização
+```bash
+MCP_PROVISIONING_ALLOWED_EMAILS=alice@example.com,bob@example.com
+```
 
-O servidor MCP aceita em qualquer `tools/call` um campo opcional
-`_meta.requestedBy: string`. Esse valor é:
+Também é possível usar regex:
 
-- **Anexado ao logger** como `requested_by` na invocação (facilita responder
-  "isso veio de qual usuário final na UX do cliente?").
-- **Jamais usado para autorização.** A decisão de autorização deriva
-  exclusivamente dos escopos do token da SA + do papel do `actingUserId` em
-  `conta_usuarios`.
-- Validado em tamanho (≤ 200 chars) e conteúdo (sem caracteres de controle);
-  inválido é descartado com WARN, mas não bloqueia a call.
+```bash
+MCP_PROVISIONING_ALLOWED_EMAILS=/.*@bfincont\.com.br/i
+```
 
-> **Por que não trusted?** Se o LLM pudesse alucinar um `requestedBy: "admin"`
-> e isso elevasse privilégio, viraria backdoor. O único sujeito que importa para
-> decidir o que pode ser feito é o token da SA.
+O primeiro login de um usuário autorizado cria automaticamente o registro em `usuarios` usando as claims `name` e `email` do token.
 
-## Rotação do token da service account
+### Manual (administração)
 
-O token da SA deve ser rotacionado periodicamente pelo operador:
+Se o provisionamento automático estiver desabilitado, insira o usuário manualmente antes do primeiro login:
 
-1. Emitir novo token no provedor OIDC antes da expiração do atual.
-2. Atualizar `MCP_SERVICE_ACCOUNT_TOKEN` no env do cliente MCP.
-3. Reiniciar o cliente MCP (que respawna o processo BFin MCP).
+```sql
+INSERT INTO usuarios (id_provedor, nome, email)
+VALUES ('auth0|123456789', 'Alice', 'alice@example.com')
+RETURNING id;
+```
 
-Se o token expirar, o bootstrap falha com mensagem clara em stderr
-(`MCP service account token expired` + `code: TOKEN_EXPIRED`) e o cliente MCP
-perde a capacidade até a renovação.
+O valor de `id_provedor` deve ser o `sub` do token JWT emitido pelo Auth0.
 
 ## Auditoria
 
-Todos os logs do MCP carregam `source: "mcp"` e, nas invocações de `tools/call`:
+Cada invocação de tool registra um evento estruturado em `pino` (nível `info`) com:
 
-- `tool`: nome (ex.: `transactions.create`)
+- `sub`: identificador do usuário no IdP
+- `user_id`: UUID interno (`actingUserId`)
+- `tool`: nome da tool
 - `scope`: escopo exigido
-- `acting_user_id`: o `MCP_SUBJECT_USER_ID`
-- `outcome`: `success` ou `error`
-- `duration_ms`
-- `requested_by` (quando informado e válido)
+- `session_id`: ID da sessão SSE
+- `duration_ms`: tempo de execução
+- `outcome`: `ok` ou `error`
+- `error_code`: código do erro, se houver
+- `input_hash`: hash SHA256 do payload (nunca o payload cru)
 
-Para separar writes vindos de MCP vs API HTTP, filtre em `logs.source = "mcp"`.
-Alternativamente, as movimentações criadas via MCP sempre têm
-`usuarioId = MCP_SUBJECT_USER_ID`.
+Para consultar logs em produção (Docker Compose):
+
+```bash
+docker compose -f docker-compose.prod.yml logs api --tail 200 | grep '"source":"mcp"'
+```
+
+## Revogação
+
+### Usuário desconecta no cliente
+
+No `claude.ai`, vá em **Settings → Connectors**, encontre o BFin e clique em **Remove**. O cliente para de enviar requests; as sessões expiram naturalmente (TTL 1h no Redis, 10min em memória).
+
+### Admin revoga acesso
+
+No **Auth0 Dashboard**:
+
+- **Revogar um usuário específico:** Applications → (app criada via DCR) → Delete. Ou Users → selecione o usuário → Revoke Grants.
+- **Revogar todos:** API → Bfin MCP → Machine to Machine → revoke.
+
+Após revogação, a próxima request retorna `401` com `WWW-Authenticate`, e o cliente força um novo fluxo OAuth.
+
+## LGPD / GDPR — direito ao esquecimento
+
+Para remover completamente um usuário do sistema (banco local + Auth0):
+
+```bash
+npm run mcp:delete-user -- --email=alice@example.com
+```
+
+Requisitos:
+- Variáveis `AUTH0_MGMT_CLIENT_ID` e `AUTH0_MGMT_CLIENT_SECRET` configuradas (opcional; se omitidas, apenas o banco local é afetado).
+- O comando encontra o usuário por email, deleta do Auth0 via Management API, remove do banco local (`usuarios`) e registra a ação no audit log.
+
+## Troubleshooting
+
+| Problema | Causa provável | Solução |
+|---|---|---|
+| `401 invalid_token` | Token ausente, expirado ou audience incorreta | Verifique `MCP_AUDIENCE_HTTP` e `MCP_AUTH_SERVER_URL`; renove o token no cliente |
+| `403 forbidden` | Usuário não provisionado | Adicione o email em `MCP_PROVISIONING_ALLOWED_EMAILS` ou insira manualmente no banco |
+| `429 rate_limit_exceeded` | Muitas requests | Aguarde a janela de 1 minuto; o rate limit é por `sub` (não por IP) |
+| `404 Session not found` | Sessão SSE expirou ou servidor reiniciou (com store em memória) | Use `MCP_SESSION_STORE=redis` em produção |
+| CORS preflight falha | Origin não está na allowlist | Verifique se o cliente é `https://claude.ai` ou `http://localhost:*` |
+| Certificado TLS inválido | DNS não aponta para a VPS | Confira `dig +short api.bfincont.com.br` e aguarde propagação |
 
 ## Limites conhecidos
 
 - **Sem suporte a prompts/resources do MCP** nesta versão — apenas tools.
-- **Sem HTTP/SSE** — apenas STDIO.
-- **Token estático** — não implementamos `client_credentials` auto-renovável
-  (follow-up).
+- **Auth0 é o único AS suportado** — não implementamos endpoints de AS próprios.
+- **Não há migração automática** do modo STDIO antigo — usuários devem reconectar via OAuth.

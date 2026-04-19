@@ -1,5 +1,6 @@
 import { discovery, allowInsecureRequests } from "openid-client";
 import { jwtVerify, createRemoteJWKSet, errors as joseErrors, type JWTPayload } from "jose";
+import { config } from "../config.js";
 
 export class JwtValidationError extends Error {
   constructor(
@@ -18,7 +19,7 @@ export interface JwtVerifier {
 
 export async function createJwtVerifier(params: {
   issuerUrl: string;
-  audience: string;
+  audience: string | undefined;
   clientIdForDiscovery?: string;
   allowInsecureHttp?: boolean;
 }): Promise<JwtVerifier> {
@@ -26,7 +27,7 @@ export async function createJwtVerifier(params: {
     issuerUrl,
     audience,
     clientIdForDiscovery = "bfin-mcp",
-    allowInsecureHttp = process.env.OIDC_ALLOW_INSECURE === "true",
+    allowInsecureHttp = config.oidcAllowInsecure,
   } = params;
 
   const serverUrl = new URL(issuerUrl);
@@ -50,10 +51,9 @@ export async function createJwtVerifier(params: {
     issuer,
     async verify(token: string): Promise<JWTPayload> {
       try {
-        const { payload } = await jwtVerify(token, jwks, {
-          issuer,
-          audience,
-        });
+        const verifyOptions: Parameters<typeof jwtVerify>[2] = { issuer };
+        if (audience) verifyOptions.audience = audience;
+        const { payload } = await jwtVerify(token, jwks, verifyOptions);
         return payload;
       } catch (err) {
         if (err instanceof joseErrors.JWTExpired) {

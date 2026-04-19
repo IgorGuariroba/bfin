@@ -8,6 +8,12 @@ import {
 } from "./helpers/auth.js";
 import { requireAdmin } from "../src/plugins/auth-guard.js";
 
+function withAdminRoute(app: TestApp["app"]) {
+  app.get("/admin-only", { onRequest: [requireAdmin()] }, async () => {
+    return { ok: true };
+  });
+}
+
 describe("Admin Guard", () => {
   let testApp: TestApp;
 
@@ -18,10 +24,9 @@ describe("Admin Guard", () => {
   it("allows admin to access protected route", async () => {
     const keyPair = await generateTestKeyPair();
     const validateToken = await createTestJwksProvider(keyPair);
-    testApp = await createTestApp({ validateToken });
+    testApp = await createTestApp({ validateToken }, withAdminRoute);
     await testApp.truncateAll();
 
-    // Create admin user directly in the database
     await testApp.client`
       INSERT INTO usuarios (id_provedor, nome, email, is_admin)
       VALUES ('admin-user', 'Admin User', 'admin@example.com', true)
@@ -31,10 +36,6 @@ describe("Admin Guard", () => {
       sub: "admin-user",
       email: "admin@example.com",
       name: "Admin User",
-    });
-
-    testApp.app.get("/admin-only", { onRequest: [requireAdmin()] }, async () => {
-      return { ok: true };
     });
 
     const res = await testApp.app.inject({
@@ -51,10 +52,9 @@ describe("Admin Guard", () => {
   it("returns 403 ADMIN_REQUIRED for non-admin user", async () => {
     const keyPair = await generateTestKeyPair();
     const validateToken = await createTestJwksProvider(keyPair);
-    testApp = await createTestApp({ validateToken });
+    testApp = await createTestApp({ validateToken }, withAdminRoute);
     await testApp.truncateAll();
 
-    // Create non-admin user directly in the database
     await testApp.client`
       INSERT INTO usuarios (id_provedor, nome, email, is_admin)
       VALUES ('regular-user', 'Regular User', 'regular@example.com', false)
@@ -64,10 +64,6 @@ describe("Admin Guard", () => {
       sub: "regular-user",
       email: "regular@example.com",
       name: "Regular User",
-    });
-
-    testApp.app.get("/admin-only", { onRequest: [requireAdmin()] }, async () => {
-      return { ok: true };
     });
 
     const res = await testApp.app.inject({

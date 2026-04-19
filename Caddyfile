@@ -1,0 +1,31 @@
+{
+    email admin@bfincont.com.br
+}
+
+api.bfincont.com.br {
+    encode zstd gzip
+
+    @mcp path /mcp /mcp/*
+
+    # Only /mcp and /mcp/* are public in this phase.
+    # Note: MCP sessions hold a live transport/server pair in-process. The
+    # RedisSessionStore persists metadata but cannot restore live objects
+    # across replicas — scaling beyond one api replica requires sticky
+    # sessions on the Mcp-Session-Id header (not configured here; single
+    # replica is assumed).
+    handle @mcp {
+        reverse_proxy api:3000 {
+            flush_interval -1
+        }
+        header +Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        header +X-Content-Type-Options "nosniff"
+        header +X-Frame-Options "DENY"
+        header +Referrer-Policy "strict-origin-when-cross-origin"
+        header +Content-Security-Policy "default-src 'self'"
+    }
+
+    # Any other route -> 404 controlled by Caddy
+    handle {
+        respond "Not found" 404
+    }
+}
