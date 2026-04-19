@@ -1,6 +1,6 @@
-import { eq, and, ilike, sql, count } from "drizzle-orm";
+import { eq, and, ilike, count } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { categorias, tipoCategorias } from "../db/schema.js";
+import { categorias, tipoCategorias, movimentacoes, dividas } from "../db/schema.js";
 import { NotFoundError, BusinessRuleError, DuplicateError, isDuplicateKeyError } from "../lib/errors.js";
 
 export interface CreateCategoryInput {
@@ -45,13 +45,17 @@ async function findTipoCategoriaIdBySlug(slug: string): Promise<string | undefin
 }
 
 async function assertNoVinculos(categoriaId: string): Promise<void> {
-  const tablesToCheck = ["movimentacoes", "dividas"];
-  for (const tableName of tablesToCheck) {
+  const tables = [
+    { table: movimentacoes, column: movimentacoes.categoriaId },
+    { table: dividas, column: dividas.categoriaId },
+  ];
+  for (const { table, column } of tables) {
     try {
-      const result = await db.execute(
-        sql.raw(`SELECT COUNT(*) as count FROM "${tableName}" WHERE categoria_id = '${categoriaId}'`)
-      );
-      const row = result[0] as { count: string | number } | undefined;
+      const result = await db
+        .select({ count: count() })
+        .from(table)
+        .where(eq(column, categoriaId));
+      const row = result[0];
       if (row && Number(row.count) > 0) {
         throw new BusinessRuleError("Category has linked records and cannot be deleted");
       }

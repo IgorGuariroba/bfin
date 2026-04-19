@@ -1,12 +1,13 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { createTestApp } from "./helpers/setup.js";
 import type { TestApp } from "./helpers/setup.js";
-import {
-  generateTestKeyPair,
-  createTestJwksProvider,
-  signTestToken,
-} from "./helpers/auth.js";
+import { setupAuthedApp } from "./helpers/fixtures.js";
 import { requireAdmin } from "../src/plugins/auth-guard.js";
+
+function withAdminRoute(app: TestApp["app"]) {
+  app.get("/admin-only", { onRequest: [requireAdmin()] }, async () => {
+    return { ok: true };
+  });
+}
 
 describe("Admin Guard", () => {
   let testApp: TestApp;
@@ -15,67 +16,32 @@ describe("Admin Guard", () => {
     await testApp?.teardown();
   });
 
-  it("allows admin to access protected route", async () => {
-    const keyPair = await generateTestKeyPair();
-    const validateToken = await createTestJwksProvider(keyPair);
-    testApp = await createTestApp({ validateToken });
-    await testApp.truncateAll();
+  async function setup(idProvedor: string, email: string, name: string, isAdmin: boolean) {
+    const authed = await setupAuthedApp(withAdminRoute);
+    testApp = authed.testApp;
 
-    // Create admin user directly in the database
     await testApp.client`
       INSERT INTO usuarios (id_provedor, nome, email, is_admin)
-      VALUES ('admin-user', 'Admin User', 'admin@example.com', true)
+      VALUES (${idProvedor}, ${name}, ${email}, ${isAdmin})
     `;
 
-    const token = await signTestToken(keyPair, {
-      sub: "admin-user",
-      email: "admin@example.com",
-      name: "Admin User",
-    });
-
-    testApp.app.get("/admin-only", { onRequest: [requireAdmin()] }, async () => {
-      return { ok: true };
-    });
-
-    const res = await testApp.app.inject({
+    const token = await authed.signToken(idProvedor, email, name);
+    return testApp.app.inject({
       method: "GET",
       url: "/admin-only",
       headers: { authorization: `Bearer ${token}` },
     });
+  }
 
+  it("allows admin to access protected route", async () => {
+    const res = await setup("admin-user", "admin@example.com", "Admin User", true);
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.payload);
     expect(body.ok).toBe(true);
   });
 
   it("returns 403 ADMIN_REQUIRED for non-admin user", async () => {
-    const keyPair = await generateTestKeyPair();
-    const validateToken = await createTestJwksProvider(keyPair);
-    testApp = await createTestApp({ validateToken });
-    await testApp.truncateAll();
-
-    // Create non-admin user directly in the database
-    await testApp.client`
-      INSERT INTO usuarios (id_provedor, nome, email, is_admin)
-      VALUES ('regular-user', 'Regular User', 'regular@example.com', false)
-    `;
-
-    const token = await signTestToken(keyPair, {
-      sub: "regular-user",
-      email: "regular@example.com",
-      name: "Regular User",
-    });
-
-    testApp.app.get("/admin-only", { onRequest: [requireAdmin()] }, async () => {
-      return { ok: true };
-    });
-
-    const res = await testApp.app.inject({
-      method: "GET",
-      url: "/admin-only",
-      headers: { authorization: `Bearer ${token}` },
-    });
-
+    const res = await setup("regular-user", "regular@example.com", "Regular User", false);
     expect(res.statusCode).toBe(403);
     const body = JSON.parse(res.payload);
     expect(body.code).toBe("ADMIN_REQUIRED");

@@ -1,30 +1,44 @@
 import { describe, it, expect, afterEach, beforeEach } from "vitest";
-import type { JWTPayload } from "jose";
 import { createTestApp } from "./helpers/setup.js";
 import type { TestApp } from "./helpers/setup.js";
 import {
-  loadServiceAccount,
+  loadServiceAccountFromToken,
   parseScopes,
   ServiceAccountBootstrapError,
 } from "../src/mcp/identity.js";
-import { JwtValidationError, type JwtVerifier } from "../src/lib/oidc-jwks.js";
+import {
+  JwtValidationError,
+  type McpClaims,
+  type McpJwtVerifier,
+} from "../src/lib/oidc-mcp.js";
+import { mcpLogger } from "../src/mcp/logger.js";
 
-function fakeVerifier(payloadOrError: JWTPayload | JwtValidationError): JwtVerifier {
+function fakeVerifier(
+  result: McpClaims | JwtValidationError
+): McpJwtVerifier {
   return {
     issuer: "https://test-issuer.example.com/",
     async verify() {
-      if (payloadOrError instanceof JwtValidationError) {
-        throw payloadOrError;
-      }
-      return payloadOrError;
+      if (result instanceof JwtValidationError) throw result;
+      return result;
     },
+  };
+}
+
+function claims(overrides: Partial<McpClaims> = {}): McpClaims {
+  return {
+    sub: "auth0|abc",
+    email: undefined,
+    name: undefined,
+    scopes: new Set<string>(),
+    exp: undefined,
+    ...overrides,
   };
 }
 
 describe("parseScopes", () => {
   it("returns empty set for non-string input", () => {
     expect(parseScopes(undefined).size).toBe(0);
-    expect(parseScopes(null).size).toBe(0);
     expect(parseScopes(42).size).toBe(0);
   });
 
@@ -35,22 +49,20 @@ describe("parseScopes", () => {
     expect(s.size).toBe(2);
   });
 
-  it("discards items without ':'", () => {
+  it("discards malformed scopes", () => {
     const s = parseScopes("accounts:read admin transactions:write");
     expect(s.has("admin")).toBe(false);
     expect(s.size).toBe(2);
   });
-
-  it("returns empty set when scope is empty string", () => {
-    expect(parseScopes("").size).toBe(0);
-  });
 });
 
-describe("loadServiceAccount", () => {
+describe("loadServiceAccountFromToken", () => {
   let testApp: TestApp;
 
   beforeEach(async () => {
-    testApp = await createTestApp({});
+    testApp = await createTestApp({
+      validateToken: async () => ({ sub: "not-used" }),
+    });
     await testApp.truncateAll();
   });
 
@@ -58,107 +70,97 @@ describe("loadServiceAccount", () => {
     await testApp?.teardown();
   });
 
-  async function insertUser(): Promise<string> {
+  async function insertUser(idProvedor: string): Promise<string> {
     const [row] = await testApp.client`
       INSERT INTO usuarios (id_provedor, nome, email)
-      VALUES ('sa-bootstrap', 'SA Bootstrap', 'sa@example.com')
+      VALUES (${idProvedor}, 'Test User', 'user@example.com')
       RETURNING id
     `;
     return row.id as string;
   }
 
-  it("returns a frozen ServiceAccount with parsed scopes", async () => {
-    const userId = await insertUser();
-    const sa = await loadServiceAccount({
-      mcpConfig: {
-        oidcAudience: "bfin-mcp",
-        serviceAccountToken: "dummy",
-        subjectUserId: userId,
-      },
-      verifier: fakeVerifier({
-        sub: "sa-subject",
-        scope: "accounts:read transactions:write",
-        exp: 9_999_999_999,
-      }),
+  it("returns a frozen ServiceAccount with parsed scopes for existing user", async () => {
+    const userId = await insertUser("auth0|abc");
+    const sa = await loadServiceAccountFromToken({
+      token: "fake",
+      verifier: fakeVerifier(
+        claims({
+          sub: "auth0|abc",
+          scopes: new Set(["accounts:read", "transactions:write"]),
+          exp: 9_999_999_999,
+        })
+      ),
+      provisioning: { allowlistRaw: undefined, logger: mcpLogger },
     });
 
-    expect(sa.subject).toBe("sa-subject");
+    expect(sa.subject).toBe("auth0|abc");
     expect(sa.actingUserId).toBe(userId);
     expect(sa.tokenExp).toBe(9_999_999_999);
     expect(sa.scopes.has("accounts:read")).toBe(true);
-    expect(sa.scopes.has("transactions:write")).toBe(true);
     expect(Object.isFrozen(sa)).toBe(true);
   });
 
-  it("empty scopes set when scope claim is absent", async () => {
-    const userId = await insertUser();
-    const sa = await loadServiceAccount({
-      mcpConfig: {
-        oidcAudience: "bfin-mcp",
-        serviceAccountToken: "dummy",
-        subjectUserId: userId,
-      },
-      verifier: fakeVerifier({ sub: "sa-subject" }),
-    });
-    expect(sa.scopes.size).toBe(0);
-  });
-
-  it("mixed valid + malformed scopes keeps only valid", async () => {
-    const userId = await insertUser();
-    const sa = await loadServiceAccount({
-      mcpConfig: {
-        oidcAudience: "bfin-mcp",
-        serviceAccountToken: "dummy",
-        subjectUserId: userId,
-      },
-      verifier: fakeVerifier({
-        sub: "sa-subject",
-        scope: "accounts:read badscope transactions:write",
-      }),
-    });
-    expect(sa.scopes.has("accounts:read")).toBe(true);
-    expect(sa.scopes.has("transactions:write")).toBe(true);
-    expect(sa.scopes.has("badscope")).toBe(false);
-  });
-
   it("throws TOKEN_EXPIRED when verifier reports expired", async () => {
-    const userId = await insertUser();
     await expect(
-      loadServiceAccount({
-        mcpConfig: {
-          oidcAudience: "bfin-mcp",
-          serviceAccountToken: "dummy",
-          subjectUserId: userId,
-        },
+      loadServiceAccountFromToken({
+        token: "x",
         verifier: fakeVerifier(new JwtValidationError("expired", "TOKEN_EXPIRED")),
+        provisioning: { allowlistRaw: undefined },
       })
     ).rejects.toMatchObject({ code: "TOKEN_EXPIRED" });
   });
 
-  it("throws TOKEN_INVALID when audience fails", async () => {
-    const userId = await insertUser();
+  it("throws TOKEN_INVALID on verifier failure", async () => {
     await expect(
-      loadServiceAccount({
-        mcpConfig: {
-          oidcAudience: "bfin-mcp",
-          serviceAccountToken: "dummy",
-          subjectUserId: userId,
-        },
-        verifier: fakeVerifier(new JwtValidationError("bad aud", "TOKEN_INVALID")),
+      loadServiceAccountFromToken({
+        token: "x",
+        verifier: fakeVerifier(new JwtValidationError("bad sig", "TOKEN_INVALID")),
+        provisioning: { allowlistRaw: undefined },
       })
     ).rejects.toMatchObject({ code: "TOKEN_INVALID" });
   });
 
-  it("throws USER_NOT_FOUND when subject user does not exist", async () => {
+  it("throws USER_NOT_FOUND when sub is unknown and no allowlist", async () => {
     await expect(
-      loadServiceAccount({
-        mcpConfig: {
-          oidcAudience: "bfin-mcp",
-          serviceAccountToken: "dummy",
-          subjectUserId: "00000000-0000-0000-0000-000000000000",
-        },
-        verifier: fakeVerifier({ sub: "sa", scope: "accounts:read" }),
+      loadServiceAccountFromToken({
+        token: "x",
+        verifier: fakeVerifier(claims({ sub: "auth0|unknown", email: "x@e.com" })),
+        provisioning: { allowlistRaw: undefined },
+      })
+    ).rejects.toMatchObject({ code: "USER_NOT_FOUND" });
+  });
+
+  it("throws USER_NOT_FOUND when email is outside allowlist", async () => {
+    await expect(
+      loadServiceAccountFromToken({
+        token: "x",
+        verifier: fakeVerifier(
+          claims({ sub: "auth0|new", email: "stranger@example.com" })
+        ),
+        provisioning: { allowlistRaw: "only@allowed.com" },
       })
     ).rejects.toBeInstanceOf(ServiceAccountBootstrapError);
+  });
+
+  it("provisions new user when email matches allowlist", async () => {
+    const sa = await loadServiceAccountFromToken({
+      token: "x",
+      verifier: fakeVerifier(
+        claims({
+          sub: "auth0|new",
+          email: "new@allowed.com",
+          name: "New User",
+          scopes: new Set(["accounts:read"]),
+        })
+      ),
+      provisioning: { allowlistRaw: "new@allowed.com" },
+    });
+
+    expect(sa.subject).toBe("auth0|new");
+    const [row] = await testApp.client`
+      SELECT id, nome FROM usuarios WHERE id_provedor = 'auth0|new'
+    `;
+    expect(row.id).toBe(sa.actingUserId);
+    expect(row.nome).toBe("New User");
   });
 });

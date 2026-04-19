@@ -1,7 +1,7 @@
 import { z, ZodType } from "zod";
 import { ValidationError } from "./errors.js";
 
-export const uuidSchema = z.string().uuid();
+export const uuidSchema = z.uuid();
 
 export function parseOrThrow<T>(schema: ZodType<T>, data: unknown, context?: string): T {
   const result = schema.safeParse(data);

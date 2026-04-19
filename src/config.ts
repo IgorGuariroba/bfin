@@ -15,6 +15,7 @@ const configSchema = z.object({
   METRICS_TOKEN: z.preprocess((val) => (val === "" ? undefined : val), z.string().optional()),
   OIDC_ISSUER_URL: z.string().min(1, "OIDC_ISSUER_URL cannot be empty"),
   OIDC_AUDIENCE: z.preprocess((val) => (val === "" ? undefined : val), z.string().optional()),
+  OIDC_ALLOW_INSECURE: z.enum(["true", "false"]).default("false"),
 });
 
 export type Config = {
@@ -32,6 +33,7 @@ export type Config = {
   metricsToken: string | undefined;
   oidcIssuerUrl: string;
   oidcAudience: string | undefined;
+  oidcAllowInsecure: boolean;
 };
 
 export class ConfigError extends Error {
@@ -64,6 +66,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     metricsToken: v.METRICS_TOKEN,
     oidcIssuerUrl: v.OIDC_ISSUER_URL,
     oidcAudience: v.OIDC_AUDIENCE,
+    oidcAllowInsecure: v.OIDC_ALLOW_INSECURE === "true",
   };
 }
 
@@ -88,31 +91,61 @@ export const config: Config = new Proxy({} as Config, {
   },
 });
 
-const mcpConfigSchema = z.object({
-  MCP_OIDC_AUDIENCE: z.string().min(1, "MCP_OIDC_AUDIENCE cannot be empty"),
-  MCP_SERVICE_ACCOUNT_TOKEN: z.string().min(1, "MCP_SERVICE_ACCOUNT_TOKEN cannot be empty"),
-  MCP_SUBJECT_USER_ID: z.string().uuid("MCP_SUBJECT_USER_ID must be a UUID"),
+const httpMcpEnabledSchema = z.object({
+  MCP_HTTP_ENABLED: z.enum(["true", "false"]).default("false"),
 });
 
-export type McpConfig = {
-  oidcAudience: string;
-  serviceAccountToken: string;
-  subjectUserId: string;
-};
+const httpMcpEnabledConfigSchema = z.object({
+  MCP_HTTP_BASE_URL: z.url("MCP_HTTP_BASE_URL must be a valid URL"),
+  MCP_AUDIENCE_HTTP: z.string().min(1, "MCP_AUDIENCE_HTTP cannot be empty"),
+  MCP_AUTH_SERVER_URL: z.url("MCP_AUTH_SERVER_URL must be a valid URL"),
+  MCP_PROVISIONING_ALLOWED_EMAILS: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.string().optional()
+  ),
+  MCP_SESSION_STORE: z.enum(["memory", "redis"]).default("memory"),
+  REDIS_URL: z.string().optional(),
+}).refine((data) => data.MCP_SESSION_STORE !== "redis" || (data.REDIS_URL && data.REDIS_URL.length > 0), {
+  message: "REDIS_URL is required when MCP_SESSION_STORE=redis",
+  path: ["REDIS_URL"],
+});
 
-export function loadMcpConfig(env: NodeJS.ProcessEnv = process.env): McpConfig {
-  const parsed = mcpConfigSchema.safeParse(env);
+export type HttpMcpConfig =
+  | {
+      enabled: false;
+    }
+  | {
+      enabled: true;
+      baseUrl: string;
+      audience: string;
+      authServerUrl: string;
+      provisioningAllowedEmails: string | undefined;
+      sessionStore: "memory" | "redis";
+      redisUrl: string | undefined;
+    };
 
+export function loadHttpMcpConfig(env: NodeJS.ProcessEnv = process.env): HttpMcpConfig {
+  const gate = httpMcpEnabledSchema.safeParse(env);
+  if (!gate.success || gate.data.MCP_HTTP_ENABLED !== "true") {
+    return { enabled: false };
+  }
+
+  const parsed = httpMcpEnabledConfigSchema.safeParse(env);
   if (!parsed.success) {
     const issues = parsed.error.issues
       .map((issue) => `  - ${issue.path.join(".")}: ${issue.message}`)
       .join("\n");
-    throw new ConfigError(`Invalid MCP environment variables:\n${issues}`);
+    throw new ConfigError(`Invalid MCP HTTP environment variables:\n${issues}`);
   }
 
+  const v = parsed.data;
   return {
-    oidcAudience: parsed.data.MCP_OIDC_AUDIENCE,
-    serviceAccountToken: parsed.data.MCP_SERVICE_ACCOUNT_TOKEN,
-    subjectUserId: parsed.data.MCP_SUBJECT_USER_ID,
+    enabled: true,
+    baseUrl: v.MCP_HTTP_BASE_URL.replace(/\/$/, ""),
+    audience: v.MCP_AUDIENCE_HTTP,
+    authServerUrl: v.MCP_AUTH_SERVER_URL.replace(/\/$/, ""),
+    provisioningAllowedEmails: v.MCP_PROVISIONING_ALLOWED_EMAILS,
+    sessionStore: v.MCP_SESSION_STORE,
+    redisUrl: v.REDIS_URL,
   };
 }

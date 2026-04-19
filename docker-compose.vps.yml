@@ -1,0 +1,125 @@
+# Dedicated stack for the new VPS (api + postgres + redis + caddy)
+# Usage: docker compose -f docker-compose.vps.yml --env-file /opt/bfin/.env up -d --build
+#
+# Place this file at /opt/bfin/app/docker-compose.vps.yml on the VPS.
+
+services:
+  api:
+    build: .
+    user: node
+    env_file: /opt/bfin/.env
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - MCP_HTTP_ENABLED=${MCP_HTTP_ENABLED:-true}
+      - MCP_HTTP_BASE_URL=${MCP_HTTP_BASE_URL}
+      - MCP_AUDIENCE_HTTP=${MCP_AUDIENCE_HTTP}
+      - MCP_AUTH_SERVER_URL=${MCP_AUTH_SERVER_URL}
+      - MCP_PROVISIONING_ALLOWED_EMAILS=${MCP_PROVISIONING_ALLOWED_EMAILS:-}
+      - MCP_SESSION_STORE=${MCP_SESSION_STORE:-redis}
+      - OIDC_ISSUER_URL=${OIDC_ISSUER_URL}
+      - OIDC_AUDIENCE=${OIDC_AUDIENCE:-}
+      - METRICS_TOKEN=${METRICS_TOKEN:-}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    mem_limit: 512m
+    cpus: 1.0
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - backend
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-bfin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-bfin}
+    volumes:
+      - /opt/bfin/data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    mem_limit: 512m
+    cpus: 1.0
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - backend
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - /opt/bfin/data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    mem_limit: 256m
+    cpus: 0.5
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - backend
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  caddy:
+    image: caddy:2.8-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /opt/bfin/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /opt/bfin/data/caddy:/data
+    mem_limit: 256m
+    cpus: 0.5
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - backend
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  backend:

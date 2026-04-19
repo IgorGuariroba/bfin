@@ -11,7 +11,7 @@ export const goalsList: McpTool<{ contaId: string }> = {
   requiredScope: "goals:read",
   minRole: "viewer",
   inputSchema: z.object({
-    contaId: z.string().uuid(),
+    contaId: z.uuid(),
   }),
   async handler({ input }) {
     const row = await db.query.meta.findFirst({
@@ -36,7 +36,7 @@ export const goalsCreate: McpTool<{ contaId: string; porcentagemReserva: number 
   requiredScope: "goals:write",
   minRole: "owner",
   inputSchema: z.object({
-    contaId: z.string().uuid(),
+    contaId: z.uuid(),
     porcentagemReserva: z.number().min(0).max(100),
   }),
   async handler({ input }) {
@@ -61,7 +61,7 @@ export const goalsUpdate: McpTool<{ contaId: string; porcentagemReserva: number 
   requiredScope: "goals:write",
   minRole: "owner",
   inputSchema: z.object({
-    contaId: z.string().uuid(),
+    contaId: z.uuid(),
     porcentagemReserva: z.number().min(0).max(100),
   }),
   async handler({ input }) {

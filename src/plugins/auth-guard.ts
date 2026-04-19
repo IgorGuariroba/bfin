@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import fp from "fastify-plugin";
-import { getTokenValidator, TokenValidator, TokenValidationError } from "./oidc.js";
+import { TokenValidator, TokenValidationError } from "./oidc.js";
 import { findOrCreateUser, UserCreationError } from "../services/user-service.js";
 import { errors as joseErrors } from "jose";
 
@@ -13,7 +13,7 @@ export interface AuthUser {
 }
 
 export interface AuthGuardOptions {
-  validateToken?: TokenValidator;
+  validateToken: TokenValidator;
   publicRoutes?: string[];
 }
 
@@ -30,7 +30,7 @@ async function authGuardPlugin(
   app: FastifyInstance,
   options: AuthGuardOptions
 ): Promise<void> {
-  const validateToken = options.validateToken ?? getTokenValidator();
+  const validateToken = options.validateToken;
   const publicRoutes = new Set(options.publicRoutes ?? DEFAULT_PUBLIC_ROUTES);
 
   app.decorateRequest("user", null);
@@ -38,6 +38,10 @@ async function authGuardPlugin(
   app.addHook("onRequest", async (request: FastifyRequest, reply: FastifyReply) => {
     const pathname = request.url.split("?", 1)[0];
     if (publicRoutes.has(pathname)) {
+      return;
+    }
+    // /mcp/* has its own OAuth 2.1 bearer auth (see src/plugins/mcp-http.ts)
+    if (pathname === "/mcp" || pathname.startsWith("/mcp/")) {
       return;
     }
 

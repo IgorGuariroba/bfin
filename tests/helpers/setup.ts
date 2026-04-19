@@ -3,6 +3,11 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import type { FastifyInstance } from "fastify";
 import { register } from "prom-client";
 import type { TokenValidator } from "../../src/plugins/oidc.js";
+import type { McpHttpPluginOptions } from "../../src/plugins/mcp-http.js";
+import {
+  generateTestKeyPair,
+  createTestJwksProvider,
+} from "./auth.js";
 
 export interface TestApp {
   app: FastifyInstance;
@@ -14,9 +19,24 @@ export interface TestApp {
 
 export interface CreateTestAppOptions {
   validateToken?: TokenValidator;
+  mcpHttpOptions?: McpHttpPluginOptions;
 }
 
-export async function createTestApp(options: CreateTestAppOptions = {}): Promise<TestApp> {
+// Lazy singleton — real RS256 verifier with local keys, created once per process.
+let _defaultVerifier: TokenValidator | undefined;
+
+async function getDefaultVerifier(): Promise<TokenValidator> {
+  if (!_defaultVerifier) {
+    const keyPair = await generateTestKeyPair();
+    _defaultVerifier = await createTestJwksProvider(keyPair);
+  }
+  return _defaultVerifier;
+}
+
+export async function createTestApp(
+  options: CreateTestAppOptions = {},
+  registerRoutes?: (app: FastifyInstance) => void
+): Promise<TestApp> {
   const databaseUrl = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
   if (!databaseUrl) {
     throw new Error("TEST_DATABASE_URL not set — did globalSetup run?");
@@ -27,8 +47,17 @@ export async function createTestApp(options: CreateTestAppOptions = {}): Promise
   // subsequent buildApp() calls in the same process don't double-register.
   register.clear();
 
+  const validateToken = options.validateToken ?? await getDefaultVerifier();
+
   const { buildApp } = await import("../../src/app.js");
-  const app = buildApp({ authGuardOptions: { validateToken: options.validateToken } });
+  const app = buildApp({
+    authGuardOptions: { validateToken },
+    mcpHttpOptions: options.mcpHttpOptions,
+  });
+
+  registerRoutes?.(app);
+
+  await app.ready();
 
   const client = postgres(databaseUrl, { max: 1 });
   const db = drizzle({ client });

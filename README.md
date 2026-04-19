@@ -16,13 +16,28 @@ The API will be available at `http://127.0.0.1:3000`.
 
 See [docs/deploy.md](docs/deploy.md) for environment variables, production compose usage, migration behavior, and smoke tests.
 
+When deploying the MCP HTTP plugin, ensure the following environment variables are set:
+
+| Variable | Example |
+|---|---|
+| `MCP_HTTP_ENABLED` | `true` |
+| `MCP_HTTP_BASE_URL` | `https://api.bfincont.com.br/mcp` |
+| `MCP_AUDIENCE_HTTP` | `https://mcp.bfincont.com.br` |
+| `MCP_AUTH_SERVER_URL` | `https://bfin.us.auth0.com` |
+| `MCP_PROVISIONING_ALLOWED_EMAILS` | `alice@example.com,bob@example.com` |
+| `MCP_SESSION_STORE` | `redis` (recommended in prod) |
+| `REDIS_URL` | `redis://redis:6379` |
+
 ## CI & Branch Protection
 
 The CI pipeline, quality gates and branch protection workflow are documented in [docs/ci.md](docs/ci.md).
 
 ## MCP server
 
-BFin also ships a second entrypoint — an MCP (Model Context Protocol) server over
-STDIO + JSON-RPC 2.0 — that exposes the domain capabilities as tools for MCP
-clients (Claude Desktop, Claude Code, etc.). See [docs/mcp.md](docs/mcp.md) for
-setup, supported scopes, and the service-account model.
+BFin exposes a **Remote MCP** at `https://api.bfincont.com.br/mcp` — pluggable
+in Claude/ChatGPT via OAuth. It uses HTTP+SSE transport with OAuth 2.1
+authentication (Auth0 as the Authorization Server), so users can connect without
+installing anything locally.
+
+See [docs/mcp.md](docs/mcp.md) for setup, supported scopes, provisioning, and
+troubleshooting.

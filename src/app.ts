@@ -18,11 +18,13 @@ import { goalRoutes } from "./routes/goals.js";
 import { generateRequestId } from "./plugins/request-id.js";
 import { registerErrorHandler } from "./lib/error-handler.js";
 import { authGuard, AuthGuardOptions } from "./plugins/auth-guard.js";
+import { mcpHttp, type McpHttpPluginOptions } from "./plugins/mcp-http.js";
 import { registerProjectionListener } from "./services/projection-engine/index.js";
 import { config } from "./config.js";
 
 export interface BuildAppOptions {
   authGuardOptions?: AuthGuardOptions;
+  mcpHttpOptions?: McpHttpPluginOptions;
 }
 
 export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
@@ -85,7 +87,8 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     app.log.warn("Metrics endpoint disabled: set METRICS_TOKEN to enable in production");
   }
 
-  void app.register(authGuard, options.authGuardOptions ?? {});
+  if (options.authGuardOptions) void app.register(authGuard, options.authGuardOptions);
+  if (options.mcpHttpOptions) void app.register(mcpHttp, options.mcpHttpOptions);
   void app.register(healthRoutes);
   void app.register(meRoutes);
   void app.register(categoryRoutes);
