@@ -16,7 +16,7 @@ export function collectScopes(registry: ToolRegistry): string[] {
   for (const tool of registry.all()) {
     if (tool.requiredScope) seen.add(tool.requiredScope);
   }
-  return [...seen].sort();
+  return [...seen].sort((a, b) => a.localeCompare(b));
 }
 
 export function buildProtectedResourceMetadata(params: {
