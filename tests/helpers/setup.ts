@@ -71,6 +71,7 @@ export async function createTestApp(
         SELECT tablename
         FROM pg_tables
         WHERE schemaname = 'public'
+        ORDER BY tablename
       `;
       if (rows.length === 0) return;
       const list = rows.map((r) => `"public"."${r.tablename}"`).join(", ");
