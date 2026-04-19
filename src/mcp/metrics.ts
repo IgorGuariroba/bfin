@@ -1,32 +1,44 @@
-import { Counter, Histogram, Gauge } from "prom-client";
+import { Counter, Histogram, Gauge, register } from "prom-client";
 
 const PREFIX = "bfin_mcp_";
 
-export const mcpToolCallsTotal = new Counter({
-  name: `${PREFIX}tool_calls_total`,
-  help: "Total MCP tool calls",
-  labelNames: ["tool", "outcome"] as const,
-});
+function getOrCreateCounter<T extends string>(name: string, help: string, labelNames: T[]) {
+  return (register.getSingleMetric(name) as Counter<T> | undefined) ?? new Counter({ name, help, labelNames });
+}
 
-export const mcpToolDurationSeconds = new Histogram({
-  name: `${PREFIX}tool_duration_seconds`,
-  help: "MCP tool call duration in seconds",
-  labelNames: ["tool"] as const,
-  buckets: [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
-});
+function getOrCreateHistogram<T extends string>(name: string, help: string, labelNames: T[], buckets?: number[]) {
+  return (register.getSingleMetric(name) as Histogram<T> | undefined) ?? new Histogram({ name, help, labelNames, buckets });
+}
 
-export const mcpActiveSessions = new Gauge({
-  name: `${PREFIX}active_sessions`,
-  help: "Currently active MCP sessions",
-});
+function getOrCreateGauge(name: string, help: string) {
+  return (register.getSingleMetric(name) as Gauge | undefined) ?? new Gauge({ name, help });
+}
 
-export const mcpAuthFailuresTotal = new Counter({
-  name: `${PREFIX}auth_failures_total`,
-  help: "Total MCP auth failures",
-  labelNames: ["reason"] as const,
-});
+export const mcpToolCallsTotal = getOrCreateCounter(
+  `${PREFIX}tool_calls_total`,
+  "Total MCP tool calls",
+  ["tool", "outcome"]
+);
+
+export const mcpToolDurationSeconds = getOrCreateHistogram(
+  `${PREFIX}tool_duration_seconds`,
+  "MCP tool call duration in seconds",
+  ["tool"],
+  [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5]
+);
+
+export const mcpActiveSessions = getOrCreateGauge(
+  `${PREFIX}active_sessions`,
+  "Currently active MCP sessions"
+);
+
+export const mcpAuthFailuresTotal = getOrCreateCounter(
+  `${PREFIX}auth_failures_total`,
+  "Total MCP auth failures",
+  ["reason"]
+);
 
 export function ensureMcpMetricsRegistered(): void {
-  // prom-client auto-registers on construction; this function
+  // Metrics are created idempotently above; this function
   // exists so the importing side has an explicit entry point.
 }
