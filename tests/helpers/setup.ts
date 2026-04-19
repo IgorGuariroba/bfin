@@ -4,6 +4,7 @@ import type { FastifyInstance } from "fastify";
 import { register } from "prom-client";
 import type { TokenValidator } from "../../src/plugins/oidc.js";
 import type { McpHttpPluginOptions } from "../../src/plugins/mcp-http.js";
+import { eventBus } from "../../src/lib/event-bus.js";
 import {
   generateTestKeyPair,
   createTestJwksProvider,
@@ -67,16 +68,29 @@ export async function createTestApp(
     client,
     db,
     async truncateAll() {
+      // Remove background listeners to prevent race conditions during truncate.
+      // Pending setImmediate callbacks may still run, so flush the event loop
+      // before acquiring table locks.
+      eventBus.removeAllListeners("projecao:recalcular");
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      await new Promise<void>((resolve) => setTimeout(resolve, 50));
+
       const rows = await client<{ tablename: string }[]>`
         SELECT tablename
         FROM pg_tables
         WHERE schemaname = 'public'
+        ORDER BY tablename
       `;
       if (rows.length === 0) return;
       const list = rows.map((r) => `"public"."${r.tablename}"`).join(", ");
       await client.unsafe(`TRUNCATE TABLE ${list} RESTART IDENTITY CASCADE`);
     },
     async teardown() {
+      // Remove background listeners and give pending async work a chance to
+      // finish before closing the app, preventing race conditions with the
+      // next test's truncateAll.
+      eventBus.removeAllListeners("projecao:recalcular");
+      await new Promise<void>((resolve) => setTimeout(resolve, 50));
       await app.close();
       await client.end();
     },
