@@ -1,11 +1,22 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { createTestApp } from "./helpers/setup.js";
 import type { TestApp } from "./helpers/setup.js";
 import {
-  generateTestKeyPair,
-  createTestJwksProvider,
-  signTestToken,
-} from "./helpers/auth.js";
+  setupAuthedApp,
+  seedTipoCategorias,
+  createUser,
+  createAccountForUser,
+  createCategoriaBySlug,
+  type AuthedTestApp,
+} from "./helpers/fixtures.js";
+
+interface TwoAccountFixture {
+  authed: AuthedTestApp;
+  userAId: string;
+  userBId: string;
+  contaAId: string;
+  contaBId: string;
+  categoriaId: string;
+}
 
 describe("API HTTP IDOR protection", () => {
   let testApp: TestApp;
@@ -14,76 +25,49 @@ describe("API HTTP IDOR protection", () => {
     await testApp?.teardown();
   });
 
-  async function createUser(app: TestApp, idProvedor: string, email: string) {
-    const [user] = await app.client`
-      INSERT INTO usuarios (id_provedor, nome, email, is_admin)
-      VALUES (${idProvedor}, ${email.split("@")[0]}, ${email}, false)
-      RETURNING id
-    `;
-    return user.id as string;
-  }
+  async function setupTwoAccounts(
+    aIdp: string,
+    aEmail: string,
+    bIdp: string,
+    bEmail: string,
+    categoriaNome: string,
+    categoriaSlug: string
+  ): Promise<TwoAccountFixture> {
+    const authed = await setupAuthedApp();
+    testApp = authed.testApp;
+    await seedTipoCategorias(testApp);
 
-  async function seedTipoCategorias(app: TestApp) {
-    await app.client`
-      INSERT INTO tipo_categorias (slug, nome)
-      VALUES ('receita', 'Receita'), ('despesa', 'Despesa'), ('divida', 'Dívida')
-      ON CONFLICT (slug) DO NOTHING
-    `;
-  }
+    const userAId = await createUser(testApp, aIdp, aEmail);
+    const userBId = await createUser(testApp, bIdp, bEmail);
+    const contaAId = await createAccountForUser(testApp, userAId, `Conta ${aIdp}`);
+    const contaBId = await createAccountForUser(testApp, userBId, `Conta ${bIdp}`);
+    const categoriaId = await createCategoriaBySlug(testApp, categoriaNome, categoriaSlug);
 
-  async function createCategory(app: TestApp, nome: string, tipo: string) {
-    const [row] = await app.client`
-      INSERT INTO categorias (nome, tipo_categoria_id)
-      SELECT ${nome}, id FROM tipo_categorias WHERE slug = ${tipo}
-      RETURNING id
-    `;
-    return row.id as string;
-  }
-
-  async function createAccount(app: TestApp, usuarioId: string, nome: string) {
-    const [conta] = await app.client`
-      INSERT INTO contas (nome, saldo_inicial) VALUES (${nome}, 0) RETURNING id
-    `;
-    await app.client`
-      INSERT INTO conta_usuarios (conta_id, usuario_id, papel)
-      VALUES (${conta.id}, ${usuarioId}, 'owner')
-    `;
-    return conta.id as string;
-  }
-
-  async function makeToken(keyPair: Awaited<ReturnType<typeof generateTestKeyPair>>, idProvedor: string, email: string) {
-    return signTestToken(keyPair, { sub: idProvedor, email, name: idProvedor });
+    return { authed, userAId, userBId, contaAId, contaBId, categoriaId };
   }
 
   describe("Transactions", () => {
     it("rejects updating a transaction from another account", async () => {
-      const keyPair = await generateTestKeyPair();
-      testApp = await createTestApp({ validateToken: await createTestJwksProvider(keyPair) });
-      await testApp.truncateAll();
-      await seedTipoCategorias(testApp);
+      const fx = await setupTwoAccounts(
+        "u-a", "a@example.com", "u-b", "b@example.com", "Alimentação", "despesa"
+      );
 
-      const userA = await createUser(testApp, "u-a", "a@example.com");
-      const userB = await createUser(testApp, "u-b", "b@example.com");
-      const contaA = await createAccount(testApp, userA, "Conta A");
-      const contaB = await createAccount(testApp, userB, "Conta B");
-      const catId = await createCategory(testApp, "Alimentação", "despesa");
-
-      const tokenB = await makeToken(keyPair, "u-b", "b@example.com");
+      const tokenB = await fx.authed.signToken("u-b", "b@example.com");
       const createRes = await testApp.app.inject({
         method: "POST",
         url: "/movimentacoes",
         headers: { authorization: `Bearer ${tokenB}` },
         payload: {
-          contaId: contaB,
+          contaId: fx.contaBId,
           tipo: "despesa",
-          categoriaId: catId,
+          categoriaId: fx.categoriaId,
           valor: 100,
           data: "2024-01-20",
         },
       });
       const txn = JSON.parse(createRes.payload);
 
-      const tokenA = await makeToken(keyPair, "u-a", "a@example.com");
+      const tokenA = await fx.authed.signToken("u-a", "a@example.com");
       const res = await testApp.app.inject({
         method: "PUT",
         url: `/movimentacoes/${txn.id}`,
@@ -102,33 +86,26 @@ describe("API HTTP IDOR protection", () => {
     });
 
     it("rejects deleting a transaction from another account", async () => {
-      const keyPair = await generateTestKeyPair();
-      testApp = await createTestApp({ validateToken: await createTestJwksProvider(keyPair) });
-      await testApp.truncateAll();
-      await seedTipoCategorias(testApp);
+      const fx = await setupTwoAccounts(
+        "u-c", "c@example.com", "u-d", "d@example.com", "Alimentação", "despesa"
+      );
 
-      const userA = await createUser(testApp, "u-c", "c@example.com");
-      const userB = await createUser(testApp, "u-d", "d@example.com");
-      const contaA = await createAccount(testApp, userA, "Conta C");
-      const contaB = await createAccount(testApp, userB, "Conta D");
-      const catId = await createCategory(testApp, "Alimentação", "despesa");
-
-      const tokenB = await makeToken(keyPair, "u-d", "d@example.com");
+      const tokenB = await fx.authed.signToken("u-d", "d@example.com");
       const createRes = await testApp.app.inject({
         method: "POST",
         url: "/movimentacoes",
         headers: { authorization: `Bearer ${tokenB}` },
         payload: {
-          contaId: contaB,
+          contaId: fx.contaBId,
           tipo: "despesa",
-          categoriaId: catId,
+          categoriaId: fx.categoriaId,
           valor: 200,
           data: "2024-01-20",
         },
       });
       const txn = JSON.parse(createRes.payload);
 
-      const tokenA = await makeToken(keyPair, "u-c", "c@example.com");
+      const tokenA = await fx.authed.signToken("u-c", "c@example.com");
       const res = await testApp.app.inject({
         method: "DELETE",
         url: `/movimentacoes/${txn.id}`,
@@ -145,35 +122,37 @@ describe("API HTTP IDOR protection", () => {
   });
 
   describe("Debts", () => {
-    it("rejects deleting a debt from another account", async () => {
-      const keyPair = await generateTestKeyPair();
-      testApp = await createTestApp({ validateToken: await createTestJwksProvider(keyPair) });
-      await testApp.truncateAll();
-      await seedTipoCategorias(testApp);
-
-      const userA = await createUser(testApp, "u-e", "e@example.com");
-      const userB = await createUser(testApp, "u-f", "f@example.com");
-      const contaA = await createAccount(testApp, userA, "Conta E");
-      const contaB = await createAccount(testApp, userB, "Conta F");
-      const catId = await createCategory(testApp, "Cartão", "divida");
-
-      const tokenB = await makeToken(keyPair, "u-f", "f@example.com");
+    async function createDividaAsB(
+      fx: TwoAccountFixture,
+      bIdp: string,
+      bEmail: string,
+      valorTotal: number,
+      totalParcelas: number
+    ) {
+      const tokenB = await fx.authed.signToken(bIdp, bEmail);
       const createRes = await testApp.app.inject({
         method: "POST",
         url: "/dividas",
         headers: { authorization: `Bearer ${tokenB}` },
         payload: {
-          contaId: contaB,
-          categoriaId: catId,
+          contaId: fx.contaBId,
+          categoriaId: fx.categoriaId,
           descricao: "Dívida B",
-          valorTotal: 1000,
-          totalParcelas: 2,
+          valorTotal,
+          totalParcelas,
           dataInicio: "2024-01-01",
         },
       });
-      const divida = JSON.parse(createRes.payload);
+      return JSON.parse(createRes.payload);
+    }
 
-      const tokenA = await makeToken(keyPair, "u-e", "e@example.com");
+    it("rejects deleting a debt from another account", async () => {
+      const fx = await setupTwoAccounts(
+        "u-e", "e@example.com", "u-f", "f@example.com", "Cartão", "divida"
+      );
+      const divida = await createDividaAsB(fx, "u-f", "f@example.com", 1000, 2);
+
+      const tokenA = await fx.authed.signToken("u-e", "e@example.com");
       const res = await testApp.app.inject({
         method: "DELETE",
         url: `/dividas/${divida.id}`,
@@ -189,34 +168,12 @@ describe("API HTTP IDOR protection", () => {
     });
 
     it("rejects paying an installment from another account", async () => {
-      const keyPair = await generateTestKeyPair();
-      testApp = await createTestApp({ validateToken: await createTestJwksProvider(keyPair) });
-      await testApp.truncateAll();
-      await seedTipoCategorias(testApp);
+      const fx = await setupTwoAccounts(
+        "u-g", "g@example.com", "u-h", "h@example.com", "Cartão", "divida"
+      );
+      const divida = await createDividaAsB(fx, "u-h", "h@example.com", 100, 1);
 
-      const userA = await createUser(testApp, "u-g", "g@example.com");
-      const userB = await createUser(testApp, "u-h", "h@example.com");
-      const contaA = await createAccount(testApp, userA, "Conta G");
-      const contaB = await createAccount(testApp, userB, "Conta H");
-      const catId = await createCategory(testApp, "Cartão", "divida");
-
-      const tokenB = await makeToken(keyPair, "u-h", "h@example.com");
-      const createRes = await testApp.app.inject({
-        method: "POST",
-        url: "/dividas",
-        headers: { authorization: `Bearer ${tokenB}` },
-        payload: {
-          contaId: contaB,
-          categoriaId: catId,
-          descricao: "Dívida B",
-          valorTotal: 100,
-          totalParcelas: 1,
-          dataInicio: "2024-01-01",
-        },
-      });
-      const divida = JSON.parse(createRes.payload);
-
-      const tokenA = await makeToken(keyPair, "u-g", "g@example.com");
+      const tokenA = await fx.authed.signToken("u-g", "g@example.com");
       const res = await testApp.app.inject({
         method: "PATCH",
         url: `/dividas/${divida.id}/parcelas/${divida.parcelas[0].id}/pagamento`,

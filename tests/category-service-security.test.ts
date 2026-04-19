@@ -2,10 +2,11 @@ import { describe, it, expect, afterEach } from "vitest";
 import { createTestApp } from "./helpers/setup.js";
 import type { TestApp } from "./helpers/setup.js";
 import {
-  generateTestKeyPair,
-  createTestJwksProvider,
-  signTestToken,
-} from "./helpers/auth.js";
+  setupAuthedApp,
+  seedTipoCategorias,
+  createUser,
+  type AuthedTestApp,
+} from "./helpers/fixtures.js";
 import { deleteCategory } from "../src/services/category-service.js";
 
 describe("Category service SQL injection protection", () => {
@@ -15,73 +16,34 @@ describe("Category service SQL injection protection", () => {
     await testApp?.teardown();
   });
 
-  async function createUser(
-    app: TestApp,
-    idProvedor: string,
-    email: string,
-    isAdmin = false
-  ) {
-    const [user] = await app.client`
-      INSERT INTO usuarios (id_provedor, nome, email, is_admin)
-      VALUES (${idProvedor}, ${email.split("@")[0]}, ${email}, ${isAdmin})
-      RETURNING id
-    `;
-    return user.id as string;
+  async function setupAdmin(): Promise<{ authed: AuthedTestApp; token: string }> {
+    const authed = await setupAuthedApp();
+    testApp = authed.testApp;
+    await seedTipoCategorias(testApp);
+    await createUser(testApp, "admin-user", "admin@example.com", true);
+    const token = await authed.signToken("admin-user", "admin@example.com", "Admin");
+    return { authed, token };
   }
 
-  async function seedTipoCategorias(app: TestApp) {
-    await app.client`
-      INSERT INTO tipo_categorias (slug, nome)
-      VALUES ('receita', 'Receita'), ('despesa', 'Despesa'), ('divida', 'Dívida')
-      ON CONFLICT (slug) DO NOTHING
-    `;
+  async function injectDelete(id: string, token: string) {
+    return testApp.app.inject({
+      method: "DELETE",
+      url: `/categorias/${id}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
   }
 
   describe("DELETE /categorias/:id", () => {
     it("rejects malicious id with quote injection (Zod UUID validation)", async () => {
-      const keyPair = await generateTestKeyPair();
-      const validateToken = await createTestJwksProvider(keyPair);
-      testApp = await createTestApp({ validateToken });
-      await testApp.truncateAll();
-      await seedTipoCategorias(testApp);
-      await createUser(testApp, "admin-user", "admin@example.com", true);
-
-      const token = await signTestToken(keyPair, {
-        sub: "admin-user",
-        email: "admin@example.com",
-        name: "Admin",
-      });
-
-      const maliciousId = "' OR '1'='1";
-      const res = await testApp.app.inject({
-        method: "DELETE",
-        url: `/categorias/${maliciousId}`,
-        headers: { authorization: `Bearer ${token}` },
-      });
-
+      const { token } = await setupAdmin();
+      const res = await injectDelete("' OR '1'='1", token);
       expect(res.statusCode).toBe(422);
     });
 
     it("does not drop table on semicolon injection", async () => {
-      const keyPair = await generateTestKeyPair();
-      const validateToken = await createTestJwksProvider(keyPair);
-      testApp = await createTestApp({ validateToken });
-      await testApp.truncateAll();
-      await seedTipoCategorias(testApp);
-      await createUser(testApp, "admin-user", "admin@example.com", true);
-
-      const token = await signTestToken(keyPair, {
-        sub: "admin-user",
-        email: "admin@example.com",
-        name: "Admin",
-      });
-
+      const { token } = await setupAdmin();
       const maliciousId = "550e8400-e29b-41d4-a716-446655440000'; DROP TABLE categorias; --";
-      const res = await testApp.app.inject({
-        method: "DELETE",
-        url: `/categorias/${maliciousId}`,
-        headers: { authorization: `Bearer ${token}` },
-      });
+      const res = await injectDelete(maliciousId, token);
 
       expect(res.statusCode).toBe(422);
 
@@ -92,54 +54,35 @@ describe("Category service SQL injection protection", () => {
     });
 
     it("rejects malicious id with union injection", async () => {
-      const keyPair = await generateTestKeyPair();
-      const validateToken = await createTestJwksProvider(keyPair);
-      testApp = await createTestApp({ validateToken });
-      await testApp.truncateAll();
-      await seedTipoCategorias(testApp);
-      await createUser(testApp, "admin-user", "admin@example.com", true);
-
-      const token = await signTestToken(keyPair, {
-        sub: "admin-user",
-        email: "admin@example.com",
-        name: "Admin",
-      });
-
+      const { token } = await setupAdmin();
       const maliciousId = "1' UNION SELECT id, nome, tipo_categoria_id, created_at, updated_at FROM categorias--";
-      const res = await testApp.app.inject({
-        method: "DELETE",
-        url: `/categorias/${maliciousId}`,
-        headers: { authorization: `Bearer ${token}` },
-      });
-
+      const res = await injectDelete(maliciousId, token);
       expect(res.statusCode).toBe(422);
     });
   });
 
   describe("deleteCategory service", () => {
-    it("rejects malicious id with quote injection (Postgres UUID validation)", async () => {
+    async function setupService(): Promise<void> {
       testApp = await createTestApp({});
       await testApp.truncateAll();
       await seedTipoCategorias(testApp);
+    }
 
-      const maliciousId = "' OR '1'='1";
-      await expect(deleteCategory(maliciousId)).rejects.toThrow();
+    it("rejects malicious id with quote injection (Postgres UUID validation)", async () => {
+      await setupService();
+      await expect(deleteCategory("' OR '1'='1")).rejects.toThrow();
     });
 
     it("rejects malicious id with comment injection (Postgres UUID validation)", async () => {
-      testApp = await createTestApp({});
-      await testApp.truncateAll();
-      await seedTipoCategorias(testApp);
-
-      const maliciousId = "550e8400-e29b-41d4-a716-446655440000'--";
-      await expect(deleteCategory(maliciousId)).rejects.toThrow();
+      await setupService();
+      await expect(
+        deleteCategory("550e8400-e29b-41d4-a716-446655440000'--")
+      ).rejects.toThrow();
     });
 
     it("does not delete linked records when id contains injection", async () => {
-      const keyPair = await generateTestKeyPair();
-      const validateToken = await createTestJwksProvider(keyPair);
-      testApp = await createTestApp({ validateToken });
-      await testApp.truncateAll();
+      const authed = await setupAuthedApp();
+      testApp = authed.testApp;
       await seedTipoCategorias(testApp);
       const adminId = await createUser(testApp, "admin-user", "admin@example.com", true);
 

@@ -27,10 +27,7 @@ function makeSa(userId: string, scopes: string[]): ServiceAccount {
   });
 }
 
-async function createClientServer(
-  testApp: TestApp,
-  sa: ServiceAccount
-) {
+async function createClientServer(sa: ServiceAccount) {
   const testLogger = pino({ level: "silent" });
   const registry = buildToolRegistry(sa);
   const server = buildMcpServer({ sa, registry, logger: testLogger });
@@ -108,6 +105,14 @@ async function buildFixtures(testApp: TestApp): Promise<Fixture> {
   };
 }
 
+const IDOR_ERROR_RE = /forbidden|Insufficient permissions|You do not have access/i;
+
+function assertIdorError(res: { isError?: boolean; content: unknown }) {
+  expect(res.isError).toBe(true);
+  const text = (res.content as Array<{ type: string; text: string }>)[0]?.text ?? "";
+  expect(text).toMatch(IDOR_ERROR_RE);
+}
+
 describe("MCP IDOR protection", () => {
   let testApp: TestApp;
 
@@ -120,6 +125,16 @@ describe("MCP IDOR protection", () => {
     await testApp?.teardown().catch(() => {});
   });
 
+  async function callAsUserA(fx: Fixture, scope: string, name: string, args: Record<string, unknown>) {
+    const sa = makeSa(fx.userA.id, [scope]);
+    const { client, close } = await createClientServer(sa);
+    try {
+      return await client.callTool({ name, arguments: args });
+    } finally {
+      await close();
+    }
+  }
+
   describe("transactions.update", () => {
     it("rejects updating a transaction from another account", async () => {
       const fx = await buildFixtures(testApp);
@@ -130,28 +145,17 @@ describe("MCP IDOR protection", () => {
         RETURNING id
       `;
 
-      const sa = makeSa(fx.userA.id, ["transactions:write"]);
-      const { client, close } = await createClientServer(testApp, sa);
-
-      const res = await client.callTool({
-        name: "transactions.update",
-        arguments: {
-          id: txn.id,
-          contaId: fx.contaA.id,
-          descricao: "Tentativa de IDOR",
-        },
+      const res = await callAsUserA(fx, "transactions:write", "transactions.update", {
+        id: txn.id,
+        contaId: fx.contaA.id,
+        descricao: "Tentativa de IDOR",
       });
-
-      expect(res.isError).toBe(true);
-      const text = (res.content as Array<{ type: string; text: string }>)[0]?.text ?? "";
-      expect(text).toMatch(/forbidden|Insufficient permissions|You do not have access/i);
+      assertIdorError(res);
 
       const [updated] = await testApp.client`
         SELECT descricao FROM movimentacoes WHERE id = ${txn.id}
       `;
       expect(updated.descricao).toBe("Salario B");
-
-      await close();
     });
   });
 
@@ -165,27 +169,16 @@ describe("MCP IDOR protection", () => {
         RETURNING id
       `;
 
-      const sa = makeSa(fx.userA.id, ["transactions:write"]);
-      const { client, close } = await createClientServer(testApp, sa);
-
-      const res = await client.callTool({
-        name: "transactions.delete",
-        arguments: {
-          id: txn.id,
-          contaId: fx.contaA.id,
-        },
+      const res = await callAsUserA(fx, "transactions:write", "transactions.delete", {
+        id: txn.id,
+        contaId: fx.contaA.id,
       });
-
-      expect(res.isError).toBe(true);
-      const text = (res.content as Array<{ type: string; text: string }>)[0]?.text ?? "";
-      expect(text).toMatch(/forbidden|Insufficient permissions|You do not have access/i);
+      assertIdorError(res);
 
       const [remaining] = await testApp.client`
         SELECT id FROM movimentacoes WHERE id = ${txn.id}
       `;
       expect(remaining).toBeDefined();
-
-      await close();
     });
   });
 
@@ -204,29 +197,18 @@ describe("MCP IDOR protection", () => {
         RETURNING id
       `;
 
-      const sa = makeSa(fx.userA.id, ["debts:write"]);
-      const { client, close } = await createClientServer(testApp, sa);
-
-      const res = await client.callTool({
-        name: "debts.pay-installment",
-        arguments: {
-          dividaId: divida.id,
-          parcelaId: parcela.id,
-          contaId: fx.contaA.id,
-          dataPagamento: new Date("2026-04-15T12:00:00Z").toISOString(),
-        },
+      const res = await callAsUserA(fx, "debts:write", "debts.pay-installment", {
+        dividaId: divida.id,
+        parcelaId: parcela.id,
+        contaId: fx.contaA.id,
+        dataPagamento: new Date("2026-04-15T12:00:00Z").toISOString(),
       });
-
-      expect(res.isError).toBe(true);
-      const text = (res.content as Array<{ type: string; text: string }>)[0]?.text ?? "";
-      expect(text).toMatch(/forbidden|Insufficient permissions|You do not have access/i);
+      assertIdorError(res);
 
       const [unpaid] = await testApp.client`
         SELECT data_pagamento FROM parcelas_divida WHERE id = ${parcela.id}
       `;
       expect(unpaid.data_pagamento).toBeNull();
-
-      await close();
     });
   });
 });

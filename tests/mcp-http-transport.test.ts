@@ -66,6 +66,20 @@ describe("MCP HTTP plugin", () => {
     await testApp?.teardown().catch(() => {});
   });
 
+  function postInitialize(token: string | undefined) {
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+      accept: "application/json, text/event-stream",
+    };
+    if (token) headers.authorization = `Bearer ${token}`;
+    return testApp.app.inject({
+      method: "POST",
+      url: "/mcp",
+      headers,
+      payload: { jsonrpc: "2.0", id: 1, method: "initialize" },
+    });
+  }
+
   it("GET /mcp/.well-known/oauth-protected-resource returns RFC 9728 metadata", async () => {
     const res = await testApp.app.inject({
       method: "GET",
@@ -81,11 +95,7 @@ describe("MCP HTTP plugin", () => {
   });
 
   it("POST /mcp without Bearer returns 401 with WWW-Authenticate", async () => {
-    const res = await testApp.app.inject({
-      method: "POST",
-      url: "/mcp",
-      payload: { jsonrpc: "2.0", id: 1, method: "initialize" },
-    });
+    const res = await postInitialize(undefined);
     expect(res.statusCode).toBe(401);
     expect(res.headers["www-authenticate"]).toContain(
       `resource_metadata="${BASE_URL}/.well-known/oauth-protected-resource"`
@@ -94,23 +104,13 @@ describe("MCP HTTP plugin", () => {
   });
 
   it("POST /mcp with invalid token returns 401", async () => {
-    const res = await testApp.app.inject({
-      method: "POST",
-      url: "/mcp",
-      headers: { authorization: "Bearer bad-token" },
-      payload: { jsonrpc: "2.0", id: 1, method: "initialize" },
-    });
+    const res = await postInitialize("bad-token");
     expect(res.statusCode).toBe(401);
     expect(res.headers["www-authenticate"]).toContain('error="invalid_token"');
   });
 
   it("POST /mcp with expired token returns 401 with expired_token error", async () => {
-    const res = await testApp.app.inject({
-      method: "POST",
-      url: "/mcp",
-      headers: { authorization: "Bearer expired-token" },
-      payload: { jsonrpc: "2.0", id: 1, method: "initialize" },
-    });
+    const res = await postInitialize("expired-token");
     expect(res.statusCode).toBe(401);
     expect(res.headers["www-authenticate"]).toContain('error="expired_token"');
   });

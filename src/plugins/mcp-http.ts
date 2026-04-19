@@ -188,6 +188,23 @@ async function mcpHttpPlugin(
     return cachedMetadata;
   });
 
+  function reply401(
+    reply: FastifyReply,
+    error: "invalid_token" | "expired_token",
+    description: string,
+    failureReason: string
+  ): false {
+    mcpAuthFailuresTotal.inc({ reason: failureReason });
+    reply
+      .code(401)
+      .header(
+        "WWW-Authenticate",
+        buildWwwAuthenticateHeader(config.baseUrl, error)
+      )
+      .send({ error, error_description: description });
+    return false;
+  }
+
   // Auth middleware for /mcp and /mcp/sse
   const authMiddleware = async (
     request: FastifyRequest,
@@ -195,15 +212,7 @@ async function mcpHttpPlugin(
   ): Promise<boolean> => {
     const token = extractBearerToken(request);
     if (!token) {
-      mcpAuthFailuresTotal.inc({ reason: "missing_token" });
-      reply
-        .code(401)
-        .header(
-          "WWW-Authenticate",
-          buildWwwAuthenticateHeader(config.baseUrl, "invalid_token")
-        )
-        .send({ error: "invalid_token", error_description: "Missing Bearer token" });
-      return false;
+      return reply401(reply, "invalid_token", "Missing Bearer token", "missing_token");
     }
 
     try {
@@ -231,26 +240,10 @@ async function mcpHttpPlugin(
     } catch (err) {
       if (err instanceof ServiceAccountBootstrapError) {
         if (err.code === "TOKEN_EXPIRED") {
-          mcpAuthFailuresTotal.inc({ reason: "expired_token" });
-          reply
-            .code(401)
-            .header(
-              "WWW-Authenticate",
-              buildWwwAuthenticateHeader(config.baseUrl, "expired_token")
-            )
-            .send({ error: "expired_token", error_description: err.message });
-          return false;
+          return reply401(reply, "expired_token", err.message, "expired_token");
         }
         if (err.code === "TOKEN_INVALID" || err.code === "SUBJECT_MISSING") {
-          mcpAuthFailuresTotal.inc({ reason: "invalid_token" });
-          reply
-            .code(401)
-            .header(
-              "WWW-Authenticate",
-              buildWwwAuthenticateHeader(config.baseUrl, "invalid_token")
-            )
-            .send({ error: "invalid_token", error_description: err.message });
-          return false;
+          return reply401(reply, "invalid_token", err.message, "invalid_token");
         }
         if (err.code === "USER_NOT_FOUND") {
           mcpAuthFailuresTotal.inc({ reason: "user_not_provisioned" });
@@ -265,6 +258,19 @@ async function mcpHttpPlugin(
       return false;
     }
   };
+
+  function requireSessionId(
+    request: FastifyRequest,
+    reply: FastifyReply
+  ): string | undefined {
+    const incoming = request.headers[SESSION_HEADER];
+    const sessionId = typeof incoming === "string" ? incoming : undefined;
+    if (!sessionId) {
+      reply.code(400).send({ error: "Missing Mcp-Session-Id header" });
+      return undefined;
+    }
+    return sessionId;
+  }
 
   // POST /mcp — handles initialize and subsequent RPC calls
   app.route({
@@ -335,13 +341,8 @@ async function mcpHttpPlugin(
       const ok = await authMiddleware(request, reply);
       if (!ok) return;
 
-      const incomingSessionId = request.headers[SESSION_HEADER];
-      const sessionId =
-        typeof incomingSessionId === "string" ? incomingSessionId : undefined;
-      if (!sessionId) {
-        reply.code(400).send({ error: "Missing Mcp-Session-Id header" });
-        return;
-      }
+      const sessionId = requireSessionId(request, reply);
+      if (!sessionId) return;
       const session = await sessionStore.get(sessionId);
       if (!session) {
         reply.code(404).send({ error: "Session not found" });
@@ -361,13 +362,8 @@ async function mcpHttpPlugin(
       const ok = await authMiddleware(request, reply);
       if (!ok) return;
 
-      const incomingSessionId = request.headers[SESSION_HEADER];
-      const sessionId =
-        typeof incomingSessionId === "string" ? incomingSessionId : undefined;
-      if (!sessionId) {
-        reply.code(400).send({ error: "Missing Mcp-Session-Id header" });
-        return;
-      }
+      const sessionId = requireSessionId(request, reply);
+      if (!sessionId) return;
       const session = await sessionStore.get(sessionId);
       if (!session) {
         reply.code(204).send();
