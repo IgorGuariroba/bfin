@@ -96,9 +96,9 @@ const httpMcpEnabledSchema = z.object({
 });
 
 const httpMcpEnabledConfigSchema = z.object({
-  MCP_HTTP_BASE_URL: z.string().url("MCP_HTTP_BASE_URL must be a valid URL"),
+  MCP_HTTP_BASE_URL: z.url("MCP_HTTP_BASE_URL must be a valid URL"),
   MCP_AUDIENCE_HTTP: z.string().min(1, "MCP_AUDIENCE_HTTP cannot be empty"),
-  MCP_AUTH_SERVER_URL: z.string().url("MCP_AUTH_SERVER_URL must be a valid URL"),
+  MCP_AUTH_SERVER_URL: z.url("MCP_AUTH_SERVER_URL must be a valid URL"),
   MCP_PROVISIONING_ALLOWED_EMAILS: z.preprocess(
     (val) => (val === "" ? undefined : val),
     z.string().optional()

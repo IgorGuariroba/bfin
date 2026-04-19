@@ -11,7 +11,7 @@ export const projectionsGet: McpTool<{ contaId: string; mes: string }> = {
   requiredScope: "projections:read",
   minRole: "viewer",
   inputSchema: z.object({
-    contaId: z.string().uuid(),
+    contaId: z.uuid(),
     mes: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "mes must be YYYY-MM"),
   }),
   async handler({ input }) {

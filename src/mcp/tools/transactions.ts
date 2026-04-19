@@ -10,7 +10,7 @@ import { assertAccountRole } from "../../lib/account-authorization.js";
 import { NotFoundError } from "../../lib/errors.js";
 import type { McpTool } from "../tool-types.js";
 
-const isoDate = z.string().datetime({ offset: true }).transform((v) => new Date(v));
+const isoDate = z.iso.datetime({ offset: true }).transform((v) => new Date(v));
 
 export const transactionsList: McpTool<{
   contaId: string;
@@ -27,11 +27,11 @@ export const transactionsList: McpTool<{
   requiredScope: "transactions:read",
   minRole: "viewer",
   inputSchema: z.object({
-    contaId: z.string().uuid(),
+    contaId: z.uuid(),
     dataInicio: isoDate.optional(),
     dataFim: isoDate.optional(),
     tipo: z.enum(["receita", "despesa"]).optional(),
-    categoriaId: z.string().uuid().optional(),
+    categoriaId: z.uuid().optional(),
     busca: z.string().optional(),
     page: z.number().int().positive().optional(),
     limit: z.number().int().positive().max(100).optional(),
@@ -56,9 +56,9 @@ export const transactionsCreate: McpTool<{
   requiredScope: "transactions:write",
   minRole: "owner",
   inputSchema: z.object({
-    contaId: z.string().uuid(),
+    contaId: z.uuid(),
     tipo: z.enum(["receita", "despesa"]),
-    categoriaId: z.string().uuid(),
+    categoriaId: z.uuid(),
     descricao: z.string().max(255).optional(),
     valor: z.number().positive(),
     data: isoDate,
@@ -85,10 +85,10 @@ export const transactionsUpdate: McpTool<{
   description: "Update an existing transaction.",
   requiredScope: "transactions:write",
   inputSchema: z.object({
-    id: z.string().uuid(),
-    contaId: z.string().uuid(),
+    id: z.uuid(),
+    contaId: z.uuid(),
     tipo: z.enum(["receita", "despesa"]).optional(),
-    categoriaId: z.string().uuid().optional(),
+    categoriaId: z.uuid().optional(),
     descricao: z.string().max(255).nullable().optional(),
     valor: z.number().positive().optional(),
     data: isoDate.optional(),
@@ -119,8 +119,8 @@ export const transactionsDelete: McpTool<{ id: string; contaId: string }> = {
   description: "Delete an existing transaction.",
   requiredScope: "transactions:write",
   inputSchema: z.object({
-    id: z.string().uuid(),
-    contaId: z.string().uuid(),
+    id: z.uuid(),
+    contaId: z.uuid(),
   }),
   async handler({ input, actingUserId }) {
     const tx = await findTransactionById(input.id);

@@ -9,7 +9,7 @@ import { assertAccountRole } from "../../lib/account-authorization.js";
 import { NotFoundError } from "../../lib/errors.js";
 import type { McpTool } from "../tool-types.js";
 
-const isoDate = z.string().datetime({ offset: true }).transform((v) => new Date(v));
+const isoDate = z.iso.datetime({ offset: true }).transform((v) => new Date(v));
 
 export const debtsList: McpTool<{
   contaId: string;
@@ -22,7 +22,7 @@ export const debtsList: McpTool<{
   requiredScope: "debts:read",
   minRole: "viewer",
   inputSchema: z.object({
-    contaId: z.string().uuid(),
+    contaId: z.uuid(),
     status: z.enum(["pendente", "quitada"]).optional(),
     page: z.number().int().positive().optional(),
     limit: z.number().int().positive().max(100).optional(),
@@ -45,8 +45,8 @@ export const debtsCreate: McpTool<{
   requiredScope: "debts:write",
   minRole: "owner",
   inputSchema: z.object({
-    contaId: z.string().uuid(),
-    categoriaId: z.string().uuid(),
+    contaId: z.uuid(),
+    categoriaId: z.uuid(),
     descricao: z.string().min(1).max(255),
     valorTotal: z.number().positive(),
     totalParcelas: z.number().int().positive(),
@@ -67,9 +67,9 @@ export const debtsPayInstallment: McpTool<{
   description: "Confirm payment of a specific installment; emits a transaction.",
   requiredScope: "debts:write",
   inputSchema: z.object({
-    dividaId: z.string().uuid(),
-    parcelaId: z.string().uuid(),
-    contaId: z.string().uuid(),
+    dividaId: z.uuid(),
+    parcelaId: z.uuid(),
+    contaId: z.uuid(),
     dataPagamento: isoDate,
   }),
   async handler({ input, actingUserId }) {

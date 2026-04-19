@@ -10,7 +10,7 @@ export const accountMembersList: McpTool<{ contaId: string }> = {
   requiredScope: "account-members:read",
   minRole: "viewer",
   inputSchema: z.object({
-    contaId: z.string().uuid(),
+    contaId: z.uuid(),
   }),
   async handler({ input }) {
     const members = await db

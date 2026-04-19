@@ -3,7 +3,7 @@ import type { FastifyRequest } from "fastify";
 export function extractBearerToken(req: FastifyRequest): string | null {
   const raw = req.headers.authorization;
   if (!raw || typeof raw !== "string") return null;
-  const match = raw.match(/^\s*Bearer\s+(\S+)\s*$/i);
+  const match = /^\s*Bearer\s+(\S+)\s*$/i.exec(raw);
   if (!match) return null;
   return match[1];
 }

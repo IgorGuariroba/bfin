@@ -1,4 +1,4 @@
-import { Counter, Histogram, Gauge, register } from "prom-client";
+import { Counter, Histogram, Gauge } from "prom-client";
 
 const PREFIX = "bfin_mcp_";
 
@@ -29,5 +29,4 @@ export const mcpAuthFailuresTotal = new Counter({
 export function ensureMcpMetricsRegistered(): void {
   // prom-client auto-registers on construction; this function
   // exists so the importing side has an explicit entry point.
-  void register;
 }

@@ -3,7 +3,7 @@ import { calcularLimiteDiario } from "../../services/daily-limit-service.js";
 import { upsertMeta } from "../../services/goal-service.js";
 import type { McpTool } from "../tool-types.js";
 
-const isoDate = z.string().datetime({ offset: true }).transform((v) => new Date(v));
+const isoDate = z.iso.datetime({ offset: true }).transform((v) => new Date(v));
 
 export const dailyLimitGet: McpTool<{ contaId: string; hoje?: Date }> = {
   name: "daily-limit.get",
@@ -11,7 +11,7 @@ export const dailyLimitGet: McpTool<{ contaId: string; hoje?: Date }> = {
   requiredScope: "daily-limit:read",
   minRole: "viewer",
   inputSchema: z.object({
-    contaId: z.string().uuid(),
+    contaId: z.uuid(),
     hoje: isoDate.optional(),
   }),
   async handler({ input }) {
@@ -29,7 +29,7 @@ export const dailyLimitSet: McpTool<{ contaId: string; porcentagemReserva: numbe
   requiredScope: "daily-limit:write",
   minRole: "owner",
   inputSchema: z.object({
-    contaId: z.string().uuid(),
+    contaId: z.uuid(),
     porcentagemReserva: z.number().min(0).max(100),
   }),
   async handler({ input }) {

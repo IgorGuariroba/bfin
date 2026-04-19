@@ -141,4 +141,104 @@ describe("MCP HTTP plugin", () => {
     expect(sessionId).toMatch(/[0-9a-f-]{36}/i);
     expect(userId).toBeTruthy();
   });
+
+  it("GET /mcp without session header returns 400", async () => {
+    const res = await testApp.app.inject({
+      method: "GET",
+      url: "/mcp",
+      headers: {
+        authorization: "Bearer valid-token",
+        accept: "text/event-stream",
+      },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error).toBe("Missing Mcp-Session-Id header");
+  });
+
+  it("GET /mcp with non-existent session returns 404", async () => {
+    const res = await testApp.app.inject({
+      method: "GET",
+      url: "/mcp",
+      headers: {
+        authorization: "Bearer valid-token",
+        accept: "text/event-stream",
+        "mcp-session-id": "00000000-0000-0000-0000-000000000000",
+      },
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error).toBe("Session not found");
+  });
+
+  it("DELETE /mcp without session header returns 400", async () => {
+    const res = await testApp.app.inject({
+      method: "DELETE",
+      url: "/mcp",
+      headers: { authorization: "Bearer valid-token" },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it("DELETE /mcp with non-existent session returns 204", async () => {
+    const res = await testApp.app.inject({
+      method: "DELETE",
+      url: "/mcp",
+      headers: {
+        authorization: "Bearer valid-token",
+        "mcp-session-id": "00000000-0000-0000-0000-000000000000",
+      },
+    });
+    expect(res.statusCode).toBe(204);
+  });
+
+  it("CORS headers are set for allowed origin", async () => {
+    const res = await testApp.app.inject({
+      method: "OPTIONS",
+      url: "/mcp",
+      headers: {
+        origin: "https://claude.ai",
+        "access-control-request-method": "POST",
+      },
+    });
+    expect(res.statusCode).toBe(204);
+    expect(res.headers["access-control-allow-origin"]).toBe("https://claude.ai");
+    expect(res.headers["access-control-allow-methods"]).toContain("POST");
+  });
+
+  it("CORS headers are set for localhost", async () => {
+    const res = await testApp.app.inject({
+      method: "OPTIONS",
+      url: "/mcp",
+      headers: {
+        origin: "http://localhost:3000",
+        "access-control-request-method": "POST",
+      },
+    });
+    expect(res.statusCode).toBe(204);
+    expect(res.headers["access-control-allow-origin"]).toBe("http://localhost:3000");
+  });
+
+  it("CORS headers are NOT set for unknown origin", async () => {
+    const res = await testApp.app.inject({
+      method: "OPTIONS",
+      url: "/mcp",
+      headers: {
+        origin: "https://evil.example.com",
+        "access-control-request-method": "POST",
+      },
+    });
+    expect(res.statusCode).toBe(204);
+    expect(res.headers["access-control-allow-origin"]).toBeUndefined();
+  });
+
+  it("well-known metadata is rate limited", async () => {
+    const requests = Array.from({ length: 61 }, () =>
+      testApp.app.inject({
+        method: "GET",
+        url: "/mcp/.well-known/oauth-protected-resource",
+      })
+    );
+    const results = await Promise.all(requests);
+    const tooMany = results.filter((r) => r.statusCode === 429);
+    expect(tooMany.length).toBeGreaterThan(0);
+  });
 });

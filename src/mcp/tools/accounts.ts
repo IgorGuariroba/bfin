@@ -40,7 +40,7 @@ export const accountsGet: McpTool<{ contaId: string }> = {
   requiredScope: "accounts:read",
   minRole: "viewer",
   inputSchema: z.object({
-    contaId: z.string().uuid(),
+    contaId: z.uuid(),
   }),
   async handler({ input }) {
     const account = await findAccountById(input.contaId);

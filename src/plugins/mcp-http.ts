@@ -23,21 +23,20 @@ import {
   buildProtectedResourceMetadata,
   collectScopes,
 } from "../mcp/oauth/metadata.js";
-import { mcpAuthFailuresTotal } from "../mcp/metrics.js";
+import { mcpAuthFailuresTotal, mcpActiveSessions } from "../mcp/metrics.js";
 import {
   InMemorySessionStore,
   type McpSession,
   type SessionStore,
 } from "../mcp/session-store.js";
-import { mcpActiveSessions } from "../mcp/metrics.js";
 
 const SESSION_HEADER = "mcp-session-id";
 const CLEANUP_INTERVAL_MS = 60_000;
 
-const MCP_CORS_ORIGINS = [
+const MCP_CORS_ORIGINS = new Set([
   "https://claude.ai",
   "https://app.claude.com",
-];
+]);
 
 const MCP_CORS_HEADERS = {
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
@@ -48,7 +47,7 @@ const MCP_CORS_HEADERS = {
 
 function isMcpCorsOrigin(origin: string | undefined): boolean {
   if (!origin) return false;
-  if (MCP_CORS_ORIGINS.includes(origin)) return true;
+  if (MCP_CORS_ORIGINS.has(origin)) return true;
   return /^http:\/\/localhost:\d+$/.test(origin);
 }
 
@@ -90,6 +89,19 @@ export interface McpHttpPluginOptions {
   config?: HttpMcpConfig;
   verifier?: McpJwtVerifier;
   sessionStore?: SessionStore;
+}
+
+function requireSessionId(
+  request: FastifyRequest,
+  reply: FastifyReply
+): string | undefined {
+  const incoming = request.headers[SESSION_HEADER];
+  const sessionId = typeof incoming === "string" ? incoming : undefined;
+  if (!sessionId) {
+    reply.code(400).send({ error: "Missing Mcp-Session-Id header" });
+    return undefined;
+  }
+  return sessionId;
 }
 
 async function mcpHttpPlugin(
@@ -258,19 +270,6 @@ async function mcpHttpPlugin(
       return false;
     }
   };
-
-  function requireSessionId(
-    request: FastifyRequest,
-    reply: FastifyReply
-  ): string | undefined {
-    const incoming = request.headers[SESSION_HEADER];
-    const sessionId = typeof incoming === "string" ? incoming : undefined;
-    if (!sessionId) {
-      reply.code(400).send({ error: "Missing Mcp-Session-Id header" });
-      return undefined;
-    }
-    return sessionId;
-  }
 
   // POST /mcp — handles initialize and subsequent RPC calls
   app.route({

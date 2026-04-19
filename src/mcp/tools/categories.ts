@@ -31,7 +31,7 @@ export const categoriesCreate: McpTool<{ nome: string; tipo: string; contaId: st
   requiredScope: "categories:write",
   minRole: "owner",
   inputSchema: z.object({
-    contaId: z.string().uuid(),
+    contaId: z.uuid(),
     nome: z.string().min(1).max(255),
     tipo: z.string().min(1),
   }),
