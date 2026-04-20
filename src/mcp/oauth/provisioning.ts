@@ -58,6 +58,15 @@ export async function resolveUserFromClaims(
   if (existing) return existing.id;
 
   if (!isEmailAllowed(claims.email, opts.allowlistRaw)) {
+    opts.logger.warn(
+      {
+        sub: claims.sub,
+        email: claims.email,
+        emailPresent: typeof claims.email === "string",
+        allowlistSet: Boolean(opts.allowlistRaw),
+      },
+      "provisioning rejected: sub unknown and email not in allowlist"
+    );
     throw new ServiceAccountBootstrapError(
       `No user mapped to sub='${claims.sub}' and email not in allowlist`,
       "USER_NOT_FOUND"
