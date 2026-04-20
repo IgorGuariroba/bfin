@@ -1,0 +1,69 @@
+groups:
+  - name: bfin-api
+    interval: 15s
+    rules:
+      - alert: APIDown
+        expr: up{job="api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'API BFin está fora do ar'
+          description: 'O endpoint /metrics da API não responde há mais de 1 minuto.'
+
+      - alert: HighErrorRate
+        expr: rate(http_request_duration_seconds_count{status_code=~"5.."}[5m]) / rate(http_request_duration_seconds_count[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Taxa de erro alta na API'
+          description: 'Mais de 5% das requisições retornaram erro 5xx nos últimos 2 minutos.'
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Latência alta na API'
+          description: 'O percentil 95 de latência está acima de 2 segundos há mais de 3 minutos.'
+
+  - name: bfin-infra
+    interval: 15s
+    rules:
+      - alert: HostDiskFull
+        expr: (node_filesystem_avail_bytes{fstype!="tmpfs",fstype!="ramfs"} / node_filesystem_size_bytes) < 0.2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Disco do host com pouco espaço'
+          description: 'Filesystem {{ $labels.device }} tem menos de 20% livre.'
+
+      - alert: HostMemoryHigh
+        expr: (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) < 0.15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Memória do host em uso crítico'
+          description: 'Menos de 15% de memória RAM disponível no host.'
+
+      - alert: ContainerCPUHigh
+        expr: rate(container_cpu_usage_seconds_total{name!=""}[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Container com uso alto de CPU'
+          description: 'Container {{ $labels.name }} está usando mais de 80% de CPU.'
+
+      - alert: ContainerMemoryHigh
+        expr: (container_memory_usage_bytes{name!=""} / container_spec_memory_limit_bytes{name!=""}) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Container com uso alto de memória'
+          description: 'Container {{ $labels.name }} está usando mais de 90% do limite de memória.'
