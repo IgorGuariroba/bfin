@@ -207,6 +207,10 @@ async function mcpHttpPlugin(
     failureReason: string
   ): false {
     mcpAuthFailuresTotal.inc({ reason: failureReason });
+    mcpLogger.warn(
+      { error, description, failureReason },
+      "MCP auth rejected"
+    );
     reply
       .code(401)
       .header(
