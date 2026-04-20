@@ -13,10 +13,7 @@ export interface McpJwtVerifier {
   readonly issuer: string;
 }
 
-function extractScopes(payload: {
-  scope?: unknown;
-  permissions?: unknown;
-}): Set<string> {
+function extractScopes(payload: Record<string, unknown>): Set<string> {
   const out = new Set<string>();
 
   if (typeof payload.scope === "string") {
@@ -28,6 +25,20 @@ function extractScopes(payload: {
 
   if (Array.isArray(payload.permissions)) {
     for (const p of payload.permissions) {
+      if (typeof p === "string" && p.includes(":")) out.add(p);
+    }
+  }
+
+  // Auth0 strips `scope` and `permissions` when set via Action custom claims;
+  // accept a namespaced fallback so Actions can still inject scopes.
+  const nsScopes = payload["https://bfincont.com.br/scopes"];
+  if (typeof nsScopes === "string") {
+    for (const s of nsScopes.split(/\s+/)) {
+      const t = s.trim();
+      if (t?.includes(":")) out.add(t);
+    }
+  } else if (Array.isArray(nsScopes)) {
+    for (const p of nsScopes) {
       if (typeof p === "string" && p.includes(":")) out.add(p);
     }
   }
