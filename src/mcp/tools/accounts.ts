@@ -17,7 +17,7 @@ export const accountsList: McpTool<{
   page?: number;
   limit?: number;
 }> = {
-  name: "accounts.list",
+  name: "accounts_list",
   description: "List accounts accessible by the service account's acting user.",
   requiredScope: "accounts:read",
   inputSchema: z.object({
@@ -35,7 +35,7 @@ export const accountsList: McpTool<{
 };
 
 export const accountsGet: McpTool<{ contaId: string }> = {
-  name: "accounts.get",
+  name: "accounts_get",
   description: "Get details of a specific account by id.",
   requiredScope: "accounts:read",
   minRole: "viewer",
@@ -53,7 +53,7 @@ export const accountsCreate: McpTool<{
   nome: string;
   saldoInicial?: number;
 }> = {
-  name: "accounts.create",
+  name: "accounts_create",
   description: "Create a new account; the service account becomes the owner.",
   requiredScope: "accounts:write",
   inputSchema: z.object({

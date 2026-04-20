@@ -117,7 +117,7 @@ describe("MCP tools coverage", () => {
       const fx = await buildFixtures(testApp);
       const sa = makeSa(fx.userId, ["accounts:read"]);
       const { client, close } = await createClientServer(testApp, sa);
-      const { parsed } = await callTool(client, "accounts.list", {});
+      const { parsed } = await callTool(client, "accounts_list", {});
       expect(Array.isArray(parsed.data)).toBe(true);
       expect(parsed.data.length).toBeGreaterThanOrEqual(1);
       await close();
@@ -127,7 +127,7 @@ describe("MCP tools coverage", () => {
       const fx = await buildFixtures(testApp);
       const sa = makeSa(fx.userId, ["accounts:read"]);
       const { client, close } = await createClientServer(testApp, sa);
-      const { parsed } = await callTool(client, "accounts.get", { contaId: fx.contaId });
+      const { parsed } = await callTool(client, "accounts_get", { contaId: fx.contaId });
       expect(parsed.id).toBe(fx.contaId);
       await close();
     });
@@ -136,7 +136,7 @@ describe("MCP tools coverage", () => {
       const fx = await buildFixtures(testApp);
       const sa = makeSa(fx.userId, ["accounts:write"]);
       const { client, close } = await createClientServer(testApp, sa);
-      const { parsed } = await callTool(client, "accounts.create", { nome: "Nova Conta", saldoInicial: 500 });
+      const { parsed } = await callTool(client, "accounts_create", { nome: "Nova Conta", saldoInicial: 500 });
       expect(parsed.nome).toBe("Nova Conta");
       await close();
     });
@@ -147,7 +147,7 @@ describe("MCP tools coverage", () => {
       const fx = await buildFixtures(testApp);
       const sa = makeSa(fx.userId, ["account-members:read"]);
       const { client, close } = await createClientServer(testApp, sa);
-      const { parsed } = await callTool(client, "account-members.list", { contaId: fx.contaId });
+      const { parsed } = await callTool(client, "account-members_list", { contaId: fx.contaId });
       expect(Array.isArray(parsed.data)).toBe(true);
       expect(parsed.data.length).toBe(1);
       await close();
@@ -159,7 +159,7 @@ describe("MCP tools coverage", () => {
       const fx = await buildFixtures(testApp);
       const sa = makeSa(fx.userId, ["goals:read"]);
       const { client, close } = await createClientServer(testApp, sa);
-      const { parsed } = await callTool(client, "goals.list", { contaId: fx.contaId });
+      const { parsed } = await callTool(client, "goals_list", { contaId: fx.contaId });
       expect(parsed.contaId).toBe(fx.contaId);
       expect(parsed.meta).toBeNull();
       await close();
@@ -169,7 +169,7 @@ describe("MCP tools coverage", () => {
       const fx = await buildFixtures(testApp);
       const sa = makeSa(fx.userId, ["goals:write"]);
       const { client, close } = await createClientServer(testApp, sa);
-      const { parsed } = await callTool(client, "goals.create", { contaId: fx.contaId, porcentagemReserva: 15 });
+      const { parsed } = await callTool(client, "goals_create", { contaId: fx.contaId, porcentagemReserva: 15 });
       expect(parsed.porcentagem_reserva).toBe("15.00");
       await close();
     });
@@ -181,7 +181,7 @@ describe("MCP tools coverage", () => {
       const fx = await buildFixtures(testApp);
       const sa = makeSa(fx.userId, ["categories:read"]);
       const { client, close } = await createClientServer(testApp, sa);
-      const { parsed } = await callTool(client, "categories.list", {});
+      const { parsed } = await callTool(client, "categories_list", {});
       expect(Array.isArray(parsed.data)).toBe(true);
       await close();
     });
@@ -190,7 +190,7 @@ describe("MCP tools coverage", () => {
       const fx = await buildFixtures(testApp);
       const sa = makeSa(fx.userId, ["categories:write"]);
       const { client, close } = await createClientServer(testApp, sa);
-      const { parsed } = await callTool(client, "categories.create", { contaId: fx.contaId, nome: "Nova Categoria", tipo: "receita" });
+      const { parsed } = await callTool(client, "categories_create", { contaId: fx.contaId, nome: "Nova Categoria", tipo: "receita" });
       expect(parsed.nome).toBe("Nova Categoria");
       await close();
     });
@@ -201,7 +201,7 @@ describe("MCP tools coverage", () => {
       const fx = await buildFixtures(testApp);
       const sa = makeSa(fx.userId, ["daily-limit:read"]);
       const { client, close } = await createClientServer(testApp, sa);
-      const { parsed } = await callTool(client, "daily-limit.get", { contaId: fx.contaId });
+      const { parsed } = await callTool(client, "daily-limit_get", { contaId: fx.contaId });
       expect(typeof parsed.limite_diario).toBe("string");
       await close();
     });
@@ -210,7 +210,7 @@ describe("MCP tools coverage", () => {
       const fx = await buildFixtures(testApp);
       const sa = makeSa(fx.userId, ["daily-limit:write"]);
       const { client, close } = await createClientServer(testApp, sa);
-      const { parsed } = await callTool(client, "daily-limit.set", { contaId: fx.contaId, porcentagemReserva: 10 });
+      const { parsed } = await callTool(client, "daily-limit_set", { contaId: fx.contaId, porcentagemReserva: 10 });
       expect(parsed.porcentagem_reserva).toBe("10.00");
       await close();
     });
@@ -221,7 +221,7 @@ describe("MCP tools coverage", () => {
       const fx = await buildFixtures(testApp);
       const sa = makeSa(fx.userId, ["debts:read"]);
       const { client, close } = await createClientServer(testApp, sa);
-      const { parsed } = await callTool(client, "debts.list", { contaId: fx.contaId });
+      const { parsed } = await callTool(client, "debts_list", { contaId: fx.contaId });
       expect(Array.isArray(parsed.data)).toBe(true);
       await close();
     });
@@ -230,7 +230,7 @@ describe("MCP tools coverage", () => {
       const fx = await buildFixtures(testApp);
       const sa = makeSa(fx.userId, ["debts:write"]);
       const { client, close } = await createClientServer(testApp, sa);
-      const { parsed } = await callTool(client, "debts.create", {
+      const { parsed } = await callTool(client, "debts_create", {
         contaId: fx.contaId,
         categoriaId: fx.categoriaDivida,
         descricao: "Novo Emprestimo",
@@ -248,7 +248,7 @@ describe("MCP tools coverage", () => {
       const fx = await buildFixtures(testApp);
       const sa = makeSa(fx.userId, ["projections:read"]);
       const { client, close } = await createClientServer(testApp, sa);
-      const { parsed } = await callTool(client, "projections.get", { contaId: fx.contaId, mes: "2026-04" });
+      const { parsed } = await callTool(client, "projections_get", { contaId: fx.contaId, mes: "2026-04" });
       expect(parsed.contaId).toBe(fx.contaId);
       expect(parsed.mes).toBe("2026-04");
       await close();

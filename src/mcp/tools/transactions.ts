@@ -22,7 +22,7 @@ export const transactionsList: McpTool<{
   page?: number;
   limit?: number;
 }> = {
-  name: "transactions.list",
+  name: "transactions_list",
   description: "List transactions for an account.",
   requiredScope: "transactions:read",
   minRole: "viewer",
@@ -51,7 +51,7 @@ export const transactionsCreate: McpTool<{
   recorrente?: boolean;
   dataFim?: Date | null;
 }> = {
-  name: "transactions.create",
+  name: "transactions_create",
   description: "Create a new transaction in an account.",
   requiredScope: "transactions:write",
   minRole: "owner",
@@ -81,7 +81,7 @@ export const transactionsUpdate: McpTool<{
   recorrente?: boolean;
   dataFim?: Date | null;
 }> = {
-  name: "transactions.update",
+  name: "transactions_update",
   description: "Update an existing transaction.",
   requiredScope: "transactions:write",
   inputSchema: z.object({
@@ -115,7 +115,7 @@ export const transactionsUpdate: McpTool<{
 };
 
 export const transactionsDelete: McpTool<{ id: string; contaId: string }> = {
-  name: "transactions.delete",
+  name: "transactions_delete",
   description: "Delete an existing transaction.",
   requiredScope: "transactions:write",
   inputSchema: z.object({

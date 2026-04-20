@@ -6,7 +6,7 @@ import type { McpTool } from "../tool-types.js";
 const isoDate = z.iso.datetime({ offset: true }).transform((v) => new Date(v));
 
 export const dailyLimitGet: McpTool<{ contaId: string; hoje?: Date }> = {
-  name: "daily-limit.get",
+  name: "daily-limit_get",
   description: "Compute the daily spending limit for an account for the current month.",
   requiredScope: "daily-limit:read",
   minRole: "viewer",
@@ -24,7 +24,7 @@ export const dailyLimitGet: McpTool<{ contaId: string; hoje?: Date }> = {
 };
 
 export const dailyLimitSet: McpTool<{ contaId: string; porcentagemReserva: number }> = {
-  name: "daily-limit.set",
+  name: "daily-limit_set",
   description: "Configure the reserve percentage that affects daily-limit calculation.",
   requiredScope: "daily-limit:write",
   minRole: "owner",

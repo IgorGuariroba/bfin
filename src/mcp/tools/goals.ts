@@ -6,7 +6,7 @@ import { upsertMeta } from "../../services/goal-service.js";
 import type { McpTool } from "../tool-types.js";
 
 export const goalsList: McpTool<{ contaId: string }> = {
-  name: "goals.list",
+  name: "goals_list",
   description: "Get the current reserve goal (meta) for an account, or null if unset.",
   requiredScope: "goals:read",
   minRole: "viewer",
@@ -31,7 +31,7 @@ export const goalsList: McpTool<{ contaId: string }> = {
 };
 
 export const goalsCreate: McpTool<{ contaId: string; porcentagemReserva: number }> = {
-  name: "goals.create",
+  name: "goals_create",
   description: "Create the reserve goal for an account.",
   requiredScope: "goals:write",
   minRole: "owner",
@@ -56,7 +56,7 @@ export const goalsCreate: McpTool<{ contaId: string; porcentagemReserva: number 
 };
 
 export const goalsUpdate: McpTool<{ contaId: string; porcentagemReserva: number }> = {
-  name: "goals.update",
+  name: "goals_update",
   description: "Update the reserve goal for an account (upsert semantics).",
   requiredScope: "goals:write",
   minRole: "owner",

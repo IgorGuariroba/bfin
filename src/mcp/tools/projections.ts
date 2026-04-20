@@ -6,7 +6,7 @@ import {
 import type { McpTool } from "../tool-types.js";
 
 export const projectionsGet: McpTool<{ contaId: string; mes: string }> = {
-  name: "projections.get",
+  name: "projections_get",
   description: "Resolve the persisted/recomputed monthly projection for an account.",
   requiredScope: "projections:read",
   minRole: "viewer",

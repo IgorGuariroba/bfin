@@ -4,7 +4,7 @@ import type { ServiceAccount } from "../identity.js";
 
 export function buildWhoami(sa: ServiceAccount): McpTool<Record<string, never>> {
   return {
-    name: "mcp.whoami",
+    name: "mcp_whoami",
     description:
       "Introspect the current MCP service account identity: subject, scopes, actingUserId, tokenExp.",
     // No requiredScope — always listed.

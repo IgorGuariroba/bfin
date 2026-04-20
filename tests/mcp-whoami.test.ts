@@ -3,7 +3,7 @@ import { pino } from "pino";
 import { buildWhoami } from "../src/mcp/tools/whoami.js";
 import type { ServiceAccount } from "../src/mcp/identity.js";
 
-describe("mcp.whoami", () => {
+describe("mcp_whoami", () => {
   it("returns service account metadata even with empty scopes", async () => {
     const sa: ServiceAccount = Object.freeze({
       subject: "sa-subject",

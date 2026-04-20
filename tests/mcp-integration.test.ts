@@ -114,12 +114,12 @@ describe("MCP integration (in-memory transport)", () => {
 
     const listed = await client.listTools();
     const names = listed.tools.map((t) => t.name).sort();
-    expect(names).toContain("transactions.create");
-    expect(names).toContain("transactions.list");
-    expect(names).toContain("mcp.whoami");
+    expect(names).toContain("transactions_create");
+    expect(names).toContain("transactions_list");
+    expect(names).toContain("mcp_whoami");
 
     const createRes = await client.callTool({
-      name: "transactions.create",
+      name: "transactions_create",
       arguments: {
         contaId: fx.contaId,
         tipo: "receita",
@@ -134,7 +134,7 @@ describe("MCP integration (in-memory transport)", () => {
     expect(txnRows.length).toBe(1);
 
     const listRes = await client.callTool({
-      name: "transactions.list",
+      name: "transactions_list",
       arguments: { contaId: fx.contaId },
     });
     const content = (listRes.content as Array<{ type: string; text: string }>)[0];
@@ -151,7 +151,7 @@ describe("MCP integration (in-memory transport)", () => {
     const { client, close } = await createClientServer(testApp, sa, logs);
 
     const res = await client.callTool({
-      name: "transactions.create",
+      name: "transactions_create",
       arguments: {
         contaId: fx.contaId,
         tipo: "receita",
@@ -174,7 +174,7 @@ describe("MCP integration (in-memory transport)", () => {
 
     // Call without write scope, but with meta.requestedBy: still forbidden
     const res = await client.callTool({
-      name: "transactions.create",
+      name: "transactions_create",
       arguments: {
         contaId: fx.contaId,
         tipo: "receita",
