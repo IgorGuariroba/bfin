@@ -152,6 +152,71 @@ describe("MCP tools coverage", () => {
       expect(parsed.data.length).toBe(1);
       await close();
     });
+
+    it("account-members.add adds existing user by email", async () => {
+      const fx = await buildFixtures(testApp);
+      const [u2] = await testApp.client`
+        INSERT INTO usuarios (id_provedor, nome, email)
+        VALUES ('other-user', 'Other User', 'other@example.com')
+        RETURNING id
+      `;
+      const sa = makeSa(fx.userId, ["account-members:write"]);
+      const { client, close } = await createClientServer(testApp, sa);
+      const { parsed } = await callTool(client, "account-members_add", {
+        contaId: fx.contaId,
+        email: "other@example.com",
+        papel: "viewer",
+      });
+      expect(parsed.email).toBe("other@example.com");
+      expect(parsed.papel).toBe("viewer");
+      expect(parsed.usuarioId).toBe(u2.id);
+      await close();
+    });
+
+    it("account-members.add blocks viewer from adding members", async () => {
+      const fx = await buildFixtures(testApp);
+      const [u2] = await testApp.client`
+        INSERT INTO usuarios (id_provedor, nome, email)
+        VALUES ('viewer-user', 'Viewer User', 'viewer@example.com')
+        RETURNING id
+      `;
+      await testApp.client`
+        INSERT INTO conta_usuarios (conta_id, usuario_id, papel)
+        VALUES (${fx.contaId}, ${u2.id}, 'viewer')
+      `;
+      const sa = makeSa(u2.id as string, ["account-members:write"]);
+      const { client, close } = await createClientServer(testApp, sa);
+      const res = await client.callTool({
+        name: "account-members_add",
+        arguments: {
+          contaId: fx.contaId,
+          email: "someone@example.com",
+          papel: "viewer",
+        },
+      });
+      expect(res.isError).toBe(true);
+      const text = (res.content as Array<{ type: string; text: string }>)[0]?.text ?? "";
+      expect(text).toContain("[-32003]");
+      await close();
+    });
+
+    it("account-members.add returns 404 for non-existent email", async () => {
+      const fx = await buildFixtures(testApp);
+      const sa = makeSa(fx.userId, ["account-members:write"]);
+      const { client, close } = await createClientServer(testApp, sa);
+      const res = await client.callTool({
+        name: "account-members_add",
+        arguments: {
+          contaId: fx.contaId,
+          email: "nobody@example.com",
+          papel: "viewer",
+        },
+      });
+      expect(res.isError).toBe(true);
+      const text = (res.content as Array<{ type: string; text: string }>)[0]?.text ?? "";
+      expect(text).toContain("[-32001]");
+      await close();
+    });
   });
 
   describe("goals", () => {

@@ -5,7 +5,7 @@ import {
   accountsGet,
   accountsCreate,
 } from "./accounts.js";
-import { accountMembersList } from "./account-members.js";
+import { accountMembersList, accountMembersAdd } from "./account-members.js";
 import { categoriesList, categoriesCreate } from "./categories.js";
 import {
   transactionsList,
@@ -26,6 +26,7 @@ export function buildToolRegistry(sa: ServiceAccount): ToolRegistry {
     accountsGet as McpToolAny,
     accountsCreate as McpToolAny,
     accountMembersList as McpToolAny,
+    accountMembersAdd as McpToolAny,
     categoriesList as McpToolAny,
     categoriesCreate as McpToolAny,
     transactionsList as McpToolAny,

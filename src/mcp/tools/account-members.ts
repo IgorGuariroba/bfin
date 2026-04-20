@@ -2,6 +2,7 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { contaUsuarios, usuarios } from "../../db/schema.js";
+import { addMember } from "../../services/account-member-service.js";
 import type { McpTool } from "../tool-types.js";
 
 export const accountMembersList: McpTool<{ contaId: string }> = {
@@ -26,5 +27,25 @@ export const accountMembersList: McpTool<{ contaId: string }> = {
       .where(eq(contaUsuarios.contaId, input.contaId));
 
     return { contaId: input.contaId, data: members };
+  },
+};
+
+export const accountMembersAdd: McpTool<{
+  contaId: string;
+  email: string;
+  papel: "owner" | "viewer";
+}> = {
+  name: "account-members_add",
+  description:
+    "Add a user to an account by email. Only owners can add members. The added user must already exist in the system.",
+  requiredScope: "account-members:write",
+  minRole: "owner",
+  inputSchema: z.object({
+    contaId: z.uuid(),
+    email: z.string().email(),
+    papel: z.enum(["owner", "viewer"]),
+  }),
+  async handler({ input }) {
+    return await addMember(input);
   },
 };
