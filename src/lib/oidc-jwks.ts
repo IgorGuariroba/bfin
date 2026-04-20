@@ -56,8 +56,10 @@ export async function createJwtVerifier(params: {
         const { payload } = await jwtVerify(token, jwks, verifyOptions);
         return payload;
       } catch (err) {
+        const detail =
+          err instanceof Error ? `${err.name}: ${err.message}` : String(err);
         if (err instanceof joseErrors.JWTExpired) {
-          throw new JwtValidationError("Token expired", "TOKEN_EXPIRED");
+          throw new JwtValidationError(`Token expired (${detail})`, "TOKEN_EXPIRED");
         }
         if (
           err instanceof joseErrors.JWSSignatureVerificationFailed ||
@@ -70,7 +72,7 @@ export async function createJwtVerifier(params: {
           err instanceof joseErrors.JOSEAlgNotAllowed ||
           err instanceof joseErrors.JWSInvalid
         ) {
-          throw new JwtValidationError("Token invalid", "TOKEN_INVALID");
+          throw new JwtValidationError(`Token invalid (${detail})`, "TOKEN_INVALID");
         }
         throw err;
       }
