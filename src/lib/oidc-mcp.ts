@@ -53,10 +53,28 @@ export async function createMcpJwtVerifier(params: {
       if (!sub) {
         throw new JwtValidationError("Token missing 'sub' claim", "TOKEN_INVALID");
       }
+      // Auth0 may silently strip standard OIDC claims (email, name) from
+      // access tokens and require namespaced custom claims. Accept either.
+      const namespacedEmail = (payload as Record<string, unknown>)[
+        "https://bfincont.com.br/email"
+      ];
+      const namespacedName = (payload as Record<string, unknown>)[
+        "https://bfincont.com.br/name"
+      ];
       return {
         sub,
-        email: typeof payload.email === "string" ? payload.email : undefined,
-        name: typeof payload.name === "string" ? payload.name : undefined,
+        email:
+          typeof payload.email === "string"
+            ? payload.email
+            : typeof namespacedEmail === "string"
+              ? namespacedEmail
+              : undefined,
+        name:
+          typeof payload.name === "string"
+            ? payload.name
+            : typeof namespacedName === "string"
+              ? namespacedName
+              : undefined,
         scopes: extractScopes(payload as { scope?: unknown; permissions?: unknown }),
         exp: typeof payload.exp === "number" ? payload.exp : undefined,
       };
