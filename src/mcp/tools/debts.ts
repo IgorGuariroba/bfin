@@ -17,7 +17,7 @@ export const debtsList: McpTool<{
   page?: number;
   limit?: number;
 }> = {
-  name: "debts.list",
+  name: "debts_list",
   description: "List debts for an account.",
   requiredScope: "debts:read",
   minRole: "viewer",
@@ -40,7 +40,7 @@ export const debtsCreate: McpTool<{
   totalParcelas: number;
   dataInicio: Date;
 }> = {
-  name: "debts.create",
+  name: "debts_create",
   description: "Create a new installment debt with generated parcelas.",
   requiredScope: "debts:write",
   minRole: "owner",
@@ -63,7 +63,7 @@ export const debtsPayInstallment: McpTool<{
   contaId: string;
   dataPagamento: Date;
 }> = {
-  name: "debts.pay-installment",
+  name: "debts_pay-installment",
   description: "Confirm payment of a specific installment; emits a transaction.",
   requiredScope: "debts:write",
   inputSchema: z.object({

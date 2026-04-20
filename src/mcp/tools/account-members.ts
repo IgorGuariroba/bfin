@@ -5,7 +5,7 @@ import { contaUsuarios, usuarios } from "../../db/schema.js";
 import type { McpTool } from "../tool-types.js";
 
 export const accountMembersList: McpTool<{ contaId: string }> = {
-  name: "account-members.list",
+  name: "account-members_list",
   description: "List members (users) associated with an account and their roles.",
   requiredScope: "account-members:read",
   minRole: "viewer",

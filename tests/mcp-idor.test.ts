@@ -135,7 +135,7 @@ describe("MCP IDOR protection", () => {
     }
   }
 
-  describe("transactions.update", () => {
+  describe("transactions_update", () => {
     it("rejects updating a transaction from another account", async () => {
       const fx = await buildFixtures(testApp);
 
@@ -145,7 +145,7 @@ describe("MCP IDOR protection", () => {
         RETURNING id
       `;
 
-      const res = await callAsUserA(fx, "transactions:write", "transactions.update", {
+      const res = await callAsUserA(fx, "transactions:write", "transactions_update", {
         id: txn.id,
         contaId: fx.contaA.id,
         descricao: "Tentativa de IDOR",
@@ -159,7 +159,7 @@ describe("MCP IDOR protection", () => {
     });
   });
 
-  describe("transactions.delete", () => {
+  describe("transactions_delete", () => {
     it("rejects deleting a transaction from another account", async () => {
       const fx = await buildFixtures(testApp);
 
@@ -169,7 +169,7 @@ describe("MCP IDOR protection", () => {
         RETURNING id
       `;
 
-      const res = await callAsUserA(fx, "transactions:write", "transactions.delete", {
+      const res = await callAsUserA(fx, "transactions:write", "transactions_delete", {
         id: txn.id,
         contaId: fx.contaA.id,
       });
@@ -182,7 +182,7 @@ describe("MCP IDOR protection", () => {
     });
   });
 
-  describe("debts.pay-installment", () => {
+  describe("debts_pay-installment", () => {
     it("rejects paying an installment from another account", async () => {
       const fx = await buildFixtures(testApp);
 
@@ -197,7 +197,7 @@ describe("MCP IDOR protection", () => {
         RETURNING id
       `;
 
-      const res = await callAsUserA(fx, "debts:write", "debts.pay-installment", {
+      const res = await callAsUserA(fx, "debts:write", "debts_pay-installment", {
         dividaId: divida.id,
         parcelaId: parcela.id,
         contaId: fx.contaA.id,

@@ -11,7 +11,7 @@ export const categoriesList: McpTool<{
   page?: number;
   limit?: number;
 }> = {
-  name: "categories.list",
+  name: "categories_list",
   description: "List categories, optionally filtered by tipo or busca.",
   requiredScope: "categories:read",
   inputSchema: z.object({
@@ -26,7 +26,7 @@ export const categoriesList: McpTool<{
 };
 
 export const categoriesCreate: McpTool<{ nome: string; tipo: string; contaId: string }> = {
-  name: "categories.create",
+  name: "categories_create",
   description: "Create a new category. contaId is required to enforce role check.",
   requiredScope: "categories:write",
   minRole: "owner",

@@ -17,29 +17,29 @@ describe("tool registry", () => {
     const reg = buildToolRegistry(sa);
     const visible = reg.listVisible(sa.scopes);
     const names = visible.map((t) => t.name);
-    expect(names).toContain("mcp.whoami");
+    expect(names).toContain("mcp_whoami");
   });
 
   it("with only accounts:read, lists only accounts.list, accounts.get and whoami", () => {
     const sa = makeSa(["accounts:read"]);
     const reg = buildToolRegistry(sa);
     const names = reg.listVisible(sa.scopes).map((t) => t.name).sort();
-    expect(names).toContain("accounts.list");
-    expect(names).toContain("accounts.get");
-    expect(names).toContain("mcp.whoami");
+    expect(names).toContain("accounts_list");
+    expect(names).toContain("accounts_get");
+    expect(names).toContain("mcp_whoami");
     // No writes visible
-    expect(names).not.toContain("accounts.create");
-    expect(names).not.toContain("transactions.create");
+    expect(names).not.toContain("accounts_create");
+    expect(names).not.toContain("transactions_create");
   });
 
   it("with transactions:read only, shows read tools but hides writes", () => {
     const sa = makeSa(["transactions:read"]);
     const reg = buildToolRegistry(sa);
     const names = reg.listVisible(sa.scopes).map((t) => t.name);
-    expect(names).toContain("transactions.list");
-    expect(names).not.toContain("transactions.create");
-    expect(names).not.toContain("transactions.update");
-    expect(names).not.toContain("transactions.delete");
+    expect(names).toContain("transactions_list");
+    expect(names).not.toContain("transactions_create");
+    expect(names).not.toContain("transactions_update");
+    expect(names).not.toContain("transactions_delete");
   });
 
   it("exposes all expected tools when all scopes granted", () => {
@@ -62,26 +62,26 @@ describe("tool registry", () => {
     const reg = buildToolRegistry(sa);
     const names = reg.listVisible(sa.scopes).map((t) => t.name);
     const expected = [
-      "accounts.list",
-      "accounts.get",
-      "accounts.create",
-      "account-members.list",
-      "categories.list",
-      "categories.create",
-      "transactions.list",
-      "transactions.create",
-      "transactions.update",
-      "transactions.delete",
-      "debts.list",
-      "debts.create",
-      "debts.pay-installment",
-      "goals.list",
-      "goals.create",
-      "goals.update",
-      "daily-limit.get",
-      "daily-limit.set",
-      "projections.get",
-      "mcp.whoami",
+      "accounts_list",
+      "accounts_get",
+      "accounts_create",
+      "account-members_list",
+      "categories_list",
+      "categories_create",
+      "transactions_list",
+      "transactions_create",
+      "transactions_update",
+      "transactions_delete",
+      "debts_list",
+      "debts_create",
+      "debts_pay-installment",
+      "goals_list",
+      "goals_create",
+      "goals_update",
+      "daily-limit_get",
+      "daily-limit_set",
+      "projections_get",
+      "mcp_whoami",
     ];
     for (const e of expected) {
       expect(names).toContain(e);

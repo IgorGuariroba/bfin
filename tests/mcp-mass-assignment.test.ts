@@ -106,14 +106,14 @@ describe("MCP mass assignment protection", () => {
     await testApp?.teardown().catch(() => {});
   });
 
-  describe("transactions.update", () => {
+  describe("transactions_update", () => {
     it("ignores protected fields (createdAt, usuarioId, parcelaDividaId)", async () => {
       const fx = await buildFixtures(testApp);
       const sa = makeSa(fx.userId, ["transactions:read", "transactions:write"]);
       const { client, close } = await createClientServer(testApp, sa);
 
       // Create a transaction
-      const { parsed: created } = await callTool(client, "transactions.create", {
+      const { parsed: created } = await callTool(client, "transactions_create", {
         contaId: fx.contaId,
         tipo: "receita",
         categoriaId: fx.categoriaReceita,
@@ -132,7 +132,7 @@ describe("MCP mass assignment protection", () => {
       const originalParcelaDividaId = original.parcela_divida_id;
 
       // Attempt mass assignment with protected fields
-      const { parsed: updated } = await callTool(client, "transactions.update", {
+      const { parsed: updated } = await callTool(client, "transactions_update", {
         id: txId,
         contaId: fx.contaId,
         valor: 9999,
@@ -159,7 +159,7 @@ describe("MCP mass assignment protection", () => {
       const sa = makeSa(fx.userId, ["transactions:read", "transactions:write"]);
       const { client, close } = await createClientServer(testApp, sa);
 
-      const { parsed: created } = await callTool(client, "transactions.create", {
+      const { parsed: created } = await callTool(client, "transactions_create", {
         contaId: fx.contaId,
         tipo: "receita",
         categoriaId: fx.categoriaReceita,
@@ -173,7 +173,7 @@ describe("MCP mass assignment protection", () => {
         SELECT descricao FROM movimentacoes WHERE id = ${txId}
       `;
 
-      const { parsed: updated } = await callTool(client, "transactions.update", {
+      const { parsed: updated } = await callTool(client, "transactions_update", {
         id: txId,
         contaId: fx.contaId,
         descricao: "Novo",
@@ -197,7 +197,7 @@ describe("MCP mass assignment protection", () => {
       const sa = makeSa(fx.userId, ["transactions:read", "transactions:write"]);
       const { client, close } = await createClientServer(testApp, sa);
 
-      const { parsed: created } = await callTool(client, "transactions.create", {
+      const { parsed: created } = await callTool(client, "transactions_create", {
         contaId: fx.contaId,
         tipo: "receita",
         categoriaId: fx.categoriaReceita,
@@ -207,7 +207,7 @@ describe("MCP mass assignment protection", () => {
       });
       const txId = created.id;
 
-      const { parsed: updated } = await callTool(client, "transactions.update", {
+      const { parsed: updated } = await callTool(client, "transactions_update", {
         id: txId,
         contaId: fx.contaId,
         valor: 200,
@@ -223,14 +223,14 @@ describe("MCP mass assignment protection", () => {
     });
   });
 
-  describe("goals.update", () => {
+  describe("goals_update", () => {
     it("ignores protected fields (id, createdAt, updatedAt)", async () => {
       const fx = await buildFixtures(testApp);
       const sa = makeSa(fx.userId, ["goals:read", "goals:write"]);
       const { client, close } = await createClientServer(testApp, sa);
 
       // Create goal first
-      await callTool(client, "goals.create", {
+      await callTool(client, "goals_create", {
         contaId: fx.contaId,
         porcentagemReserva: 10,
       });
@@ -243,7 +243,7 @@ describe("MCP mass assignment protection", () => {
       const originalUpdatedAt = original.updated_at;
 
       // Attempt mass assignment
-      const { parsed: updated } = await callTool(client, "goals.update", {
+      const { parsed: updated } = await callTool(client, "goals_update", {
         contaId: fx.contaId,
         porcentagemReserva: 25,
         id: "00000000-0000-0000-0000-000000000000",
@@ -270,12 +270,12 @@ describe("MCP mass assignment protection", () => {
       const sa = makeSa(fx.userId, ["goals:read", "goals:write"]);
       const { client, close } = await createClientServer(testApp, sa);
 
-      await callTool(client, "goals.create", {
+      await callTool(client, "goals_create", {
         contaId: fx.contaId,
         porcentagemReserva: 10,
       });
 
-      const { parsed: updated } = await callTool(client, "goals.update", {
+      const { parsed: updated } = await callTool(client, "goals_update", {
         contaId: fx.contaId,
         porcentagemReserva: 30,
         isAdmin: true,
