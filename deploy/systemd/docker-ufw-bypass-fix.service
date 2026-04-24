@@ -1,0 +1,16 @@
+[Unit]
+Description=Prevent Docker from bypassing UFW firewall rules
+Documentation=https://github.com/chaifeng/ufw-docker
+After=docker.service
+BindsTo=docker.service
+ReloadPropagatedFrom=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/docker-ufw-bypass-fix.sh apply
+ExecStop=/usr/local/bin/docker-ufw-bypass-fix.sh flush
+ExecReload=/usr/local/bin/docker-ufw-bypass-fix.sh apply
+
+[Install]
+WantedBy=multi-user.target
