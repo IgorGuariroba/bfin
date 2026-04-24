@@ -86,3 +86,6 @@ docker-data/
 
 # Local test tools
 .posting/
+
+# Hurl installer
+hurl_*.deb

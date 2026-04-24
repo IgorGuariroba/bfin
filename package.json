@@ -21,7 +21,9 @@
     "profile:doctor": "CLINIC_TOOL=doctor docker compose -f docker-compose.yml -f docker-compose.profile.yml up --build",
     "profile:bubbleprof": "CLINIC_TOOL=bubbleprof docker compose -f docker-compose.yml -f docker-compose.profile.yml up --build",
     "profile:heap": "CLINIC_TOOL=heapprofiler docker compose -f docker-compose.yml -f docker-compose.profile.yml up --build",
-    "mcp:delete-user": "tsx scripts/delete-mcp-user.ts"
+    "mcp:delete-user": "tsx scripts/delete-mcp-user.ts",
+    "test:hurl": "sh scripts/test-hurl.sh",
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
   },
   "keywords": [],
   "author": "",
