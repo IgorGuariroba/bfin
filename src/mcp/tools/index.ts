@@ -15,7 +15,7 @@ import {
 } from "./transactions.js";
 import { debtsList, debtsCreate, debtsPayInstallment } from "./debts.js";
 import { goalsList, goalsCreate, goalsUpdate } from "./goals.js";
-import { dailyLimitGet, dailyLimitSet } from "./daily-limit.js";
+import { dailyLimitGet, dailyLimitV2Get, dailyLimitSet } from "./daily-limit.js";
 import { projectionsGet } from "./projections.js";
 import { buildWhoami } from "./whoami.js";
 
@@ -40,6 +40,7 @@ export function buildToolRegistry(sa: ServiceAccount): ToolRegistry {
     goalsCreate as McpToolAny,
     goalsUpdate as McpToolAny,
     dailyLimitGet as McpToolAny,
+    dailyLimitV2Get as McpToolAny,
     dailyLimitSet as McpToolAny,
     projectionsGet as McpToolAny,
   ];

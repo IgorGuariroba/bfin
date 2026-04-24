@@ -279,6 +279,41 @@ describe("MCP tools coverage", () => {
       expect(parsed.porcentagem_reserva).toBe("10.00");
       await close();
     });
+
+    it("daily-limit_v2_get retorna limite v2 com payload exato", async () => {
+      const fx = await buildFixtures(testApp);
+      const sa = makeSa(fx.userId, ["daily-limit:read"]);
+      const { client, close } = await createClientServer(testApp, sa);
+      const { parsed } = await callTool(client, "daily-limit_v2_get", { contaId: fx.contaId });
+      expect(parsed.contaId).toBe(fx.contaId);
+      expect(typeof parsed.janela_inicio).toBe("string");
+      expect(typeof parsed.janela_fim).toBe("string");
+      expect(parsed.horizonte_dias).toBe(30);
+      expect(typeof parsed.saldo_atual).toBe("string");
+      expect(typeof parsed.limite_diario).toBe("string");
+      expect(typeof parsed.calculado_em).toBe("string");
+      // payload não tem campos além dos especificados
+      expect(Object.keys(parsed).sort()).toEqual([
+        "calculado_em",
+        "contaId",
+        "horizonte_dias",
+        "janela_fim",
+        "janela_inicio",
+        "limite_diario",
+        "saldo_atual",
+      ]);
+      await close();
+    });
+
+    it("daily-limit_v2_get rejeita contaId inválido via schema", async () => {
+      const fx = await buildFixtures(testApp);
+      const sa = makeSa(fx.userId, ["daily-limit:read"]);
+      const { client, close } = await createClientServer(testApp, sa);
+      await expect(
+        callTool(client, "daily-limit_v2_get", { contaId: "nao-e-uuid" })
+      ).rejects.toThrow();
+      await close();
+    });
   });
 
   describe("debts", () => {

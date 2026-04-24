@@ -56,11 +56,34 @@ O token OAuth carrega escopos no formato `resource:action` (padrão OAuth 2.0, s
 | `debts:write` | `debts.create`, `debts.pay-installment` |
 | `goals:read` | `goals.list` |
 | `goals:write` | `goals.create`, `goals.update` |
-| `daily-limit:read` | `daily-limit.get` |
-| `daily-limit:write` | `daily-limit.set` |
+| `daily-limit:read` | `daily-limit_get`, `daily-limit_v2_get` |
+| `daily-limit:write` | `daily-limit_set` |
 | `projections:read` | `projections.get` |
 
 A tool `mcp.whoami` é sempre exposta (sem `requiredScope`) e retorna o subject, escopos, `actingUserId` e `tokenExp` da sessão.
+
+### `daily-limit_get` vs `daily-limit_v2_get`
+
+Ambas requerem escopo `daily-limit:read` e `minRole: viewer`.
+
+**`daily-limit_get`** (v1): divide `saldo_disponível` por `dias_restantes_no_mês`, subtraindo recorrentes futuras e parcelas de dívida do mês. Degenera no fim do mês.
+
+**`daily-limit_v2_get`** (v2): `max(0, saldo_atual) / 30` com janela móvel de 30 dias. Não consulta `porcentagem_reserva`, `projecao`, recorrentes futuras nem parcelas de dívida.
+
+Parâmetros v2: `contaId` (UUID, obrigatório), `hoje` (ISO 8601 datetime, opcional — usado em testes).
+
+Payload de resposta v2:
+```json
+{
+  "contaId": "uuid",
+  "janela_inicio": "2026-04-24T10:00:00.000Z",
+  "janela_fim": "2026-05-24T10:00:00.000Z",
+  "horizonte_dias": 30,
+  "saldo_atual": "2500.00",
+  "limite_diario": "83.33",
+  "calculado_em": "2026-04-24T10:00:00.000Z"
+}
+```
 
 ## Como conectar no Claude.ai
 
