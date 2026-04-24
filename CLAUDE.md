@@ -2,6 +2,11 @@
 - Sempre que modificar docker-compose.yml, Dockerfile, ou .env,
   rode a skill de auditoria de segurança antes de concluir a tarefa.
 
+- ## Regras de commit
+- Sempre que houver alguma modificação e a branch atual for a master não podemos fazer o commit diretamente na master
+- crie uma branch que resulma o que está sendo feito na alteração.
+- Ante de commitar as mudanças elas precisão estar cobertas de teste e com todos os testes passando não importa se é teste antigo ou novo o comportamento deve ser preservado.
+
 ## Testes
 - **Testes manuais** da API devem ser feitos usando a coleção em `.posting/`.
 - **Testes automatizados** devem ser executados com `npm run test` (que roda a suíte vitest dentro do `docker-compose.test.yml`).

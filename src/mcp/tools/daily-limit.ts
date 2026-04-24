@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { calcularLimiteDiario } from "../../services/daily-limit-service.js";
+import { calcularLimiteDiarioV2 } from "../../services/daily-limit-v2-service.js";
 import { upsertMeta } from "../../services/goal-service.js";
 import type { McpTool } from "../tool-types.js";
 
@@ -16,6 +17,24 @@ export const dailyLimitGet: McpTool<{ contaId: string; hoje?: Date }> = {
   }),
   async handler({ input }) {
     const result = await calcularLimiteDiario({
+      contaId: input.contaId,
+      hoje: input.hoje,
+    });
+    return { contaId: input.contaId, ...result };
+  },
+};
+
+export const dailyLimitV2Get: McpTool<{ contaId: string; hoje?: Date }> = {
+  name: "daily-limit_v2_get",
+  description: "Compute the daily spending limit v2 for an account: max(0, balance) / 30 over a rolling 30-day window.",
+  requiredScope: "daily-limit:read",
+  minRole: "viewer",
+  inputSchema: z.object({
+    contaId: z.uuid(),
+    hoje: isoDate.optional(),
+  }),
+  async handler({ input }) {
+    const result = await calcularLimiteDiarioV2({
       contaId: input.contaId,
       hoje: input.hoje,
     });
