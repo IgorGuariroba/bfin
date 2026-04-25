@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildToolRegistry } from "../src/mcp/tools/index.js";
+import { dailyLimitGet, dailyLimitSet } from "../src/mcp/tools/daily-limit.js";
 import type { ServiceAccount } from "../src/mcp/identity.js";
 
 function makeSa(scopes: string[]): ServiceAccount {
@@ -86,5 +87,23 @@ describe("tool registry", () => {
     for (const e of expected) {
       expect(names).toContain(e);
     }
+  });
+
+  describe("deprecation markers", () => {
+    it("daily-limit_get description starts with [DEPRECATED", () => {
+      expect(dailyLimitGet.description.startsWith("[DEPRECATED")).toBe(true);
+    });
+
+    it("daily-limit_set description starts with [DEPRECATED", () => {
+      expect(dailyLimitSet.description.startsWith("[DEPRECATED")).toBe(true);
+    });
+
+    it("deprecated tools remain functional in registry", () => {
+      const sa = makeSa(["daily-limit:read", "daily-limit:write"]);
+      const reg = buildToolRegistry(sa);
+      const names = reg.listVisible(sa.scopes).map((t) => t.name);
+      expect(names).toContain("daily-limit_get");
+      expect(names).toContain("daily-limit_set");
+    });
   });
 });

@@ -57,16 +57,18 @@ O token OAuth carrega escopos no formato `resource:action` (padrão OAuth 2.0, s
 | `goals:read` | `goals.list` |
 | `goals:write` | `goals.create`, `goals.update` |
 | `daily-limit:read` | `daily-limit_get`, `daily-limit_v2_get` |
-| `daily-limit:write` | `daily-limit_set` |
+| `daily-limit:write` | ~~`daily-limit_set`~~ **DEPRECATED** (sunset 2026-07-23) |
 | `projections:read` | `projections.get` |
 
 A tool `mcp.whoami` é sempre exposta (sem `requiredScope`) e retorna o subject, escopos, `actingUserId` e `tokenExp` da sessão.
 
 ### `daily-limit_get` vs `daily-limit_v2_get`
 
+> **Caminho recomendado:** use `daily-limit_v2_get` para novos integradores. As tools v1 estão **deprecated** (sunset 2026-07-23).
+
 Ambas requerem escopo `daily-limit:read` e `minRole: viewer`.
 
-**`daily-limit_get`** (v1): divide `saldo_disponível` por `dias_restantes_no_mês`, subtraindo recorrentes futuras e parcelas de dívida do mês. Degenera no fim do mês.
+**`daily-limit_get`** ~~(v1)~~ **DEPRECATED** (sunset 2026-07-23): divide `saldo_disponível` por `dias_restantes_no_mês`, subtraindo recorrentes futuras e parcelas de dívida do mês. Degenera no fim do mês. Migre para `daily-limit_v2_get`.
 
 **`daily-limit_v2_get`** (v2): `max(0, saldo_atual) / 30` com janela móvel de 30 dias. Não consulta `porcentagem_reserva`, `projecao`, recorrentes futuras nem parcelas de dívida.
 
@@ -84,6 +86,8 @@ Payload de resposta v2:
   "calculado_em": "2026-04-24T10:00:00.000Z"
 }
 ```
+
+> **Nota sobre `daily-limit_set`:** essa tool grava `porcentagem_reserva` em `metas` via `upsertMeta`, mas esse campo **nunca afetou** o cálculo de limite diário (nem v1 nem v2). Os substitutos reais são `goals_create` e `goals_update`.
 
 ## Como conectar no Claude.ai
 

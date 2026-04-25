@@ -1,0 +1,61 @@
+#!/bin/sh
+
+branch=$(git symbolic-ref --short HEAD)
+if [ "$branch" = "master" ]; then
+  echo "Direct commits to master are not allowed. Create a branch first."
+  exit 1
+fi
+
+echo "Running tests before commit..."
+
+npm run test
+
+if [ $? -ne 0 ]; then
+  echo "Tests failed. Commit aborted."
+  exit 1
+fi
+
+echo "All tests passed."
+
+API_STARTED_BY_HOOK=0
+
+if ! curl -sf http://127.0.0.1:3000/health/live > /dev/null 2>&1; then
+  echo "API not running. Starting via docker compose..."
+  docker compose up -d --build
+  if [ $? -ne 0 ]; then
+    echo "Failed to start API. Commit aborted."
+    exit 1
+  fi
+  API_STARTED_BY_HOOK=1
+
+  echo "Waiting for API to be healthy..."
+  for i in $(seq 1 60); do
+    if curl -sf http://127.0.0.1:3000/health/live > /dev/null 2>&1; then
+      echo "API is healthy."
+      break
+    fi
+    if [ "$i" = "60" ]; then
+      echo "API did not become healthy within 60s. Commit aborted."
+      docker compose down
+      exit 1
+    fi
+    sleep 1
+  done
+fi
+
+echo "Running hurl E2E tests..."
+sh scripts/test-hurl.sh
+HURL_EXIT=$?
+
+if [ "$API_STARTED_BY_HOOK" = "1" ]; then
+  echo "Stopping API (started by hook)..."
+  docker compose down
+fi
+
+if [ $HURL_EXIT -ne 0 ]; then
+  echo "Hurl E2E tests failed. Commit aborted."
+  exit 1
+fi
+
+echo "Hurl E2E tests passed."
+exit 0

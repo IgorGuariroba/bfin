@@ -9,6 +9,7 @@ import {
 import { calcularLimiteDiario } from "../services/daily-limit-service.js";
 import { calcularLimiteDiarioV2 } from "../services/daily-limit-v2-service.js";
 import { parseOrThrow, uuidSchema } from "../lib/validation.js";
+import { DAILY_LIMIT_V1_SUNSET } from "../lib/deprecation.js";
 
 const contaParamsSchema = z.object({ contaId: uuidSchema });
 
@@ -64,7 +65,12 @@ export async function accountRoutes(app: FastifyInstance): Promise<void> {
     async (request, reply) => {
       const { contaId } = parseOrThrow(contaParamsSchema, request.params, "params");
       const result = await calcularLimiteDiario({ contaId });
-      return reply.status(200).send({ contaId, ...result });
+      return reply
+        .status(200)
+        .header("Deprecation", "true")
+        .header("Sunset", DAILY_LIMIT_V1_SUNSET)
+        .header("Link", `</contas/${contaId}/limite-diario-v2>; rel="successor-version"`)
+        .send({ contaId, ...result });
     }
   );
 

@@ -3,12 +3,13 @@ import { calcularLimiteDiario } from "../../services/daily-limit-service.js";
 import { calcularLimiteDiarioV2 } from "../../services/daily-limit-v2-service.js";
 import { upsertMeta } from "../../services/goal-service.js";
 import type { McpTool } from "../tool-types.js";
+import { DAILY_LIMIT_V1_SUNSET_DATE } from "../../lib/deprecation.js";
 
 const isoDate = z.iso.datetime({ offset: true }).transform((v) => new Date(v));
 
 export const dailyLimitGet: McpTool<{ contaId: string; hoje?: Date }> = {
   name: "daily-limit_get",
-  description: "Compute the daily spending limit for an account for the current month.",
+  description: `[DEPRECATED — use daily-limit_v2_get; sunset ${DAILY_LIMIT_V1_SUNSET_DATE}] Compute the daily spending limit for an account for the current month.`,
   requiredScope: "daily-limit:read",
   minRole: "viewer",
   inputSchema: z.object({
@@ -44,7 +45,7 @@ export const dailyLimitV2Get: McpTool<{ contaId: string; hoje?: Date }> = {
 
 export const dailyLimitSet: McpTool<{ contaId: string; porcentagemReserva: number }> = {
   name: "daily-limit_set",
-  description: "Configure the reserve percentage that affects daily-limit calculation.",
+  description: `[DEPRECATED — use goals_create/goals_update; sunset ${DAILY_LIMIT_V1_SUNSET_DATE}] Configure the reserve percentage that affects daily-limit calculation.`,
   requiredScope: "daily-limit:write",
   minRole: "owner",
   inputSchema: z.object({

@@ -6,6 +6,7 @@ import {
   createTestJwksProvider,
   signTestToken,
 } from "./helpers/auth.js";
+import { DAILY_LIMIT_V1_SUNSET } from "../src/lib/deprecation.js";
 
 describe("GET /contas/:id/limite-diario", () => {
   let testApp: TestApp;
@@ -82,6 +83,12 @@ describe("GET /contas/:id/limite-diario", () => {
     expect(body.despesas_fixas_pendentes).toBe("0.00");
     expect(body.dias_restantes).toBeGreaterThan(0);
     expect(body.limite_diario).toBeDefined();
+
+    // headers de deprecação
+    expect(res.headers["deprecation"]).toBe("true");
+    expect(res.headers["sunset"]).toBe(DAILY_LIMIT_V1_SUNSET);
+    expect(res.headers["link"]).toContain(`rel="successor-version"`);
+    expect(res.headers["link"]).toContain(`/contas/${contaId}/limite-diario-v2`);
   });
 
   it("viewer consulta limite", async () => {
@@ -122,6 +129,10 @@ describe("GET /contas/:id/limite-diario", () => {
     });
 
     expect(res.statusCode).toBe(403);
+
+    // erros NÃO trazem headers de deprecação
+    expect(res.headers["deprecation"]).toBeUndefined();
+    expect(res.headers["sunset"]).toBeUndefined();
   });
 
   it("saldo negativo retorna limite_diario = 0.00", async () => {
