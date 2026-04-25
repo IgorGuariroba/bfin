@@ -5,9 +5,10 @@
 api.bfincont.com.br {
     encode zstd gzip
 
-    @mcp path /mcp /mcp/*
+    @mcp path /mcp /mcp/* /.well-known/oauth-protected-resource* /.well-known/oauth-authorization-server* /.well-known/openid-configuration*
 
-    # Only /mcp and /mcp/* are public in this phase.
+    # Public in this phase: /mcp, /mcp/* and OAuth discovery endpoints
+    # (/.well-known/*) required by RFC 9728 / RFC 8414 for MCP clients.
     # Note: MCP sessions hold a live transport/server pair in-process. The
     # RedisSessionStore persists metadata but cannot restore live objects
     # across replicas — scaling beyond one api replica requires sticky

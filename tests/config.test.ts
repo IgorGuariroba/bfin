@@ -73,6 +73,25 @@ describe("loadConfig", () => {
     expect(cfg.metricsToken).toBeUndefined();
     expect(cfg.oidcAudience).toBeUndefined();
   });
+
+  it("parses ADMIN_EMAILS into a lowercase set", () => {
+    const cfg = loadConfig({
+      DATABASE_URL: "postgres://fake",
+      OIDC_ISSUER_URL: "https://test",
+      ADMIN_EMAILS: "Admin@Example.com, other@test.com",
+    });
+    expect(cfg.adminEmails.has("admin@example.com")).toBe(true);
+    expect(cfg.adminEmails.has("other@test.com")).toBe(true);
+    expect(cfg.adminEmails.has("unknown@test.com")).toBe(false);
+  });
+
+  it("defaults ADMIN_EMAILS to empty set", () => {
+    const cfg = loadConfig({
+      DATABASE_URL: "postgres://fake",
+      OIDC_ISSUER_URL: "https://test",
+    });
+    expect(cfg.adminEmails.size).toBe(0);
+  });
 });
 
 describe("loadHttpMcpConfig", () => {

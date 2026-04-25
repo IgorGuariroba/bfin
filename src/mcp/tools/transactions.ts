@@ -117,7 +117,7 @@ export const transactionsUpdate: McpTool<{
 export const transactionsDelete: McpTool<{ id: string; contaId: string }> = {
   name: "transactions_delete",
   description: "Delete an existing transaction.",
-  requiredScope: "transactions:write",
+  requiredScope: "transactions:delete",
   inputSchema: z.object({
     id: z.uuid(),
     contaId: z.uuid(),

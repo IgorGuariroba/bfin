@@ -8,6 +8,18 @@ fi
 
 echo "Running tests before commit..."
 
+npm run mcp:audit-names
+if [ $? -ne 0 ]; then
+  echo "MCP tool name audit failed. Commit aborted."
+  exit 1
+fi
+
+npm run mcp:audit-descriptions
+if [ $? -ne 0 ]; then
+  echo "MCP tool description audit failed. Commit aborted."
+  exit 1
+fi
+
 npm run test
 
 if [ $? -ne 0 ]; then

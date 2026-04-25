@@ -162,7 +162,7 @@ describe("buildMcpServer (unit)", () => {
     await close();
   });
 
-  it("NotFoundError maps to -32001", async () => {
+  it("NotFoundError maps to NOT_FOUND", async () => {
     const sa = makeSa(["test:read"]);
     const log = captureLogger();
     const { client, close } = await connect(registry, sa, log);
@@ -170,11 +170,11 @@ describe("buildMcpServer (unit)", () => {
     const res = await client.callTool({ name: "fail-not-found", arguments: { id: "x" } });
     expect(res.isError).toBe(true);
     const content = (res.content as Array<{ type: string; text: string }>)[0];
-    expect(content.text).toContain("-32001");
+    expect(content.text).toContain('"NOT_FOUND"');
     await close();
   });
 
-  it("ForbiddenError maps to -32003", async () => {
+  it("ForbiddenError maps to FORBIDDEN", async () => {
     const sa = makeSa(["test:read"]);
     const log = captureLogger();
     const { client, close } = await connect(registry, sa, log);
@@ -182,11 +182,11 @@ describe("buildMcpServer (unit)", () => {
     const res = await client.callTool({ name: "fail-forbidden", arguments: {} });
     expect(res.isError).toBe(true);
     const content = (res.content as Array<{ type: string; text: string }>)[0];
-    expect(content.text).toContain("-32003");
+    expect(content.text).toContain('"FORBIDDEN"');
     await close();
   });
 
-  it("BusinessRuleError maps to -32002", async () => {
+  it("BusinessRuleError maps to BUSINESS_RULE", async () => {
     const sa = makeSa(["test:read"]);
     const log = captureLogger();
     const { client, close } = await connect(registry, sa, log);
@@ -194,11 +194,11 @@ describe("buildMcpServer (unit)", () => {
     const res = await client.callTool({ name: "fail-business", arguments: {} });
     expect(res.isError).toBe(true);
     const content = (res.content as Array<{ type: string; text: string }>)[0];
-    expect(content.text).toContain("-32002");
+    expect(content.text).toContain('"BUSINESS_RULE"');
     await close();
   });
 
-  it("invalid input returns -32600", async () => {
+  it("invalid input returns INVALID_INPUT", async () => {
     const sa = makeSa(["test:read"]);
     const log = captureLogger();
     const { client, close } = await connect(registry, sa, log);
@@ -206,7 +206,7 @@ describe("buildMcpServer (unit)", () => {
     const res = await client.callTool({ name: "echo", arguments: { wrong_field: 123 } });
     expect(res.isError).toBe(true);
     const content = (res.content as Array<{ type: string; text: string }>)[0];
-    expect(content.text).toContain("-32600");
+    expect(content.text).toContain('"INVALID_INPUT"');
     await close();
   });
 
@@ -220,7 +220,7 @@ describe("buildMcpServer (unit)", () => {
     await close();
   });
 
-  it("SystemGeneratedResourceError maps to -32004", async () => {
+  it("SystemGeneratedResourceError maps to BUSINESS_RULE", async () => {
     const sysErrTool: McpToolAny = {
       name: "sys-err-tool",
       description: "Throws SystemGeneratedResourceError",
@@ -238,11 +238,11 @@ describe("buildMcpServer (unit)", () => {
     const res = await client.callTool({ name: "sys-err-tool", arguments: {} });
     expect(res.isError).toBe(true);
     const content = (res.content as Array<{ type: string; text: string }>)[0];
-    expect(content.text).toContain("-32004");
+    expect(content.text).toContain('"BUSINESS_RULE"');
     await close();
   });
 
-  it("generic AppError maps to -32602", async () => {
+  it("generic AppError maps to INVALID_INPUT", async () => {
     const appErrTool: McpToolAny = {
       name: "app-err-tool",
       description: "Throws generic AppError",
@@ -260,11 +260,11 @@ describe("buildMcpServer (unit)", () => {
     const res = await client.callTool({ name: "app-err-tool", arguments: {} });
     expect(res.isError).toBe(true);
     const content = (res.content as Array<{ type: string; text: string }>)[0];
-    expect(content.text).toContain("-32602");
+    expect(content.text).toContain('"INVALID_INPUT"');
     await close();
   });
 
-  it("unexpected error maps to -32603", async () => {
+  it("unexpected error maps to INTERNAL", async () => {
     const crashTool: McpToolAny = {
       name: "crash-tool",
       description: "Throws unexpected error",
@@ -282,7 +282,7 @@ describe("buildMcpServer (unit)", () => {
     const res = await client.callTool({ name: "crash-tool", arguments: {} });
     expect(res.isError).toBe(true);
     const content = (res.content as Array<{ type: string; text: string }>)[0];
-    expect(content.text).toContain("-32603");
+    expect(content.text).toContain('"INTERNAL"');
     await close();
   });
 
@@ -294,7 +294,7 @@ describe("buildMcpServer (unit)", () => {
     const res = await client.callTool({ name: "echo", arguments: { msg: "hi" } });
     expect(res.isError).toBe(true);
     const content = (res.content as Array<{ type: string; text: string }>)[0];
-    expect(content.text).toContain("-32003");
+    expect(content.text).toContain('"FORBIDDEN"');
     await close();
   });
 });

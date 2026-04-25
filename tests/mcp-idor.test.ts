@@ -169,7 +169,7 @@ describe("MCP IDOR protection", () => {
         RETURNING id
       `;
 
-      const res = await callAsUserA(fx, "transactions:write", "transactions_delete", {
+      const res = await callAsUserA(fx, "transactions:delete", "transactions_delete", {
         id: txn.id,
         contaId: fx.contaA.id,
       });

@@ -13,6 +13,7 @@ const configSchema = z.object({
   DB_POOL_IDLE_TIMEOUT: z.coerce.number().int().nonnegative().default(30),
   DB_POOL_CONNECT_TIMEOUT: z.coerce.number().int().nonnegative().default(10),
   METRICS_TOKEN: z.preprocess((val) => (val === "" ? undefined : val), z.string().optional()),
+  ADMIN_EMAILS: z.preprocess((val) => (val === "" ? undefined : val), z.string().optional()),
   OIDC_ISSUER_URL: z.string().min(1, "OIDC_ISSUER_URL cannot be empty"),
   OIDC_AUDIENCE: z.preprocess((val) => (val === "" ? undefined : val), z.string().optional()),
   OIDC_ALLOW_INSECURE: z.enum(["true", "false"]).default("false"),
@@ -31,6 +32,7 @@ export type Config = {
   dbPoolIdleTimeout: number;
   dbPoolConnectTimeout: number;
   metricsToken: string | undefined;
+  adminEmails: ReadonlySet<string>;
   oidcIssuerUrl: string;
   oidcAudience: string | undefined;
   oidcAllowInsecure: boolean;
@@ -64,6 +66,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     dbPoolIdleTimeout: v.DB_POOL_IDLE_TIMEOUT,
     dbPoolConnectTimeout: v.DB_POOL_CONNECT_TIMEOUT,
     metricsToken: v.METRICS_TOKEN,
+    adminEmails: new Set((v.ADMIN_EMAILS ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean)),
     oidcIssuerUrl: v.OIDC_ISSUER_URL,
     oidcAudience: v.OIDC_AUDIENCE,
     oidcAllowInsecure: v.OIDC_ALLOW_INSECURE === "true",
@@ -105,6 +108,10 @@ const httpMcpEnabledConfigSchema = z.object({
   ),
   MCP_SESSION_STORE: z.enum(["memory", "redis"]).default("memory"),
   REDIS_URL: z.string().optional(),
+  MCP_ALLOWED_ORIGINS: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.string().optional()
+  ),
 }).refine((data) => data.MCP_SESSION_STORE !== "redis" || (data.REDIS_URL && data.REDIS_URL.length > 0), {
   message: "REDIS_URL is required when MCP_SESSION_STORE=redis",
   path: ["REDIS_URL"],
@@ -122,6 +129,7 @@ export type HttpMcpConfig =
       provisioningAllowedEmails: string | undefined;
       sessionStore: "memory" | "redis";
       redisUrl: string | undefined;
+      allowedOrigins: ReadonlySet<string>;
     };
 
 export function loadHttpMcpConfig(env: NodeJS.ProcessEnv = process.env): HttpMcpConfig {
@@ -139,6 +147,9 @@ export function loadHttpMcpConfig(env: NodeJS.ProcessEnv = process.env): HttpMcp
   }
 
   const v = parsed.data;
+  const allowedOrigins = new Set(
+    (v.MCP_ALLOWED_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean)
+  );
   return {
     enabled: true,
     baseUrl: v.MCP_HTTP_BASE_URL.replace(/\/$/, ""),
@@ -147,5 +158,6 @@ export function loadHttpMcpConfig(env: NodeJS.ProcessEnv = process.env): HttpMcp
     provisioningAllowedEmails: v.MCP_PROVISIONING_ALLOWED_EMAILS,
     sessionStore: v.MCP_SESSION_STORE,
     redisUrl: v.REDIS_URL,
+    allowedOrigins,
   };
 }

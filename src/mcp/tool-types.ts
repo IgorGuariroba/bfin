@@ -8,9 +8,16 @@ export interface ToolHandlerContext<TInput> {
   logger: Logger;
 }
 
+export interface ToolAnnotations {
+  title: string;
+  readOnlyHint?: true;
+  destructiveHint?: true;
+}
+
 export interface McpTool<TInput = unknown> {
   name: string;
   description: string;
+  annotations?: ToolAnnotations;
   requiredScope?: string;
   minRole?: AccountRole;
   inputSchema: z.ZodType<TInput>;

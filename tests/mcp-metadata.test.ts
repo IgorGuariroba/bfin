@@ -51,7 +51,7 @@ describe("buildProtectedResourceMetadata", () => {
     });
 
     expect(meta.resource).toBe("https://api.bfincont.com.br/mcp");
-    expect(meta.authorization_servers).toEqual(["https://bfin.us.auth0.com"]);
+    expect(meta.authorization_servers).toEqual(["https://api.bfincont.com.br/mcp"]);
     expect(meta.bearer_methods_supported).toEqual(["header"]);
     expect(meta.scopes_supported).toEqual([
       "accounts:read",

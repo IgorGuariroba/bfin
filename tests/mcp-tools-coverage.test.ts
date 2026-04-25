@@ -196,7 +196,7 @@ describe("MCP tools coverage", () => {
       });
       expect(res.isError).toBe(true);
       const text = (res.content as Array<{ type: string; text: string }>)[0]?.text ?? "";
-      expect(text).toContain("[-32003]");
+      expect(text).toContain('"FORBIDDEN"');
       await close();
     });
 
@@ -214,7 +214,7 @@ describe("MCP tools coverage", () => {
       });
       expect(res.isError).toBe(true);
       const text = (res.content as Array<{ type: string; text: string }>)[0]?.text ?? "";
-      expect(text).toContain("[-32001]");
+      expect(text).toContain('"NOT_FOUND"');
       await close();
     });
   });
@@ -309,9 +309,13 @@ describe("MCP tools coverage", () => {
       const fx = await buildFixtures(testApp);
       const sa = makeSa(fx.userId, ["daily-limit:read"]);
       const { client, close } = await createClientServer(testApp, sa);
-      await expect(
-        callTool(client, "daily-limit_v2_get", { contaId: "nao-e-uuid" })
-      ).rejects.toThrow();
+      const res = await client.callTool({
+        name: "daily-limit_v2_get",
+        arguments: { contaId: "nao-e-uuid" },
+      });
+      expect(res.isError).toBe(true);
+      const text = (res.content as Array<{ type: string; text: string }>)[0]?.text ?? "";
+      expect(text).toContain('"INVALID_INPUT"');
       await close();
     });
   });

@@ -29,6 +29,8 @@ import {
   type McpSession,
   type SessionStore,
 } from "../mcp/session-store.js";
+import { buildOriginGuard } from "../mcp/transport/origin-guard.js";
+import { config as appConfig } from "../config.js";
 
 const SESSION_HEADER = "mcp-session-id";
 const CLEANUP_INTERVAL_MS = 60_000;
@@ -41,7 +43,7 @@ const MCP_CORS_ORIGINS = new Set([
 const MCP_CORS_HEADERS = {
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
   "Access-Control-Allow-Headers":
-    "Authorization, Content-Type, Mcp-Session-Id, Accept",
+    "Authorization, Content-Type, Mcp-Session-Id, Mcp-Protocol-Version, Accept",
   "Access-Control-Max-Age": "86400",
 };
 
@@ -166,10 +168,30 @@ async function mcpHttpPlugin(
     if (closeFn) await closeFn.call(sessionStore);
   });
 
-  // CORS for MCP routes (Claude domains + localhost)
+  // Origin guard — rejects requests with disallowed Origin (DNS rebinding defense)
+  const originGuard = buildOriginGuard({
+    allowedOrigins: config.allowedOrigins,
+    nodeEnv: appConfig.nodeEnv,
+    logger: mcpLogger,
+  });
+
+  app.addHook("onRequest", (request, reply, done) => {
+    const pathname = request.url.split("?", 1)[0];
+    if (
+      pathname.startsWith("/mcp") &&
+      !pathname.startsWith("/mcp/.well-known") &&
+      request.method !== "OPTIONS"
+    ) {
+      originGuard(request, reply, done);
+      return;
+    }
+    done();
+  });
+
+  // CORS for MCP routes and OAuth discovery endpoints (Claude domains + localhost)
   app.addHook("onRequest", async (request, reply) => {
     const pathname = request.url.split("?", 1)[0];
-    if (!pathname.startsWith("/mcp")) return;
+    if (!pathname.startsWith("/mcp") && !pathname.startsWith("/.well-known/")) return;
 
     const origin = request.headers.origin;
     if (isMcpCorsOrigin(origin)) {
@@ -192,13 +214,54 @@ async function mcpHttpPlugin(
     scopes: collectScopes(buildToolRegistry(phantomSa())),
   });
 
-  // Public: RFC 9728 metadata (rate limited by IP)
-  app.get("/mcp/.well-known/oauth-protected-resource", async (request, reply) => {
+  // Public: RFC 9728 metadata (rate limited by IP).
+  // Served at both /.well-known/... (RFC 9728 standard for resources without path)
+  // and /mcp/.well-known/... (legacy compatibility).
+  const metadataHandler = async (
+    request: FastifyRequest,
+    reply: FastifyReply
+  ): Promise<unknown> => {
     if (!checkRateLimit(request.ip, 60, 60_000)) {
       return reply.code(429).send({ error: "rate_limit_exceeded" });
     }
     return cachedMetadata;
-  });
+  };
+  app.get("/.well-known/oauth-protected-resource", metadataHandler);
+  app.get("/.well-known/oauth-protected-resource/mcp", metadataHandler);
+  app.get("/mcp/.well-known/oauth-protected-resource", metadataHandler);
+
+  // RFC 8414 authorization server metadata — proxied from upstream Auth0.
+  // MCP Inspector and similar clients query this to discover the OAuth flow
+  // endpoints when they don't follow `authorization_servers` from RFC 9728.
+  let cachedAuthServerMetadata: unknown = null;
+  const fetchAuthServerMetadata = async (): Promise<unknown> => {
+    if (cachedAuthServerMetadata) return cachedAuthServerMetadata;
+    const upstream = `${config.authServerUrl}/.well-known/openid-configuration`;
+    const res = await fetch(upstream);
+    if (!res.ok) {
+      throw new Error(`upstream metadata ${upstream} returned ${res.status}`);
+    }
+    cachedAuthServerMetadata = await res.json();
+    return cachedAuthServerMetadata;
+  };
+  const authServerMetadataHandler = async (
+    request: FastifyRequest,
+    reply: FastifyReply
+  ): Promise<unknown> => {
+    if (!checkRateLimit(request.ip, 60, 60_000)) {
+      return reply.code(429).send({ error: "rate_limit_exceeded" });
+    }
+    try {
+      return await fetchAuthServerMetadata();
+    } catch (err) {
+      mcpLogger.error({ err }, "Failed to fetch upstream auth server metadata");
+      reply.code(502).send({ error: "upstream_metadata_unavailable" });
+    }
+  };
+  app.get("/.well-known/oauth-authorization-server", authServerMetadataHandler);
+  app.get("/.well-known/oauth-authorization-server/mcp", authServerMetadataHandler);
+  app.get("/.well-known/openid-configuration", authServerMetadataHandler);
+  app.get("/.well-known/openid-configuration/mcp", authServerMetadataHandler);
 
   function reply401(
     reply: FastifyReply,

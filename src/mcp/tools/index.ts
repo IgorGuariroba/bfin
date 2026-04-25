@@ -18,46 +18,71 @@ import { goalsList, goalsCreate, goalsUpdate } from "./goals.js";
 import { dailyLimitGet, dailyLimitV2Get, dailyLimitSet } from "./daily-limit.js";
 import { projectionsGet } from "./projections.js";
 import { buildWhoami } from "./whoami.js";
+import { withAnnotations } from "./__shared__/annotations.js";
+
+function validateAnnotations(tools: McpToolAny[]): void {
+  for (const tool of tools) {
+    if (!tool.annotations?.title) {
+      throw new Error(
+        `Tool '${tool.name}' missing annotation: title is required`
+      );
+    }
+    const hasRead = tool.annotations.readOnlyHint === true;
+    const hasDest = tool.annotations.destructiveHint === true;
+    if (!hasRead && !hasDest) {
+      throw new Error(
+        `Tool '${tool.name}' missing annotation: must have readOnlyHint or destructiveHint`
+      );
+    }
+    if (hasRead && hasDest) {
+      throw new Error(
+        `Tool '${tool.name}' has both readOnlyHint and destructiveHint — must have exactly one`
+      );
+    }
+  }
+}
 
 export function buildToolRegistry(sa: ServiceAccount): ToolRegistry {
-  const tools: McpToolAny[] = [
-    buildWhoami(sa) as McpToolAny,
-    accountsList as McpToolAny,
-    accountsGet as McpToolAny,
-    accountsCreate as McpToolAny,
-    accountMembersList as McpToolAny,
-    accountMembersAdd as McpToolAny,
-    categoriesList as McpToolAny,
-    categoriesCreate as McpToolAny,
-    transactionsList as McpToolAny,
-    transactionsCreate as McpToolAny,
-    transactionsUpdate as McpToolAny,
-    transactionsDelete as McpToolAny,
-    debtsList as McpToolAny,
-    debtsCreate as McpToolAny,
-    debtsPayInstallment as McpToolAny,
-    goalsList as McpToolAny,
-    goalsCreate as McpToolAny,
-    goalsUpdate as McpToolAny,
-    dailyLimitGet as McpToolAny,
-    dailyLimitV2Get as McpToolAny,
-    dailyLimitSet as McpToolAny,
-    projectionsGet as McpToolAny,
-  ];
+  const annotated: McpToolAny[] = [
+    buildWhoami(sa),
+    accountsList,
+    accountsGet,
+    accountsCreate,
+    accountMembersList,
+    accountMembersAdd,
+    categoriesList,
+    categoriesCreate,
+    transactionsList,
+    transactionsCreate,
+    transactionsUpdate,
+    transactionsDelete,
+    debtsList,
+    debtsCreate,
+    debtsPayInstallment,
+    goalsList,
+    goalsCreate,
+    goalsUpdate,
+    dailyLimitGet,
+    dailyLimitV2Get,
+    dailyLimitSet,
+    projectionsGet,
+  ].map((t) => withAnnotations(t as McpToolAny));
 
-  const byName = new Map(tools.map((t) => [t.name, t]));
+  validateAnnotations(annotated);
+
+  const byName = new Map(annotated.map((t) => [t.name, t]));
 
   return {
     get(name) {
       return byName.get(name);
     },
     listVisible(scopes) {
-      return tools.filter(
+      return annotated.filter(
         (t) => !t.requiredScope || scopes.has(t.requiredScope)
       );
     },
     all() {
-      return tools;
+      return annotated;
     },
   };
 }

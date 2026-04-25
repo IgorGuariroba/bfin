@@ -44,6 +44,10 @@ async function authGuardPlugin(
     if (pathname === "/mcp" || pathname.startsWith("/mcp/")) {
       return;
     }
+    // RFC 8414 / RFC 9728 OAuth discovery endpoints are public by design.
+    if (pathname.startsWith("/.well-known/")) {
+      return;
+    }
 
     const authHeader = request.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
