@@ -199,3 +199,23 @@ Authorization: Bearer {{token}}
 HTTP 200
 
 # categoriaIdDivida não pode ser deletada — primeira dívida com parcela paga mantém referência (business rule)
+
+# ── Error cases ────────────────────────────────────────────────────────────────
+
+# Invalid input: missing required fields
+POST http://127.0.0.1:3000/contas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+{
+  "saldo_inicial": 1000.00
+}
+HTTP 422
+
+# Not found: non-existent account
+GET http://127.0.0.1:3000/contas/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+HTTP 404
+
+# Forbidden: missing auth
+GET http://127.0.0.1:3000/contas
+HTTP 401

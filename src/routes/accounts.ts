@@ -13,10 +13,15 @@ import { DAILY_LIMIT_V1_SUNSET } from "../lib/deprecation.js";
 
 const contaParamsSchema = z.object({ contaId: uuidSchema });
 
+const createAccountBodySchema = z.object({
+  nome: z.string().min(1),
+  saldo_inicial: z.number().optional(),
+});
+
 export async function accountRoutes(app: FastifyInstance): Promise<void> {
   app.post("/contas", async (request, reply) => {
     const user = request.user!;
-    const body = request.body as { nome: string; saldo_inicial?: number };
+    const body = parseOrThrow(createAccountBodySchema, request.body);
     const account = await createAccount(
       {
         nome: body.nome,

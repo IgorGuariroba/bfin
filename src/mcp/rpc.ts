@@ -7,19 +7,14 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import { ZodError } from "zod";
 import type { Logger } from "pino";
-import {
-  AppError,
-  ValidationError,
-} from "../lib/errors.js";
-import { mapDomainError } from "./errors.js";
+import { AppError } from "../lib/errors.js";
+import { toMCPError, type MCPErrorPayload } from "./errors.js";
 import { mcpToolCallsTotal, mcpToolDurationSeconds } from "./metrics.js";
 import { mcpLogger } from "./logger.js";
 import type { ServiceAccount } from "./identity.js";
 import type { ToolRegistry, McpToolAny } from "./tool-types.js";
 import {
-  ToolAuthorizationError,
   authorizeToolCall,
   normalizeRequestedBy,
 } from "./authz.js";
@@ -46,6 +41,7 @@ function toolToDescriptor(tool: McpToolAny): ListToolsResult["tools"][number] {
     name: tool.name,
     description: tool.description,
     inputSchema,
+    ...(tool.annotations ? { annotations: tool.annotations } : {}),
   };
 }
 
@@ -57,30 +53,15 @@ function textResult(text: string, isError = false): CallToolResult {
 }
 
 function mapErrorToResult(err: unknown, logger: Logger): CallToolResult {
-  if (err instanceof ToolAuthorizationError) {
-    logger.warn({ reason: err.reason }, "tool authorization denied");
-    return textResult(
-      `[-32003] Unauthorized: ${err.message}`,
-      true
-    );
+  const payload: MCPErrorPayload = toMCPError(err);
+
+  if (payload.code === "INTERNAL") {
+    logger.error({ err }, "unexpected tool error");
+  } else {
+    logger.warn({ mcpCode: payload.code, field: payload.field }, "tool error");
   }
-  if (err instanceof ZodError) {
-    const first = err.issues[0];
-    const path = first.path.length > 0 ? first.path.join(".") : "<root>";
-    logger.warn({ zodIssue: first }, "tool input validation failed");
-    return textResult(`[-32600] Invalid input: ${path}: ${first.message}`, true);
-  }
-  if (err instanceof ValidationError) {
-    logger.warn({ code: err.code }, "tool validation error");
-    return textResult(`[-32600] Invalid input: ${err.message}`, true);
-  }
-  const domain = mapDomainError(err);
-  if (domain) {
-    logger.warn({ code: domain.code }, "tool domain error");
-    return textResult(`[${domain.code}] ${domain.message}`, true);
-  }
-  logger.error({ err }, "unexpected tool error");
-  return textResult("[-32603] Internal error", true);
+
+  return textResult(JSON.stringify(payload), true);
 }
 
 export function buildMcpServer(params: BuildMcpServerParams): Server {
@@ -116,7 +97,7 @@ export function buildMcpServer(params: BuildMcpServerParams): Server {
         requestedBy,
       });
       invocationLogger.warn("tool not found");
-      return textResult(`Tool '${name}' not found`, true);
+      return textResult(JSON.stringify({ code: "NOT_FOUND", message: `Tool '${name}' not found` } satisfies MCPErrorPayload), true);
     }
 
     const invocationLogger = createInvocationLogger(logger, {

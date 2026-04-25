@@ -26,7 +26,7 @@ export function buildProtectedResourceMetadata(params: {
   const { config, scopes } = params;
   return {
     resource: config.baseUrl,
-    authorization_servers: [config.authServerUrl],
+    authorization_servers: [config.baseUrl],
     bearer_methods_supported: ["header"],
     scopes_supported: scopes,
     resource_documentation:

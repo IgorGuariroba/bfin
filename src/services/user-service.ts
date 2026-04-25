@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { usuarios } from "../db/schema.js";
+import { config } from "../config.js";
 import type { OidcClaims } from "../plugins/oidc.js";
 
 export interface AuthUser {
@@ -37,13 +38,12 @@ export async function findOrCreateUser(claims: OidcClaims): Promise<AuthUser> {
   });
 
   if (existing) {
-    return {
-      id: existing.id,
-      idProvedor: existing.idProvedor,
-      nome: existing.nome,
-      email: existing.email,
-      isAdmin: existing.isAdmin,
-    };
+    const shouldBeAdmin = config.adminEmails.has(existing.email.toLowerCase());
+    if (shouldBeAdmin && !existing.isAdmin) {
+      await db.update(usuarios).set({ isAdmin: true }).where(eq(usuarios.id, existing.id));
+      return { id: existing.id, idProvedor: existing.idProvedor, nome: existing.nome, email: existing.email, isAdmin: true };
+    }
+    return { id: existing.id, idProvedor: existing.idProvedor, nome: existing.nome, email: existing.email, isAdmin: existing.isAdmin };
   }
 
   try {
@@ -53,6 +53,7 @@ export async function findOrCreateUser(claims: OidcClaims): Promise<AuthUser> {
         idProvedor: claims.sub,
         nome,
         email: claims.email,
+        isAdmin: config.adminEmails.has(claims.email.toLowerCase()),
       })
       .returning();
 

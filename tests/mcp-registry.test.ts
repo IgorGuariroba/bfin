@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import { buildToolRegistry } from "../src/mcp/tools/index.js";
 import { dailyLimitGet, dailyLimitSet } from "../src/mcp/tools/daily-limit.js";
 import type { ServiceAccount } from "../src/mcp/identity.js";
+import { withAnnotations } from "../src/mcp/tools/__shared__/annotations.js";
+import type { McpToolAny } from "../src/mcp/tool-types.js";
 
 function makeSa(scopes: string[]): ServiceAccount {
   return Object.freeze({
@@ -52,6 +54,7 @@ describe("tool registry", () => {
       "categories:write",
       "transactions:read",
       "transactions:write",
+      "transactions:delete",
       "debts:read",
       "debts:write",
       "goals:read",
@@ -105,5 +108,103 @@ describe("tool registry", () => {
       expect(names).toContain("daily-limit_get");
       expect(names).toContain("daily-limit_set");
     });
+  });
+
+  describe("tool annotations", () => {
+    it("every tool has a title annotation", () => {
+      const sa = makeSa([
+        "accounts:read", "accounts:write",
+        "account-members:read", "account-members:write",
+        "categories:read", "categories:write",
+        "transactions:read", "transactions:write", "transactions:delete",
+        "debts:read", "debts:write",
+        "goals:read", "goals:write",
+        "daily-limit:read", "daily-limit:write",
+        "projections:read",
+      ]);
+      const reg = buildToolRegistry(sa);
+      for (const tool of reg.all()) {
+        expect(tool.annotations?.title).toBeTruthy();
+      }
+    });
+
+    it("read-only tools have readOnlyHint: true", () => {
+      const result = withAnnotations({
+        name: "test_list",
+        description: "test",
+        inputSchema: { parse: (x: unknown) => x } as McpToolAny["inputSchema"],
+        handler: async () => null,
+      } as McpToolAny);
+      expect(result.annotations.readOnlyHint).toBe(true);
+      expect(result.annotations.destructiveHint).toBeUndefined();
+    });
+
+    it("write tools have destructiveHint: true", () => {
+      const result = withAnnotations({
+        name: "test_create",
+        description: "test",
+        inputSchema: { parse: (x: unknown) => x } as McpToolAny["inputSchema"],
+        handler: async () => null,
+      } as McpToolAny);
+      expect(result.annotations.destructiveHint).toBe(true);
+      expect(result.annotations.readOnlyHint).toBeUndefined();
+    });
+
+    it("mcp_whoami gets readOnlyHint", () => {
+      const result = withAnnotations({
+        name: "mcp_whoami",
+        description: "test",
+        inputSchema: { parse: (x: unknown) => x } as McpToolAny["inputSchema"],
+        handler: async () => null,
+      } as McpToolAny);
+      expect(result.annotations.readOnlyHint).toBe(true);
+      expect(result.annotations.title).toBe("Introspect Identity");
+    });
+
+    it("title is humanized from domain and action", () => {
+      const result = withAnnotations({
+        name: "account-members_add",
+        description: "test",
+        inputSchema: { parse: (x: unknown) => x } as McpToolAny["inputSchema"],
+        handler: async () => null,
+      } as McpToolAny);
+      expect(result.annotations.title).toBe("Add Account Members");
+    });
+
+    const readOnlyNames = [
+      "accounts_list", "accounts_get", "account-members_list",
+      "categories_list", "transactions_list", "debts_list",
+      "goals_list", "daily-limit_get", "daily-limit_v2_get",
+      "projections_get",
+    ];
+    for (const name of readOnlyNames) {
+      it(`${name} has readOnlyHint`, () => {
+        const result = withAnnotations({
+          name,
+          description: "test",
+          inputSchema: { parse: (x: unknown) => x } as McpToolAny["inputSchema"],
+          handler: async () => null,
+        } as McpToolAny);
+        expect(result.annotations.readOnlyHint).toBe(true);
+      });
+    }
+
+    const destructiveNames = [
+      "accounts_create", "account-members_add", "categories_create",
+      "transactions_create", "transactions_update", "transactions_delete",
+      "debts_create", "debts_pay-installment", "goals_create", "goals_update",
+      "daily-limit_set",
+    ];
+    for (const name of destructiveNames) {
+      it(`${name} has destructiveHint`, () => {
+        const result = withAnnotations({
+          name,
+          description: "test",
+          inputSchema: { parse: (x: unknown) => x } as McpToolAny["inputSchema"],
+          handler: async () => null,
+        } as McpToolAny);
+        expect(result.annotations.destructiveHint).toBe(true);
+      });
+    }
   });
 });
