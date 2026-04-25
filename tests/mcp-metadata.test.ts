@@ -58,7 +58,7 @@ describe("buildProtectedResourceMetadata", () => {
       "transactions:write",
     ]);
     expect(meta.resource_documentation).toBe(
-      "https://api.bfincont.com.br/mcp/docs"
+      "https://github.com/IgorGuariroba/bfin/blob/master/docs/mcp.md"
     );
   });
 });

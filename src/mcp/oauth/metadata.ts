@@ -29,6 +29,7 @@ export function buildProtectedResourceMetadata(params: {
     authorization_servers: [config.authServerUrl],
     bearer_methods_supported: ["header"],
     scopes_supported: scopes,
-    resource_documentation: `${config.baseUrl}/docs`,
+    resource_documentation:
+      "https://github.com/IgorGuariroba/bfin/blob/master/docs/mcp.md",
   };
 }
