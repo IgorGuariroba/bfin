@@ -3,12 +3,11 @@ import type { Logger } from "pino";
 
 export interface OriginGuardOptions {
   allowedOrigins: ReadonlySet<string>;
-  nodeEnv: string;
   logger: Logger;
 }
 
 export function buildOriginGuard(options: OriginGuardOptions) {
-  const { allowedOrigins, nodeEnv, logger } = options;
+  const { allowedOrigins, logger } = options;
 
   return function originGuard(
     request: FastifyRequest,
@@ -18,14 +17,9 @@ export function buildOriginGuard(options: OriginGuardOptions) {
     const origin = request.headers.origin;
 
     if (!origin) {
-      if (nodeEnv === "production") {
-        logger.warn(
-          { path: request.url, ip: request.ip },
-          "MCP Origin rejected: missing header in production"
-        );
-        reply.code(403).send({ error: "forbidden_origin" });
-        return;
-      }
+      // Non-browser clients (server-to-server MCP, CLI tools) don't send
+      // an Origin header. DNS rebinding only applies to browser requests,
+      // so absent Origin is safe to allow through.
       done();
       return;
     }

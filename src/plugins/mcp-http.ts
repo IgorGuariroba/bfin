@@ -30,7 +30,6 @@ import {
   type SessionStore,
 } from "../mcp/session-store.js";
 import { buildOriginGuard } from "../mcp/transport/origin-guard.js";
-import { config as appConfig } from "../config.js";
 
 const SESSION_HEADER = "mcp-session-id";
 const CLEANUP_INTERVAL_MS = 60_000;
@@ -171,7 +170,6 @@ async function mcpHttpPlugin(
   // Origin guard — rejects requests with disallowed Origin (DNS rebinding defense)
   const originGuard = buildOriginGuard({
     allowedOrigins: config.allowedOrigins,
-    nodeEnv: appConfig.nodeEnv,
     logger: mcpLogger,
   });
 

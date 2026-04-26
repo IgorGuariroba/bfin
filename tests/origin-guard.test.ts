@@ -38,7 +38,6 @@ describe("origin guard", () => {
   it("allows request with allowed origin", () => {
     const guard = buildOriginGuard({
       allowedOrigins,
-      nodeEnv: "production",
       logger: mockLogger(),
     });
     const req = mockRequest("https://api.bfincont.com.br");
@@ -50,11 +49,10 @@ describe("origin guard", () => {
     expect(reply.code as ReturnType<typeof vi.fn>).not.toHaveBeenCalled();
   });
 
-  it("rejects request with disallowed origin in production", () => {
+  it("rejects request with disallowed origin", () => {
     const logger = mockLogger();
     const guard = buildOriginGuard({
       allowedOrigins,
-      nodeEnv: "production",
       logger,
     });
     const req = mockRequest("https://attacker.example");
@@ -67,26 +65,9 @@ describe("origin guard", () => {
     expect(logger.warn).toHaveBeenCalled();
   });
 
-  it("rejects request without origin in production", () => {
-    const logger = mockLogger();
+  it("allows server-to-server request without origin", () => {
     const guard = buildOriginGuard({
       allowedOrigins,
-      nodeEnv: "production",
-      logger,
-    });
-    const req = mockRequest(undefined);
-    const reply = mockReply();
-    const done = vi.fn();
-
-    guard(req, reply, done);
-    expect(reply.code as ReturnType<typeof vi.fn>).toHaveBeenCalledWith(403);
-    expect(done).not.toHaveBeenCalled();
-  });
-
-  it("allows request without origin in development", () => {
-    const guard = buildOriginGuard({
-      allowedOrigins,
-      nodeEnv: "development",
       logger: mockLogger(),
     });
     const req = mockRequest(undefined);
@@ -98,10 +79,23 @@ describe("origin guard", () => {
     expect(reply.code as ReturnType<typeof vi.fn>).not.toHaveBeenCalled();
   });
 
-  it("allows localhost origin in development", () => {
+  it("allows request without origin in development", () => {
     const guard = buildOriginGuard({
       allowedOrigins,
-      nodeEnv: "development",
+      logger: mockLogger(),
+    });
+    const req = mockRequest(undefined);
+    const reply = mockReply();
+    const done = vi.fn();
+
+    guard(req, reply, done);
+    expect(done).toHaveBeenCalled();
+    expect(reply.code as ReturnType<typeof vi.fn>).not.toHaveBeenCalled();
+  });
+
+  it("allows localhost origin", () => {
+    const guard = buildOriginGuard({
+      allowedOrigins,
       logger: mockLogger(),
     });
     const req = mockRequest("http://localhost:3000");
