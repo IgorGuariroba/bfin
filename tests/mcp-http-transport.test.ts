@@ -88,7 +88,7 @@ describe("MCP HTTP plugin", () => {
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.resource).toBe(BASE_URL);
-    expect(body.authorization_servers).toEqual([BASE_URL]);
+    expect(body.authorization_servers).toEqual(["https://auth.test.local"]);
     expect(body.bearer_methods_supported).toEqual(["header"]);
     expect(Array.isArray(body.scopes_supported)).toBe(true);
     expect(body.scopes_supported).toContain("accounts:read");
