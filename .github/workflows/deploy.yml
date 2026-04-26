@@ -98,3 +98,19 @@ jobs:
       - name: Run Smoke Tests
         run: |
           hurl --variable host=https://api.bfincont.com.br --test --retry 5 scripts/smoke-test.hurl
+
+      - name: Notify Failure via Telegram
+        if: failure()
+        run: |
+          MESSAGE="❌ *Deploy Falhou - bfin*
+          
+          *Workflow*: ${{ github.workflow }}
+          *Commit*: \`${{ env.SHA }}\`
+          *Link*: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          
+          Verifique os logs no GitHub Actions para diagnosticar o erro."
+          
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=Markdown"
