@@ -30,15 +30,9 @@ import {
   type SessionStore,
 } from "../mcp/session-store.js";
 import { buildOriginGuard } from "../mcp/transport/origin-guard.js";
-import { config as appConfig } from "../config.js";
 
 const SESSION_HEADER = "mcp-session-id";
 const CLEANUP_INTERVAL_MS = 60_000;
-
-const MCP_CORS_ORIGINS = new Set([
-  "https://claude.ai",
-  "https://app.claude.com",
-]);
 
 const MCP_CORS_HEADERS = {
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
@@ -47,9 +41,12 @@ const MCP_CORS_HEADERS = {
   "Access-Control-Max-Age": "86400",
 };
 
-function isMcpCorsOrigin(origin: string | undefined): boolean {
+function isAllowedOrigin(
+  origin: string | undefined,
+  allowedOrigins: ReadonlySet<string>
+): boolean {
   if (!origin) return false;
-  if (MCP_CORS_ORIGINS.has(origin)) return true;
+  if (allowedOrigins.has(origin)) return true;
   return /^http:\/\/localhost:\d+$/.test(origin);
 }
 
@@ -171,7 +168,6 @@ async function mcpHttpPlugin(
   // Origin guard — rejects requests with disallowed Origin (DNS rebinding defense)
   const originGuard = buildOriginGuard({
     allowedOrigins: config.allowedOrigins,
-    nodeEnv: appConfig.nodeEnv,
     logger: mcpLogger,
   });
 
@@ -194,7 +190,7 @@ async function mcpHttpPlugin(
     if (!pathname.startsWith("/mcp") && !pathname.startsWith("/.well-known/")) return;
 
     const origin = request.headers.origin;
-    if (isMcpCorsOrigin(origin)) {
+    if (isAllowedOrigin(origin, config.allowedOrigins)) {
       reply.header("Access-Control-Allow-Origin", origin!);
       for (const [k, v] of Object.entries(MCP_CORS_HEADERS)) {
         reply.header(k, v);

@@ -147,8 +147,9 @@ export function loadHttpMcpConfig(env: NodeJS.ProcessEnv = process.env): HttpMcp
   }
 
   const v = parsed.data;
+  const DEFAULT_MCP_ORIGINS = "https://claude.ai,https://app.claude.com";
   const allowedOrigins = new Set(
-    (v.MCP_ALLOWED_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean)
+    (v.MCP_ALLOWED_ORIGINS ?? DEFAULT_MCP_ORIGINS).split(",").map((s) => s.trim()).filter(Boolean)
   );
   return {
     enabled: true,
