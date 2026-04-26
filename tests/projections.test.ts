@@ -189,7 +189,7 @@ describe("GET /projecao", () => {
     expect(new Date(secondBody.recalculado_em).getTime()).toBe(firstTimestamp);
   });
 
-  it("recorrentes aparecem no mês seguinte com saldo projetado correto", async () => {
+  it("recurring transactions appear in the following month with correct projected balance", async () => {
     const keyPair = await generateTestKeyPair();
     testApp = await createTestApp({ validateToken: await createTestJwksProvider(keyPair) });
     await testApp.truncateAll();
@@ -238,9 +238,9 @@ describe("GET /projecao", () => {
     });
     expect(marco.statusCode).toBe(200);
     const marcoBody = JSON.parse(marco.payload);
-    expect(marcoBody.projecao[4].saldo_projetado).toBe("2000.00"); // dia 5
-    expect(marcoBody.projecao[5].saldo_projetado).toBe("1800.00"); // dia 6
-    expect(marcoBody.projecao[6].saldo_projetado).toBe("1800.00"); // dia 7
+    expect(marcoBody.projecao[4]).toMatchObject({ data: "2024-03-05", saldo_projetado: "2000.00" });
+    expect(marcoBody.projecao[5]).toMatchObject({ data: "2024-03-06", saldo_projetado: "1800.00" });
+    expect(marcoBody.projecao[6]).toMatchObject({ data: "2024-03-07", saldo_projetado: "1800.00" });
     expect(marcoBody.resumo.saldo_final_projetado).toBe("1800.00");
 
     // Projeção abril: saldo dia 7 = 1800 + 2000 - 200 = 3600
@@ -253,10 +253,10 @@ describe("GET /projecao", () => {
     const abrilBody = JSON.parse(abril.payload);
     expect(abrilBody.resumo.total_receitas).toBe("2000.00");
     expect(abrilBody.resumo.total_despesas).toBe("200.00");
-    expect(abrilBody.projecao[3].saldo_projetado).toBe("1800.00"); // dia 4 (antes da receita)
-    expect(abrilBody.projecao[4].saldo_projetado).toBe("3800.00"); // dia 5 (após receita)
-    expect(abrilBody.projecao[5].saldo_projetado).toBe("3600.00"); // dia 6 (após despesa)
-    expect(abrilBody.projecao[6].saldo_projetado).toBe("3600.00"); // dia 7
+    expect(abrilBody.projecao[3]).toMatchObject({ data: "2024-04-04", saldo_projetado: "1800.00" });
+    expect(abrilBody.projecao[4]).toMatchObject({ data: "2024-04-05", saldo_projetado: "3800.00" });
+    expect(abrilBody.projecao[5]).toMatchObject({ data: "2024-04-06", saldo_projetado: "3600.00" });
+    expect(abrilBody.projecao[6]).toMatchObject({ data: "2024-04-07", saldo_projetado: "3600.00" });
     expect(abrilBody.resumo.saldo_final_projetado).toBe("3600.00");
   });
 
