@@ -189,6 +189,77 @@ describe("GET /projecao", () => {
     expect(new Date(secondBody.recalculado_em).getTime()).toBe(firstTimestamp);
   });
 
+  it("recorrentes aparecem no mês seguinte com saldo projetado correto", async () => {
+    const keyPair = await generateTestKeyPair();
+    testApp = await createTestApp({ validateToken: await createTestJwksProvider(keyPair) });
+    await testApp.truncateAll();
+    await seedTipoCategorias(testApp);
+    const userId = await createUser(testApp, "proj-rec", "proj-rec@example.com");
+    const contaId = await createAccount(testApp, userId, "Conta Rec", 0);
+    const receitaCat = await createCategory(testApp, "Salário", "receita");
+    const despesaCat = await createCategory(testApp, "Água", "despesa");
+    const token = await tokenFor(keyPair, "proj-rec");
+
+    // Receita recorrente dia 5: +2000
+    await testApp.app.inject({
+      method: "POST",
+      url: "/movimentacoes",
+      headers: { authorization: `Bearer ${token}` },
+      payload: {
+        contaId,
+        tipo: "receita",
+        categoriaId: receitaCat,
+        valor: 2000,
+        data: "2024-03-05",
+        recorrente: true,
+      },
+    });
+
+    // Despesa recorrente dia 6: -200
+    await testApp.app.inject({
+      method: "POST",
+      url: "/movimentacoes",
+      headers: { authorization: `Bearer ${token}` },
+      payload: {
+        contaId,
+        tipo: "despesa",
+        categoriaId: despesaCat,
+        valor: 200,
+        data: "2024-03-06",
+        recorrente: true,
+      },
+    });
+
+    // Projeção março: saldo dia 7 = 0 + 2000 - 200 = 1800
+    const marco = await testApp.app.inject({
+      method: "GET",
+      url: `/projecao?contaId=${contaId}&mes=2024-03`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(marco.statusCode).toBe(200);
+    const marcoBody = JSON.parse(marco.payload);
+    expect(marcoBody.projecao[4].saldo_projetado).toBe("2000.00"); // dia 5
+    expect(marcoBody.projecao[5].saldo_projetado).toBe("1800.00"); // dia 6
+    expect(marcoBody.projecao[6].saldo_projetado).toBe("1800.00"); // dia 7
+    expect(marcoBody.resumo.saldo_final_projetado).toBe("1800.00");
+
+    // Projeção abril: saldo dia 7 = 1800 + 2000 - 200 = 3600
+    const abril = await testApp.app.inject({
+      method: "GET",
+      url: `/projecao?contaId=${contaId}&mes=2024-04`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(abril.statusCode).toBe(200);
+    const abrilBody = JSON.parse(abril.payload);
+    expect(abrilBody.resumo.total_receitas).toBe("2000.00");
+    expect(abrilBody.resumo.total_despesas).toBe("200.00");
+    expect(abrilBody.projecao[3].saldo_projetado).toBe("1800.00"); // dia 4 (antes da receita)
+    expect(abrilBody.projecao[4].saldo_projetado).toBe("3800.00"); // dia 5 (após receita)
+    expect(abrilBody.projecao[5].saldo_projetado).toBe("3600.00"); // dia 6 (após despesa)
+    expect(abrilBody.projecao[6].saldo_projetado).toBe("3600.00"); // dia 7
+    expect(abrilBody.resumo.saldo_final_projetado).toBe("3600.00");
+  });
+
   it("recomputes cascade across two months", async () => {
     const keyPair = await generateTestKeyPair();
     testApp = await createTestApp({ validateToken: await createTestJwksProvider(keyPair) });

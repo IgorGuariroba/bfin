@@ -148,6 +148,10 @@ describe("Projection E2E", () => {
       headers: { authorization: `Bearer ${t}` },
     });
     expect(abril.statusCode).toBe(200);
+    const abrilBody = JSON.parse(abril.payload);
+    // Recorrentes devem aparecer em abril
+    expect(abrilBody.resumo.total_receitas).toBe("5000.00");
+    expect(abrilBody.resumo.total_despesas).toBe("1500.00");
 
     const maio = await testApp.app.inject({
       method: "GET",
@@ -155,6 +159,10 @@ describe("Projection E2E", () => {
       headers: { authorization: `Bearer ${t}` },
     });
     expect(maio.statusCode).toBe(200);
+    const maioBody = JSON.parse(maio.payload);
+    // Recorrentes devem aparecer em maio
+    expect(maioBody.resumo.total_receitas).toBe("5000.00");
+    expect(maioBody.resumo.total_despesas).toBe("1500.00");
 
     const persisted = await testApp.client<{ mes: string; status: string }[]>`
       SELECT mes, status FROM projecao WHERE conta_id = ${contaId} ORDER BY mes
