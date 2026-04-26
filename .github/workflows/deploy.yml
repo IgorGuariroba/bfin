@@ -64,6 +64,10 @@ jobs:
             git checkout master
             git reset --hard origin/master
             export IMAGE_TAG="$SHA"
+            if ! cmp -s Caddyfile /opt/bfin/caddy/Caddyfile; then
+              cp Caddyfile /opt/bfin/caddy/Caddyfile
+              docker compose -f docker-compose.vps.yml --env-file /opt/bfin/.env exec -T caddy caddy reload --config /etc/caddy/Caddyfile
+            fi
             docker compose -f docker-compose.vps.yml --env-file /opt/bfin/.env pull api
             docker compose -f docker-compose.vps.yml --env-file /opt/bfin/.env up -d
             docker image prune -f
