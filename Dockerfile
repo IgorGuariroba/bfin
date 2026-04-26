@@ -14,17 +14,6 @@ RUN npm ci
 COPY . .
 CMD ["npm", "test"]
 
-# Profile stage (dev deps + clinic.js, requires glibc)
-FROM node:22.14-slim AS profile
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/src/db/migrations ./src/db/migrations
-RUN mkdir -p .clinic && chown -R node:node /app
-USER node
-EXPOSE 3000
-
 # Runtime stage
 FROM node:22.14-alpine AS runtime
 WORKDIR /app
