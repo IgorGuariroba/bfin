@@ -21,6 +21,18 @@ jobs:
       - uses: ./.github/actions/setup-node-deps
       - run: npm run lint
 
+  lint-docker:
+    name: lint-docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          recursive: true
+          failure-threshold: error
+
   typecheck:
     name: typecheck
     runs-on: ubuntu-latest
