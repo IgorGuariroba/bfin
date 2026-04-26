@@ -260,8 +260,10 @@ async function mcpHttpPlugin(
   };
   app.get("/.well-known/oauth-authorization-server", authServerMetadataHandler);
   app.get("/.well-known/oauth-authorization-server/mcp", authServerMetadataHandler);
+  app.get("/mcp/.well-known/oauth-authorization-server", authServerMetadataHandler);
   app.get("/.well-known/openid-configuration", authServerMetadataHandler);
   app.get("/.well-known/openid-configuration/mcp", authServerMetadataHandler);
+  app.get("/mcp/.well-known/openid-configuration", authServerMetadataHandler);
 
   function reply401(
     reply: FastifyReply,
