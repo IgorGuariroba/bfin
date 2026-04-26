@@ -39,7 +39,13 @@ describe("GET /health/ready", () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ status: "ready" });
+    expect(response.json()).toEqual({
+      status: "ready",
+      services: {
+        database: "ok",
+        mcp: expect.any(String),
+      },
+    });
   });
 });
 

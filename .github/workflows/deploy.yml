@@ -70,5 +70,31 @@ jobs:
             if ! git diff --quiet "$PREV_SHA" HEAD -- caddy/Caddyfile; then
               docker compose -f docker-compose.vps.yml --env-file /opt/bfin/.env restart caddy
             fi
+
+            echo "Waiting for API to be ready..."
+            # Wait up to 60 seconds for health check (12 * 5s)
+            for i in $(seq 1 12); do
+              if docker compose -f docker-compose.vps.yml exec -T api node -e "fetch('http://127.0.0.1:3000/health/ready').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))" 2>/dev/null; then
+                echo "API is ready!"
+                break
+              fi
+              echo "Waiting... ($i)"
+              sleep 5
+              if [ $i -eq 12 ]; then
+                echo "API failed to become ready in time"
+                docker compose -f docker-compose.vps.yml logs api
+                exit 1
+              fi
+            done
+
             docker image prune -f
             docker compose -f docker-compose.vps.yml ps
+
+      - name: Install Hurl
+        run: |
+          curl --location --remote-name https://github.com/Orange-OpenSource/hurl/releases/download/6.0.0/hurl_6.0.0_amd64.deb
+          sudo apt-get update && sudo apt-get install ./hurl_6.0.0_amd64.deb
+
+      - name: Run Smoke Tests
+        run: |
+          hurl --variable host=https://api.bfincont.com.br --test --retry 5 scripts/smoke-test.hurl

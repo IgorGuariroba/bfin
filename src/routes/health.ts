@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { client } from "../db/index.js";
+import { loadHttpMcpConfig } from "../config.js";
 
 export async function healthRoutes(app: FastifyInstance): Promise<void> {
   app.get("/health/live", async (_, reply) => {
@@ -13,8 +14,18 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
         setTimeout(() => reject(new Error("Database health check timed out")), 2000)
       );
       await Promise.race([client`SELECT 1`, timeout]);
+
+      const mcpConfig = loadHttpMcpConfig();
+      const mcpStatus = mcpConfig.enabled ? "enabled" : "disabled";
+
       void reply.status(200);
-      return { status: "ready" };
+      return {
+        status: "ready",
+        services: {
+          database: "ok",
+          mcp: mcpStatus,
+        },
+      };
     } catch {
       void reply.status(503);
       return { status: "not ready" };
