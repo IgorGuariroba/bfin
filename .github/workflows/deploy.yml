@@ -67,7 +67,7 @@ jobs:
             export IMAGE_TAG="$SHA"
             docker compose -f docker-compose.vps.yml --env-file /opt/bfin/.env pull api
             docker compose -f docker-compose.vps.yml --env-file /opt/bfin/.env up -d
-            if ! git diff --quiet "$PREV_SHA" HEAD -- Caddyfile; then
+            if ! git diff --quiet "$PREV_SHA" HEAD -- caddy/Caddyfile; then
               docker compose -f docker-compose.vps.yml --env-file /opt/bfin/.env exec -T caddy caddy reload --config /etc/caddy/Caddyfile
             fi
             docker image prune -f
