@@ -238,9 +238,11 @@ describe("GET /projecao", () => {
     });
     expect(marco.statusCode).toBe(200);
     const marcoBody = JSON.parse(marco.payload);
-    expect(marcoBody.projecao[4]).toMatchObject({ data: "2024-03-05", saldo_projetado: "2000.00" });
-    expect(marcoBody.projecao[5]).toMatchObject({ data: "2024-03-06", saldo_projetado: "1800.00" });
-    expect(marcoBody.projecao[6]).toMatchObject({ data: "2024-03-07", saldo_projetado: "1800.00" });
+    const findDia = (body: { projecao: Array<{ data: string }> }, data: string) =>
+      body.projecao.find((d) => d.data === data);
+    expect(findDia(marcoBody, "2024-03-05")).toMatchObject({ saldo_projetado: "2000.00" });
+    expect(findDia(marcoBody, "2024-03-06")).toMatchObject({ saldo_projetado: "1800.00" });
+    expect(findDia(marcoBody, "2024-03-07")).toMatchObject({ saldo_projetado: "1800.00" });
     expect(marcoBody.resumo.saldo_final_projetado).toBe("1800.00");
 
     // Projeção abril: saldo dia 7 = 1800 + 2000 - 200 = 3600
@@ -253,10 +255,10 @@ describe("GET /projecao", () => {
     const abrilBody = JSON.parse(abril.payload);
     expect(abrilBody.resumo.total_receitas).toBe("2000.00");
     expect(abrilBody.resumo.total_despesas).toBe("200.00");
-    expect(abrilBody.projecao[3]).toMatchObject({ data: "2024-04-04", saldo_projetado: "1800.00" });
-    expect(abrilBody.projecao[4]).toMatchObject({ data: "2024-04-05", saldo_projetado: "3800.00" });
-    expect(abrilBody.projecao[5]).toMatchObject({ data: "2024-04-06", saldo_projetado: "3600.00" });
-    expect(abrilBody.projecao[6]).toMatchObject({ data: "2024-04-07", saldo_projetado: "3600.00" });
+    expect(findDia(abrilBody, "2024-04-04")).toMatchObject({ saldo_projetado: "1800.00" });
+    expect(findDia(abrilBody, "2024-04-05")).toMatchObject({ saldo_projetado: "3800.00" });
+    expect(findDia(abrilBody, "2024-04-06")).toMatchObject({ saldo_projetado: "3600.00" });
+    expect(findDia(abrilBody, "2024-04-07")).toMatchObject({ saldo_projetado: "3600.00" });
     expect(abrilBody.resumo.saldo_final_projetado).toBe("3600.00");
   });
 
