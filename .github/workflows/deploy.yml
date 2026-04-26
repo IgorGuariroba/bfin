@@ -60,15 +60,15 @@ jobs:
           script: |
             set -e
             cd /opt/bfin/app
+            PREV_SHA=$(git rev-parse HEAD)
             git fetch origin master
             git checkout master
             git reset --hard origin/master
             export IMAGE_TAG="$SHA"
-            if ! cmp -s Caddyfile /opt/bfin/caddy/Caddyfile; then
-              cp Caddyfile /opt/bfin/caddy/Caddyfile
-              docker compose -f docker-compose.vps.yml --env-file /opt/bfin/.env exec -T caddy caddy reload --config /etc/caddy/Caddyfile
-            fi
             docker compose -f docker-compose.vps.yml --env-file /opt/bfin/.env pull api
             docker compose -f docker-compose.vps.yml --env-file /opt/bfin/.env up -d
+            if ! git diff --quiet "$PREV_SHA" HEAD -- caddy/Caddyfile; then
+              docker compose -f docker-compose.vps.yml --env-file /opt/bfin/.env exec -T caddy caddy reload --config /etc/caddy/Caddyfile
+            fi
             docker image prune -f
             docker compose -f docker-compose.vps.yml ps
