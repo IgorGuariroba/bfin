@@ -105,4 +105,31 @@ describe("origin guard", () => {
     guard(req, reply, done);
     expect(done).toHaveBeenCalled();
   });
+
+  it("allows localhost origin with any port", () => {
+    const guard = buildOriginGuard({
+      allowedOrigins,
+      logger: mockLogger(),
+    });
+    const req = mockRequest("http://localhost:5173");
+    const reply = mockReply();
+    const done = vi.fn();
+
+    guard(req, reply, done);
+    expect(done).toHaveBeenCalled();
+  });
+
+  it("rejects localhost without port", () => {
+    const logger = mockLogger();
+    const guard = buildOriginGuard({
+      allowedOrigins,
+      logger,
+    });
+    const req = mockRequest("http://localhost");
+    const reply = mockReply();
+    const done = vi.fn();
+
+    guard(req, reply, done);
+    expect(reply.code as ReturnType<typeof vi.fn>).toHaveBeenCalledWith(403);
+  });
 });

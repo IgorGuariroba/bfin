@@ -29,6 +29,11 @@ export function buildOriginGuard(options: OriginGuardOptions) {
       return;
     }
 
+    if (/^http:\/\/localhost:\d+$/.test(origin)) {
+      done();
+      return;
+    }
+
     logger.warn(
       { origin, path: request.url, ip: request.ip },
       "MCP Origin rejected: not in allowlist"

@@ -49,6 +49,7 @@ describe("MCP HTTP plugin", () => {
           authServerUrl: "https://auth.test.local",
           provisioningAllowedEmails: undefined,
           sessionStore: "memory",
+          allowedOrigins: new Set(["https://claude.ai", "https://app.claude.com"]),
         },
         verifier,
       },
@@ -140,6 +141,72 @@ describe("MCP HTTP plugin", () => {
     expect(typeof sessionId).toBe("string");
     expect(sessionId).toMatch(/[0-9a-f-]{36}/i);
     expect(userId).toBeTruthy();
+  });
+
+  it("POST /mcp with allowed origin passes origin guard", async () => {
+    const res = await testApp.app.inject({
+      method: "POST",
+      url: "/mcp",
+      headers: {
+        authorization: "Bearer valid-token",
+        origin: "https://claude.ai",
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+      },
+      payload: {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "2025-06-18",
+          capabilities: {},
+          clientInfo: { name: "test", version: "1.0" },
+        },
+      },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers["mcp-session-id"]).toBeTruthy();
+  });
+
+  it("POST /mcp with disallowed origin is rejected by origin guard", async () => {
+    const res = await testApp.app.inject({
+      method: "POST",
+      url: "/mcp",
+      headers: {
+        authorization: "Bearer valid-token",
+        origin: "https://evil.example.com",
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+      },
+      payload: { jsonrpc: "2.0", id: 1, method: "initialize" },
+    });
+    expect(res.statusCode).toBe(403);
+    expect(res.json().error).toBe("forbidden_origin");
+  });
+
+  it("POST /mcp with localhost origin passes origin guard", async () => {
+    const res = await testApp.app.inject({
+      method: "POST",
+      url: "/mcp",
+      headers: {
+        authorization: "Bearer valid-token",
+        origin: "http://localhost:5173",
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+      },
+      payload: {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "2025-06-18",
+          capabilities: {},
+          clientInfo: { name: "test", version: "1.0" },
+        },
+      },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers["mcp-session-id"]).toBeTruthy();
   });
 
   it("GET /mcp without session header returns 400", async () => {
