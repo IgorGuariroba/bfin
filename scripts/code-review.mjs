@@ -2,16 +2,17 @@
 import { execSync } from "node:child_process";
 
 const {
-  GEMINI_API_KEY,
+  ZAI_API_KEY,
   GH_TOKEN,
   REPO,
   PR_NUMBER,
   HEAD_SHA,
-  GEMINI_MODEL = "gemini-2.5-pro",
+  ZAI_MODEL = "glm-5.1",
+  ZAI_BASE_URL = "https://api.z.ai/api/openai/v1",
 } = process.env;
 
-if (!GEMINI_API_KEY || !GH_TOKEN || !REPO || !PR_NUMBER || !HEAD_SHA) {
-  console.error("Missing required env: GEMINI_API_KEY, GH_TOKEN, REPO, PR_NUMBER, HEAD_SHA");
+if (!ZAI_API_KEY || !GH_TOKEN || !REPO || !PR_NUMBER || !HEAD_SHA) {
+  console.error("Missing required env: ZAI_API_KEY, GH_TOKEN, REPO, PR_NUMBER, HEAD_SHA");
   process.exit(1);
 }
 
@@ -40,85 +41,81 @@ const systemInstruction = `Você é um revisor de código sênior. Sempre respon
 
 Revise o diff do PR abaixo. Foque em problemas reais e acionáveis: bugs, falhas de segurança, regressões, vazamento de recursos, race conditions, contratos quebrados, edge cases não cobertos. Ignore questões de estilo a menos que prejudiquem clareza.
 
-Para cada achado relevante, produza um item com:
-- path: caminho do arquivo (do diff)
-- line: linha no arquivo modificado (lado RIGHT do diff)
-- severity: LOW | MEDIUM | HIGH | CRITICAL
-- body: descrição curta + sugestão de correção
+Retorne JSON estrito no formato:
+{
+  "summary": "string — resumo geral do PR e qualidade",
+  "comments": [
+    {
+      "path": "string — caminho do arquivo conforme o diff",
+      "line": int — número da linha no arquivo modificado (lado RIGHT do diff),
+      "severity": "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
+      "body": "string — descrição curta + sugestão de correção"
+    }
+  ]
+}
 
 Se não houver achados relevantes, retorne comments=[] e summary explicando que está tudo certo.
 
-Limite a 10 comentários. Severidade só HIGH/CRITICAL pode falhar o check.`;
-
-const schema = {
-  type: "object",
-  properties: {
-    summary: { type: "string" },
-    comments: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          path: { type: "string" },
-          line: { type: "integer" },
-          severity: { type: "string", enum: ["LOW", "MEDIUM", "HIGH", "CRITICAL"] },
-          body: { type: "string" },
-        },
-        required: ["path", "line", "severity", "body"],
-      },
-    },
-  },
-  required: ["summary", "comments"],
-};
+Limite a 10 comentários. Severidade só CRITICAL faz o check falhar.`;
 
 const userPrompt = `# PR: ${prTitle}\n\n\`\`\`diff\n${diff}\n\`\`\``;
 
-console.log(`Calling ${GEMINI_MODEL} with diff (${diff.length} chars)...`);
+console.log(`Calling ${ZAI_MODEL} at ${ZAI_BASE_URL} with diff (${diff.length} chars)...`);
 
-const geminiRes = await fetch(
-  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-  {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: systemInstruction }] },
-      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: schema,
-        temperature: 0.2,
-      },
-    }),
+const llmRes = await fetch(`${ZAI_BASE_URL}/chat/completions`, {
+  method: "POST",
+  headers: {
+    authorization: `Bearer ${ZAI_API_KEY}`,
+    "content-type": "application/json",
   },
-);
+  body: JSON.stringify({
+    model: ZAI_MODEL,
+    messages: [
+      { role: "system", content: systemInstruction },
+      { role: "user", content: userPrompt },
+    ],
+    response_format: { type: "json_object" },
+    temperature: 0.2,
+  }),
+});
 
-if (!geminiRes.ok) {
-  console.error(`Gemini API error ${geminiRes.status}: ${await geminiRes.text()}`);
+if (!llmRes.ok) {
+  console.error(`Z.AI API error ${llmRes.status}: ${await llmRes.text()}`);
   process.exit(1);
 }
 
-const geminiJson = await geminiRes.json();
-const text = geminiJson?.candidates?.[0]?.content?.parts?.[0]?.text;
+const llmJson = await llmRes.json();
+const text = llmJson?.choices?.[0]?.message?.content;
 if (!text) {
-  console.error("Empty Gemini response", JSON.stringify(geminiJson));
+  console.error("Empty Z.AI response", JSON.stringify(llmJson));
   process.exit(1);
 }
 
-const review = JSON.parse(text);
-console.log(`Gemini returned ${review.comments.length} comments. Summary: ${review.summary}`);
+let review;
+try {
+  review = JSON.parse(text);
+} catch (err) {
+  console.error("Failed to parse JSON from model:", text);
+  process.exit(1);
+}
+
+if (!Array.isArray(review.comments)) review.comments = [];
+if (typeof review.summary !== "string") review.summary = "(sem resumo)";
+
+console.log(`Model returned ${review.comments.length} comments. Summary: ${review.summary}`);
 
 const sevEmoji = { LOW: "ℹ️", MEDIUM: "⚠️", HIGH: "🔴", CRITICAL: "🚨" };
 
 const inlineComments = review.comments
-  .filter((c) => c.path && Number.isInteger(c.line))
+  .filter((c) => c && typeof c.path === "string" && Number.isInteger(c.line))
   .map((c) => ({
     path: c.path,
     line: c.line,
     side: "RIGHT",
-    body: `${sevEmoji[c.severity] ?? ""} **${c.severity}** — ${c.body}`,
+    body: `${sevEmoji[c.severity] ?? ""} **${c.severity ?? "INFO"}** — ${c.body ?? ""}`,
   }));
 
-const reviewBody = `## Code Review (${GEMINI_MODEL})\n\n${review.summary}`;
+const reviewBody = `## Code Review (${ZAI_MODEL})\n\n${review.summary}`;
 
 const reviewRes = await ghApi(`/repos/${REPO}/pulls/${PR_NUMBER}/reviews`, {
   method: "POST",
@@ -149,7 +146,7 @@ if (!reviewRes.ok) {
   }
 }
 
-const blocking = review.comments.filter((c) => c.severity === "CRITICAL");
+const blocking = review.comments.filter((c) => c?.severity === "CRITICAL");
 if (blocking.length > 0) {
   console.error(`Found ${blocking.length} CRITICAL issue(s) — failing check.`);
   process.exit(1);
