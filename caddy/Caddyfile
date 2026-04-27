@@ -17,12 +17,10 @@ api.bfincont.com.br {
         flush_interval -1
     }
 
-    # Set (not append) — backend's @fastify/helmet already emits these
-    # headers; the `+` prefix would duplicate them and produce invalid
-    # values (e.g. `X-Frame-Options: SAMEORIGIN, DENY`).
-    header Strict-Transport-Security "max-age=31536000; includeSubDomains"
-    header X-Content-Type-Options "nosniff"
-    header X-Frame-Options "DENY"
-    header Referrer-Policy "strict-origin-when-cross-origin"
+    # @fastify/helmet emits HSTS, X-Content-Type-Options, X-Frame-Options,
+    # Referrer-Policy and friends from the backend. Caddy's `header`
+    # directive appends rather than replacing when the upstream already
+    # sent the field, producing duplicates (e.g. X-Frame-Options: DENY +
+    # SAMEORIGIN). CSP is disabled in helmet, so Caddy owns it here.
     header Content-Security-Policy "default-src 'self'"
 }
