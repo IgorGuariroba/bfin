@@ -7,7 +7,7 @@ const {
   REPO,
   PR_NUMBER,
   HEAD_SHA,
-  GEMINI_MODEL = "gemini-3-pro-preview",
+  GEMINI_MODEL = "gemini-2.5-pro",
 } = process.env;
 
 if (!GEMINI_API_KEY || !GH_TOKEN || !REPO || !PR_NUMBER || !HEAD_SHA) {
