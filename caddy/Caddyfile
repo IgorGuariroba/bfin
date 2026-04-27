@@ -5,29 +5,24 @@
 api.bfincont.com.br {
     encode zstd gzip
 
-    @public path /mcp /mcp/* /.well-known/* /health /health/*
-
-    # Public in this phase: /mcp, /mcp/* and OAuth discovery endpoints
-    # (/.well-known/*) required by RFC 9728 / RFC 8414 for MCP clients.
-    # Health checks also exposed for monitoring and smoke tests.
+    # All routes proxied to API. Auth-guard enforces auth on every route
+    # except /health*, /metrics, /.well-known/* (OAuth discovery — RFC 8414 /
+    # RFC 9728). MCP SSE requires flush_interval -1.
     # Note: MCP sessions hold a live transport/server pair in-process. The
     # RedisSessionStore persists metadata but cannot restore live objects
     # across replicas — scaling beyond one api replica requires sticky
     # sessions on the Mcp-Session-Id header (not configured here; single
     # replica is assumed).
-    handle @public {
-        reverse_proxy api:3000 {
-            flush_interval -1
-        }
-        header +Strict-Transport-Security "max-age=31536000; includeSubDomains"
-        header +X-Content-Type-Options "nosniff"
-        header +X-Frame-Options "DENY"
-        header +Referrer-Policy "strict-origin-when-cross-origin"
-        header +Content-Security-Policy "default-src 'self'"
+    reverse_proxy api:3000 {
+        flush_interval -1
     }
 
-    # Any other route -> 404 controlled by Caddy
-    handle {
-        respond "Not found" 404
-    }
+    # Set (not append) — backend's @fastify/helmet already emits these
+    # headers; the `+` prefix would duplicate them and produce invalid
+    # values (e.g. `X-Frame-Options: SAMEORIGIN, DENY`).
+    header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    header X-Content-Type-Options "nosniff"
+    header X-Frame-Options "DENY"
+    header Referrer-Policy "strict-origin-when-cross-origin"
+    header Content-Security-Policy "default-src 'self'"
 }

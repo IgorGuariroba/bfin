@@ -1,8 +1,3 @@
 have_fun: false
 code_review:
-  comment_severity_threshold: MEDIUM
-  pull_request_opened:
-    summary: false
-    code_review: true
-    help: false
-    include_drafts: false
+  disable: true
