@@ -8,7 +8,7 @@ const {
   PR_NUMBER,
   HEAD_SHA,
   ZAI_MODEL = "glm-5.1",
-  ZAI_BASE_URL = "https://api.z.ai/api/openai/v1",
+  ZAI_BASE_URL = "https://api.z.ai/api/coding/paas/v4",
 } = process.env;
 
 if (!ZAI_API_KEY || !GH_TOKEN || !REPO || !PR_NUMBER || !HEAD_SHA) {
