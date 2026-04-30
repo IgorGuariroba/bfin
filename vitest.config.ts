@@ -17,6 +17,15 @@ export default defineConfig({
       provider: "istanbul",
       reporter: ["text-summary", "lcov"],
       reportsDirectory: "coverage/lcov",
+      include: ["src/**"],
+      exclude: [
+        "scripts/**",
+        "tests/**",
+        "dist/**",
+        "drizzle/**",
+        "**/*.config.{ts,js}",
+        "**/*.d.ts",
+      ],
       thresholds: {
         lines: 60,
         statements: 60,
