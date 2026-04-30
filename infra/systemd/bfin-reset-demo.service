@@ -1,0 +1,11 @@
+[Unit]
+Description=Reset BFin demo account
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/bfin
+ExecStart=/usr/bin/npm run demo:reset
+User=deploy
+Environment=NODE_ENV=production
+EnvironmentFile=/opt/bfin/.env

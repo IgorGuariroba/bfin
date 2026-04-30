@@ -41,3 +41,8 @@ installing anything locally.
 
 See [docs/mcp.md](docs/mcp.md) for setup, supported scopes, provisioning, and
 troubleshooting.
+
+## Privacy Policy
+
+Our privacy policy is publicly available at
+[https://api.bfincont.com.br/privacy](https://api.bfincont.com.br/privacy).

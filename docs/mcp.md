@@ -40,6 +40,33 @@ As variáveis abaixo não são mais lidas. Remova-as do `.env`:
 - `MCP_SERVICE_ACCOUNT_TOKEN`
 - `MCP_SUBJECT_USER_ID`
 
+## Tools
+
+| Name | Title | Description | Required Scope |
+|---|---|---|---|
+| `accounts_list` | List Accounts | List accounts accessible by the service account's acting user. | `accounts:read` |
+| `accounts_get` | Get Accounts | Get details of a specific account by id. | `accounts:read` |
+| `accounts_create` | Create Accounts | Create a new account; the service account becomes the owner. | `accounts:write` |
+| `account-members_list` | List Account Members | List members (users) associated with an account and their roles. | `account-members:read` |
+| `account-members_add` | Add Account Members | Add a user to an account by email. Only owners can add members. | `account-members:write` |
+| `categories_list` | List Categories | List categories, optionally filtered by tipo or busca. | `categories:read` |
+| `categories_create` | Create Categories | Create a new category. contaId is required to enforce role check. | `categories:write` |
+| `transactions_list` | List Transactions | List transactions for an account. | `transactions:read` |
+| `transactions_create` | Create Transactions | Create a new transaction in an account. | `transactions:write` |
+| `transactions_update` | Update Transactions | Update an existing transaction. | `transactions:write` |
+| `transactions_delete` | Delete Transactions | Delete an existing transaction. | `transactions:delete` |
+| `debts_list` | List Debts | List debts for an account. | `debts:read` |
+| `debts_create` | Create Debts | Create a new installment debt with generated parcelas. | `debts:write` |
+| `debts_pay-installment` | Pay Installment Debts | Confirm payment of a specific installment; emits a transaction. | `debts:write` |
+| `goals_list` | List Goals | Get the current reserve goal (meta) for an account, or null if unset. | `goals:read` |
+| `goals_create` | Create Goals | Create the reserve goal for an account. | `goals:write` |
+| `goals_update` | Update Goals | Update the reserve goal for an account (upsert semantics). | `goals:write` |
+| `daily-limit_get` | Get Daily Limit | Compute the daily spending limit for an account for the current month. **DEPRECATED** (sunset 2026-07-23). | `daily-limit:read` |
+| `daily-limit_v2_get` | Get Daily Limit_v2 | Compute the daily spending limit v2 for an account: max(0, balance) / 30 over a rolling 30-day window. | `daily-limit:read` |
+| `daily-limit_set` | Set Daily Limit | Configure the reserve percentage that affects daily-limit calculation. **DEPRECATED** (sunset 2026-07-23). | `daily-limit:write` |
+| `projections_get` | Get Projections | Resolve the persisted/recomputed monthly projection for an account. | `projections:read` |
+| `mcp_whoami` | Introspect Identity | Introspect the current MCP service account identity: subject, scopes, actingUserId, tokenExp. | — |
+
 ## Escopos suportados
 
 O token OAuth carrega escopos no formato `resource:action` (padrão OAuth 2.0, separados por espaço):
@@ -181,6 +208,8 @@ Requisitos:
 
 ## Troubleshooting
 
+### Problemas comuns
+
 | Problema | Causa provável | Solução |
 |---|---|---|
 | `401 invalid_token` | Token ausente, expirado ou audience incorreta | Verifique `MCP_AUDIENCE_HTTP` e `MCP_AUTH_SERVER_URL`; renove o token no cliente |
@@ -189,6 +218,18 @@ Requisitos:
 | `404 Session not found` | Sessão SSE expirou ou servidor reiniciou (com store em memória) | Use `MCP_SESSION_STORE=redis` em produção |
 | CORS preflight falha | Origin não está na allowlist | Verifique se o cliente é `https://claude.ai` ou `http://localhost:*` |
 | Certificado TLS inválido | DNS não aponta para a VPS | Confira `dig +short api.bfincont.com.br` e aguarde propagação |
+
+### Códigos de erro estruturados
+
+Quando uma tool falha, o campo `content[0].text` contém um JSON com o seguinte código:
+
+| Código | Quando ocorre | Solução |
+|---|---|---|
+| `INVALID_INPUT` | Parâmetro com tipo ou formato inválido (falha Zod). | Corrija o campo indicado em `field` (ex.: UUID malformado, número no lugar de string). |
+| `NOT_FOUND` | Recurso solicitado não existe (conta, transação, dívida, etc.). | Verifique o `id` informado; use a tool de `list` para confirmar os IDs válidos. |
+| `FORBIDDEN` | Usuário não tem permissão (role insuficiente ou não é membro da conta). | Verifique se o usuário é `owner` ou `viewer` da conta; `owner` é necessário para writes. |
+| `BUSINESS_RULE` | Regra de domínio violada (duplicata, parcela já paga, meta inexistente, etc.). | Leia a dica em `hint` (ex.: "installment already paid"); ajuste a operação conforme o estado atual. |
+| `INTERNAL` | Erro inesperado no servidor. | Tente novamente em alguns segundos. Se persistir, contate o suporte. |
 
 ## Tool annotations
 
@@ -257,6 +298,23 @@ Para validar annotations e contrato de erro:
 # Comando completo
 npx @modelcontextprotocol/inspector npm run mcp:dev
 ```
+
+## Conta demo
+
+O BFin oferece uma conta demo para revisores e testes de integração.
+
+- **Email:** `mcp-review@bfincont.com.br`
+- **Dataset:** 2 contas, ~30 transações distribuídas em 90 dias, 1 dívida com 12 parcelas, 1 meta de reserva, 1 projeção cacheada.
+- **Janela de reset:** 03:00 BRT diariamente. O script `scripts/reset-demo-account.ts` restaura o dataset baseline automaticamente.
+- **Provisionamento:** o usuário demo é pré-cadastrado no Auth0 (sem MFA). As credenciais são entregues via formulário de submissão da Anthropic e armazenadas em secret manager (1Password).
+
+## Política de privacidade
+
+A política de privacidade do BFin está publicada em:
+
+**[https://api.bfincont.com.br/privacy](https://api.bfincont.com.br/privacy)**
+
+Ela descreve dados coletados, não coletados, finalidades, retenção, subprocessadores, direitos LGPD e contato.
 
 ## Checklist: atualizar escopos no Auth0
 

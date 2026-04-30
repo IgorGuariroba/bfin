@@ -1,0 +1,1 @@
+BFin is a personal finance MCP server that lets AI assistants manage your accounts, transactions, debts, and goals via OAuth-secured tools.
