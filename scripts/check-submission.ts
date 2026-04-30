@@ -28,18 +28,27 @@ function main() {
   assertFile(resolve("docs/branding/favicon.ico"), "favicon ICO");
   assertFile(resolve("docs/branding/favicon-32.png"), "favicon PNG");
 
-  assertFile(resolve("docs/branding/tagline.txt"), "tagline");
-  assertFile(resolve("docs/branding/desc-short.txt"), "short description");
-  assertFile(resolve("docs/branding/desc-long.md"), "long description");
+  const taglinePath = resolve("docs/branding/tagline.txt");
+  const shortDescPath = resolve("docs/branding/desc-short.txt");
+  const longDescPath = resolve("docs/branding/desc-long.md");
+  assertFile(taglinePath, "tagline");
+  assertFile(shortDescPath, "short description");
+  assertFile(longDescPath, "long description");
 
-  const tagline = readFileSync(resolve("docs/branding/tagline.txt"), "utf-8").trim();
-  if (tagline.length > 80) errors.push(`Tagline exceeds 80 chars (${tagline.length})`);
+  if (existsSync(taglinePath)) {
+    const tagline = readFileSync(taglinePath, "utf-8").trim();
+    if (tagline.length > 80) errors.push(`Tagline exceeds 80 chars (${tagline.length})`);
+  }
 
-  const shortDesc = readFileSync(resolve("docs/branding/desc-short.txt"), "utf-8").trim();
-  if (shortDesc.length > 140) errors.push(`Short description exceeds 140 chars (${shortDesc.length})`);
+  if (existsSync(shortDescPath)) {
+    const shortDesc = readFileSync(shortDescPath, "utf-8").trim();
+    if (shortDesc.length > 140) errors.push(`Short description exceeds 140 chars (${shortDesc.length})`);
+  }
 
-  const longDesc = readFileSync(resolve("docs/branding/desc-long.md"), "utf-8").trim();
-  if (longDesc.length > 2000) errors.push(`Long description exceeds 2000 chars (${longDesc.length})`);
+  if (existsSync(longDescPath)) {
+    const longDesc = readFileSync(longDescPath, "utf-8").trim();
+    if (longDesc.length > 2000) errors.push(`Long description exceeds 2000 chars (${longDesc.length})`);
+  }
 
   // Screenshots
   const screenshots = readdirSync(resolve("docs/branding/screenshots")).filter((f: string) =>
