@@ -1,43 +1,12 @@
 import { FastifyInstance } from "fastify";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { Marked } from "marked";
 
-function mdToHtml(md: string): string {
-  const lines = md.split("\n");
-  const out: string[] = [];
-  let inList = false;
+const marked = new Marked({ gfm: true, breaks: false, async: false });
 
-  for (let line of lines) {
-    line = line.trimEnd();
-    if (line.startsWith("### ")) {
-      if (inList) { out.push("</ul>"); inList = false; }
-      out.push(`<h3>${escapeHtml(line.slice(4))}</h3>`);
-    } else if (line.startsWith("## ")) {
-      if (inList) { out.push("</ul>"); inList = false; }
-      out.push(`<h2>${escapeHtml(line.slice(3))}</h2>`);
-    } else if (line.startsWith("- ")) {
-      if (!inList) { out.push("<ul>"); inList = true; }
-      out.push(`<li>${escapeHtml(line.slice(2))}</li>`);
-    } else if (line === "") {
-      if (inList) { out.push("</ul>"); inList = false; }
-      out.push("<br>");
-    } else {
-      if (inList) { out.push("</ul>"); inList = false; }
-      out.push(`<p>${escapeHtml(line)}</p>`);
-    }
-  }
-  if (inList) out.push("</ul>");
-
-  return out.join("\n");
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+const PRIVACY_MD_PATH = resolve(process.cwd(), "docs/privacy.md");
+const PRIVACY_BODY_HTML = marked.parse(readFileSync(PRIVACY_MD_PATH, "utf-8")) as string;
 
 export async function privacyRoutes(app: FastifyInstance): Promise<void> {
   app.get("/privacy/v1", async (_req, reply) => {
@@ -45,9 +14,7 @@ export async function privacyRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get("/privacy", async (_req, reply) => {
-    const path = resolve(process.cwd(), "docs/privacy.md");
-    const md = readFileSync(path, "utf-8");
-    const body = mdToHtml(md);
+    const body = PRIVACY_BODY_HTML;
     const html = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>

@@ -44,6 +44,7 @@
     "fastify-metrics": "^13.2.0",
     "fastify-type-provider-zod": "^6.1.0",
     "ioredis": "^5.10.1",
+    "marked": "^14.1.4",
     "openid-client": "^6.8.3",
     "pino": "^9.6.0",
     "postgres": "^3.4.5",

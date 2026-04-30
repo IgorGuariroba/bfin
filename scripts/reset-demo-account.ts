@@ -12,10 +12,12 @@ import {
 import { eq, inArray } from "drizzle-orm";
 import { config } from "../src/config.js";
 
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 const DEMO_PROVIDER_ID = "auth0|demo-mcp-review";
 
-async function cleanup() {
-  const user = await db.query.usuarios.findFirst({
+async function cleanup(tx: Tx) {
+  const user = await tx.query.usuarios.findFirst({
     where: eq(usuarios.idProvedor, DEMO_PROVIDER_ID),
   });
 
@@ -24,11 +26,11 @@ async function cleanup() {
     return null;
   }
 
-  const accounts = await db.query.contas.findMany({
+  const accounts = await tx.query.contas.findMany({
     where: inArray(
       contas.id,
       (
-        await db.query.contaUsuarios.findMany({
+        await tx.query.contaUsuarios.findMany({
           where: eq(contaUsuarios.usuarioId, user.id),
         })
       ).map((cu) => cu.contaId)
@@ -38,31 +40,36 @@ async function cleanup() {
   const accountIds = accounts.map((a) => a.id);
 
   for (const contaId of accountIds) {
-    // Delete projections
-    await db.delete(projecao).where(eq(projecao.contaId, contaId));
-    // Delete goals
-    await db.delete(meta).where(eq(meta.contaId, contaId));
-    // Delete transactions
-    await db.delete(movimentacoes).where(eq(movimentacoes.contaId, contaId));
-    // Debts cascade delete parcelas via FK, but we delete explicitly for clarity
-    const debts = await db.query.dividas.findMany({
+    await tx.delete(projecao).where(eq(projecao.contaId, contaId));
+    await tx.delete(meta).where(eq(meta.contaId, contaId));
+    await tx.delete(movimentacoes).where(eq(movimentacoes.contaId, contaId));
+    const debts = await tx.query.dividas.findMany({
       where: eq(dividas.contaId, contaId),
     });
     for (const d of debts) {
-      await db.delete(parcelasDivida).where(eq(parcelasDivida.dividaId, d.id));
+      await tx.delete(parcelasDivida).where(eq(parcelasDivida.dividaId, d.id));
     }
-    await db.delete(dividas).where(eq(dividas.contaId, contaId));
+    await tx.delete(dividas).where(eq(dividas.contaId, contaId));
   }
 
-  // Remove account memberships (preserve accounts themselves to keep IDs stable)
-  await db.delete(contaUsuarios).where(eq(contaUsuarios.usuarioId, user.id));
+  await tx.delete(contaUsuarios).where(eq(contaUsuarios.usuarioId, user.id));
 
   console.log("Cleaned demo data for accounts:", accountIds.join(", "));
   return user;
 }
 
-async function seed(userId: string) {
-  // Reuse seed logic inline to avoid module dependency issues
+function uuid(n: string): string {
+  const hash = Array.from(n).reduce((h, c) => (h << 5) - h + c.charCodeAt(0), 0);
+  const pad = (x: number) => Math.abs(x).toString(16).padStart(8, "0").slice(0, 8);
+  const p1 = pad(hash);
+  const p2 = pad(hash >>> 4);
+  const p3 = ((pad(hash >>> 8) + "4").slice(0, 4));
+  const p4 = ((pad(hash >>> 12) + "89ab").slice(0, 4));
+  const p5 = (pad(hash >>> 16) + pad(hash >>> 20) + pad(hash >>> 24)).slice(0, 12);
+  return `${p1}-${p2}-${p3}-${p4}-${p5}`;
+}
+
+async function seed(tx: Tx, userId: string) {
   const {
     tipoCategorias,
     categorias,
@@ -77,22 +84,10 @@ async function seed(userId: string) {
 
   const { eq: eqFn } = await import("drizzle-orm");
 
-  function uuid(n: string): string {
-    const hash = Array.from(n).reduce((h, c) => (h << 5) - h + c.charCodeAt(0), 0);
-    const pad = (x: number) => Math.abs(x).toString(16).padStart(8, "0").slice(0, 8);
-    const p1 = pad(hash);
-    const p2 = pad(hash >>> 4);
-    const p3 = ((pad(hash >>> 8) + "4").slice(0, 4));
-    const p4 = ((pad(hash >>> 12) + "89ab").slice(0, 4));
-    const p5 = (pad(hash >>> 16) + pad(hash >>> 20) + pad(hash >>> 24)).slice(0, 12);
-    return `${p1}-${p2}-${p3}-${p4}-${p5}`;
-  }
-
-  // Categories
-  const existingTipos = await db.query.tipoCategorias.findMany();
+  const existingTipos = await tx.query.tipoCategorias.findMany();
   let tipos = existingTipos;
   if (tipos.length === 0) {
-    tipos = await db
+    tipos = await tx
       .insert(tipoCategorias)
       .values([
         { id: uuid("tipo-receita"), slug: "receita", nome: "Receita" },
@@ -101,9 +96,9 @@ async function seed(userId: string) {
       .returning();
   }
 
-  let cats = await db.query.categorias.findMany();
+  let cats = await tx.query.categorias.findMany();
   if (cats.length === 0) {
-    cats = await db
+    cats = await tx
       .insert(categorias)
       .values([
         { id: uuid("cat-salario"), nome: "Salário", tipoCategoriaId: tipos.find((t) => t.slug === "receita")!.id },
@@ -118,8 +113,7 @@ async function seed(userId: string) {
       .returning();
   }
 
-  // Accounts
-  const accounts = await db
+  await tx
     .insert(contasTable)
     .values([
       { id: config.demoAccountId, nome: "Conta Demo Principal", saldoInicial: "5000.00" },
@@ -128,7 +122,7 @@ async function seed(userId: string) {
     .onConflictDoNothing()
     .returning();
 
-  await db
+  await tx
     .insert(cuTable)
     .values([
       { contaId: config.demoAccountId, usuarioId: userId, papel: "owner" as const },
@@ -136,12 +130,11 @@ async function seed(userId: string) {
     ])
     .onConflictDoNothing();
 
-  const allAccounts = await db.query.contas.findMany({
+  const allAccounts = await tx.query.contas.findMany({
     where: eqFn(contasTable.id, config.demoAccountId),
   });
   const mainAccount = allAccounts[0];
 
-  // Transactions
   const despesas = cats.filter((c) => c.nome !== "Salário" && c.nome !== "Freelance");
   const receitas = cats.filter((c) => c.nome === "Salário" || c.nome === "Freelance");
 
@@ -173,9 +166,8 @@ async function seed(userId: string) {
     });
   }
 
-  await db.insert(movTable).values(txs);
+  await tx.insert(movTable).values(txs);
 
-  // Debt
   const despesaCat = cats.find((c) => c.nome === "Moradia")!;
   const total = "12000.00";
   const parcelas = 12;
@@ -183,7 +175,7 @@ async function seed(userId: string) {
   const start = new Date();
   start.setDate(1);
 
-  const [debt] = await db
+  const [debt] = await tx
     .insert(divTable)
     .values({
       id: uuid("debt-1"),
@@ -212,18 +204,16 @@ async function seed(userId: string) {
     });
   }
 
-  await db.insert(parcTable).values(ps);
+  await tx.insert(parcTable).values(ps);
 
-  // Goal
-  await db.insert(metaTable).values({
+  await tx.insert(metaTable).values({
     id: uuid("goal-1"),
     contaId: mainAccount.id,
     porcentagemReserva: "15.00",
   });
 
-  // Projection
   const mes = now.toISOString().slice(0, 7);
-  await db.insert(projTable).values({
+  await tx.insert(projTable).values({
     id: uuid("proj-1"),
     contaId: mainAccount.id,
     mes,
@@ -242,33 +232,24 @@ async function seed(userId: string) {
 
 async function main() {
   console.log("Resetting demo account...");
-  const user = await cleanup();
-  if (!user) {
-    // User didn't exist; create and seed
-    const { usuarios: uTable } = await import("../src/db/schema.js");
-    function uuid(n: string): string {
-      const hash = Array.from(n).reduce((h, c) => (h << 5) - h + c.charCodeAt(0), 0);
-      const pad = (x: number) => Math.abs(x).toString(16).padStart(8, "0").slice(0, 8);
-      const p1 = pad(hash);
-      const p2 = pad(hash >>> 4);
-      const p3 = ((pad(hash >>> 8) + "4").slice(0, 4));
-      const p4 = ((pad(hash >>> 12) + "89ab").slice(0, 4));
-      const p5 = (pad(hash >>> 16) + pad(hash >>> 20) + pad(hash >>> 24)).slice(0, 12);
-      return `${p1}-${p2}-${p3}-${p4}-${p5}`;
+  await db.transaction(async (tx) => {
+    const user = await cleanup(tx);
+    if (!user) {
+      const { usuarios: uTable } = await import("../src/db/schema.js");
+      const [inserted] = await tx
+        .insert(uTable)
+        .values({
+          id: uuid("demo-user"),
+          idProvedor: DEMO_PROVIDER_ID,
+          nome: "Anthropic Reviewer",
+          email: "mcp-review@bfincont.com.br",
+        })
+        .returning();
+      await seed(tx, inserted.id);
+    } else {
+      await seed(tx, user.id);
     }
-    const [inserted] = await db
-      .insert(uTable)
-      .values({
-        id: uuid("demo-user"),
-        idProvedor: DEMO_PROVIDER_ID,
-        nome: "Anthropic Reviewer",
-        email: "mcp-review@bfincont.com.br",
-      })
-      .returning();
-    await seed(inserted.id);
-  } else {
-    await seed(user.id);
-  }
+  });
   console.log("Demo reset complete.");
 }
 
