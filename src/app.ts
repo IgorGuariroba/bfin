@@ -5,7 +5,13 @@ import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import metricsPlugin from "fastify-metrics";
-import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
+import {
+  serializerCompiler,
+  validatorCompiler,
+  jsonSchemaTransform,
+} from "fastify-type-provider-zod";
+import { ApiErrorSchema } from "./lib/schemas.js";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
 type MetricsPluginOptions = { endpoint?: string };
 const metrics = metricsPlugin as unknown as FastifyPluginCallback<MetricsPluginOptions>;
@@ -80,19 +86,12 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
       ],
       components: {
         schemas: {
-          ApiError: {
-            type: "object",
-            required: ["code", "message", "timestamp", "requestId"],
-            properties: {
-              code: { type: "string", description: "Código de erro legível por máquina" },
-              message: { type: "string", description: "Descrição do erro" },
-              timestamp: { type: "string", format: "date-time" },
-              requestId: { type: "string" },
-            },
-          },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ApiError: zodToJsonSchema(ApiErrorSchema as any, { target: "openApi3" }),
         },
       },
     },
+    transform: jsonSchemaTransform,
   });
 
   const docsAdminOnly = config.nodeEnv === "production";
