@@ -1,4 +1,6 @@
 import { describe, beforeAll, afterAll, it, expect } from "vitest";
+import { renameSync } from "node:fs";
+import { resolve } from "node:path";
 import { createTestApp, type TestApp } from "./helpers/setup.js";
 
 let testApp: TestApp;
@@ -50,5 +52,24 @@ describe("GET /privacy/v1", () => {
 
     expect([301, 302, 307]).toContain(response.statusCode);
     expect(response.headers["location"]).toBe("/privacy");
+  });
+});
+
+describe("GET /privacy when markdown unreadable", () => {
+  const original = resolve(process.cwd(), "docs/privacy.md");
+  const tmp = resolve(process.cwd(), "docs/privacy.md.bak-test");
+
+  it("returns 500 if privacy.md cannot be read", async () => {
+    renameSync(original, tmp);
+    try {
+      const response = await testApp.app.inject({
+        method: "GET",
+        url: "/privacy",
+      });
+      expect(response.statusCode).toBe(500);
+      expect(response.body).toContain("temporarily unavailable");
+    } finally {
+      renameSync(tmp, original);
+    }
   });
 });
