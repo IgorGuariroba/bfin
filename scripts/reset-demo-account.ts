@@ -10,6 +10,7 @@ import {
   projecao,
 } from "../src/db/schema.js";
 import { eq, inArray } from "drizzle-orm";
+import { createHash } from "node:crypto";
 import { config } from "../src/config.js";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -59,14 +60,14 @@ async function cleanup(tx: Tx) {
 }
 
 function uuid(n: string): string {
-  const hash = Array.from(n).reduce((h, c) => (h << 5) - h + c.charCodeAt(0), 0);
-  const pad = (x: number) => Math.abs(x).toString(16).padStart(8, "0").slice(0, 8);
-  const p1 = pad(hash);
-  const p2 = pad(hash >>> 4);
-  const p3 = ((pad(hash >>> 8) + "4").slice(0, 4));
-  const p4 = ((pad(hash >>> 12) + "89ab").slice(0, 4));
-  const p5 = (pad(hash >>> 16) + pad(hash >>> 20) + pad(hash >>> 24)).slice(0, 12);
-  return `${p1}-${p2}-${p3}-${p4}-${p5}`;
+  // Deterministic v5-style UUID derived from sha256("bfin-demo:" + n).
+  // Sets RFC 4122 version (5) and variant (10) bits so Postgres uuid validation passes
+  // and collisions are cryptographically negligible.
+  const hash = createHash("sha256").update(`bfin-demo:${n}`).digest();
+  hash[6] = (hash[6] & 0x0f) | 0x50;
+  hash[8] = (hash[8] & 0x3f) | 0x80;
+  const hex = hash.toString("hex");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
 }
 
 async function seed(tx: Tx, userId: string) {
