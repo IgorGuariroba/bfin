@@ -31,11 +31,16 @@ function main() {
   errors.push(...checkFile(resolve(BRANDING_DIR, "favicon-32.png"), "favicon-32.png"));
 
   // Screenshots
-  const screenshots = readdirSync(resolve(BRANDING_DIR, "screenshots")).filter((f) =>
-    f.endsWith(".png")
-  );
-  if (screenshots.length < 3) {
-    errors.push(`Expected at least 3 screenshots in docs/branding/screenshots, found ${screenshots.length}`);
+  const screenshotsDir = resolve(BRANDING_DIR, "screenshots");
+  let screenshotsCount = 0;
+  if (!existsSync(screenshotsDir)) {
+    errors.push(`Missing screenshots directory: ${screenshotsDir}`);
+  } else {
+    const screenshots = readdirSync(screenshotsDir).filter((f) => f.endsWith(".png"));
+    screenshotsCount = screenshots.length;
+    if (screenshots.length < 3) {
+      errors.push(`Expected at least 3 screenshots in docs/branding/screenshots, found ${screenshots.length}`);
+    }
   }
 
   errors.push(...checkFile(resolve(BRANDING_DIR, "tagline.txt"), "tagline.txt", undefined, 80));
@@ -48,7 +53,7 @@ function main() {
     process.exit(1);
   }
 
-  console.log(`Branding check OK (screenshots: ${screenshots.length}).`);
+  console.log(`Branding check OK (screenshots: ${screenshotsCount}).`);
 }
 
 main();
