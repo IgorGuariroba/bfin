@@ -49,6 +49,7 @@ describe("loadConfig", () => {
       DB_POOL_MAX: "20",
       DB_POOL_IDLE_TIMEOUT: "60",
       DB_POOL_CONNECT_TIMEOUT: "5",
+      DEMO_ACCOUNT_ID: "11111111-1111-4111-8111-111111111111",
     });
     expect(cfg.corsOrigin).toBe("https://app.example.com");
     expect(cfg.metricsToken).toBe("secret");
@@ -91,6 +92,24 @@ describe("loadConfig", () => {
       OIDC_ISSUER_URL: "https://test",
     });
     expect(cfg.adminEmails.size).toBe(0);
+  });
+
+  it("requires DEMO_ACCOUNT_ID when NODE_ENV=production", () => {
+    expect(() =>
+      loadConfig({
+        DATABASE_URL: "postgres://fake",
+        OIDC_ISSUER_URL: "https://test",
+        NODE_ENV: "production",
+      })
+    ).toThrow(/DEMO_ACCOUNT_ID is required/);
+  });
+
+  it("leaves DEMO_ACCOUNT_ID undefined in non-production", () => {
+    const cfg = loadConfig({
+      DATABASE_URL: "postgres://fake",
+      OIDC_ISSUER_URL: "https://test",
+    });
+    expect(cfg.demoAccountId).toBeUndefined();
   });
 });
 
