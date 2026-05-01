@@ -2,6 +2,7 @@ import { eq, count, desc, sql, asc } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { dividas, parcelasDivida, movimentacoes, categorias, tipoCategorias } from "../db/schema.js";
 import { NotFoundError, BusinessRuleError, AlreadyPaidError, DebtHasPaymentsError } from "../lib/errors.js";
+import { assertNotDemoAccount } from "../lib/demo-account.js";
 import { invalidateProjections } from "./projection-invalidation.js";
 
 export interface CreateDebtInput {
@@ -98,6 +99,7 @@ export function generateInstallments(
 }
 
 export async function createDebt(input: CreateDebtInput, usuarioId: string) {
+  assertNotDemoAccount(input.contaId);
   if (input.valorTotal <= 0) {
     throw new BusinessRuleError("valor_total must be greater than zero");
   }
@@ -291,6 +293,8 @@ export async function deleteDebt(id: string) {
       throw new NotFoundError("Debt not found");
     }
 
+    assertNotDemoAccount(divida[0].contaId);
+
     const lockedParcelas = await tx.execute(
       sql`SELECT id, data_pagamento FROM parcelas_divida WHERE divida_id = ${id} FOR UPDATE`
     );
@@ -327,6 +331,8 @@ export async function confirmInstallmentPayment(
     if (!parcelaRow) {
       throw new NotFoundError("Installment not found");
     }
+
+    assertNotDemoAccount(parcelaRow.conta_id as string);
 
     if (parcelaRow.data_pagamento != null) {
       throw new AlreadyPaidError("Installment has already been paid");

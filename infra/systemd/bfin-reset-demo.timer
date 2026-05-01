@@ -1,0 +1,10 @@
+[Unit]
+Description=Run BFin demo reset daily at 03:00 BRT
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+Timezone=America/Sao_Paulo
+
+[Install]
+WantedBy=timers.target

@@ -17,6 +17,18 @@ const configSchema = z.object({
   OIDC_ISSUER_URL: z.string().min(1, "OIDC_ISSUER_URL cannot be empty"),
   OIDC_AUDIENCE: z.preprocess((val) => (val === "" ? undefined : val), z.string().optional()),
   OIDC_ALLOW_INSECURE: z.enum(["true", "false"]).default("false"),
+  DEMO_ACCOUNT_ID: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.uuid().optional()
+  ),
+}).superRefine((data, ctx) => {
+  if (data.NODE_ENV === "production" && !data.DEMO_ACCOUNT_ID) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["DEMO_ACCOUNT_ID"],
+      message: "DEMO_ACCOUNT_ID is required when NODE_ENV=production",
+    });
+  }
 });
 
 export type Config = {
@@ -36,6 +48,7 @@ export type Config = {
   oidcIssuerUrl: string;
   oidcAudience: string | undefined;
   oidcAllowInsecure: boolean;
+  demoAccountId: string | undefined;
 };
 
 export class ConfigError extends Error {
@@ -70,6 +83,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     oidcIssuerUrl: v.OIDC_ISSUER_URL,
     oidcAudience: v.OIDC_AUDIENCE,
     oidcAllowInsecure: v.OIDC_ALLOW_INSECURE === "true",
+    demoAccountId: v.DEMO_ACCOUNT_ID,
   };
 }
 

@@ -2,7 +2,10 @@ import { FastifyInstance, FastifyPluginCallback, fastify } from "fastify";
 import helmet from "@fastify/helmet";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
+import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
 import metricsPlugin from "fastify-metrics";
+import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 
 type MetricsPluginOptions = { endpoint?: string };
 const metrics = metricsPlugin as unknown as FastifyPluginCallback<MetricsPluginOptions>;
@@ -15,6 +18,7 @@ import { transactionRoutes } from "./routes/transactions.js";
 import { debtRoutes } from "./routes/debts.js";
 import { projectionRoutes } from "./routes/projections.js";
 import { goalRoutes } from "./routes/goals.js";
+import { privacyRoutes } from "./routes/privacy.js";
 import { generateRequestId } from "./plugins/request-id.js";
 import { registerErrorHandler } from "./lib/error-handler.js";
 import { authGuard, AuthGuardOptions } from "./plugins/auth-guard.js";
@@ -58,7 +62,59 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     },
   });
 
+  app.setValidatorCompiler(validatorCompiler);
+  app.setSerializerCompiler(serializerCompiler);
+
   registerErrorHandler(app);
+
+  void app.register(swagger, {
+    openapi: {
+      info: {
+        title: "bfin API",
+        description: "API de controle financeiro pessoal",
+        version: "1.0.0",
+      },
+      servers: [
+        { url: "https://api.bfincont.com.br", description: "Produção" },
+        { url: "http://localhost:3000", description: "Local" },
+      ],
+      components: {
+        schemas: {
+          ApiError: {
+            type: "object",
+            required: ["code", "message", "timestamp", "requestId"],
+            properties: {
+              code: { type: "string", description: "Código de erro legível por máquina" },
+              message: { type: "string", description: "Descrição do erro" },
+              timestamp: { type: "string", format: "date-time" },
+              requestId: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const docsAdminOnly = config.nodeEnv === "production";
+  void app.register(swaggerUi, {
+    routePrefix: "/docs",
+    staticCSP: true,
+    transformStaticCSP: (header) => header,
+    uiHooks: docsAdminOnly
+      ? {
+          preHandler: async (request, reply) => {
+            if (!request.user || !request.user.isAdmin) {
+              return reply.status(403).send({
+                timestamp: new Date().toISOString(),
+                requestId: request.id,
+                message: "Admin access required",
+                code: "ADMIN_REQUIRED",
+              });
+            }
+          },
+        }
+      : undefined,
+  });
 
   void app.register(helmet, { contentSecurityPolicy: false });
   void app.register(cors, {
@@ -88,6 +144,8 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   }
 
   if (options.authGuardOptions) void app.register(authGuard, options.authGuardOptions);
+
+  app.get("/openapi.json", { schema: { hide: true } }, async () => app.swagger());
   if (options.mcpHttpOptions) void app.register(mcpHttp, options.mcpHttpOptions);
   void app.register(healthRoutes);
   void app.register(meRoutes);
@@ -98,6 +156,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   void app.register(debtRoutes);
   void app.register(projectionRoutes);
   void app.register(goalRoutes);
+  void app.register(privacyRoutes);
 
   registerProjectionListener({ logger: app.log });
 

@@ -2,6 +2,7 @@ import { eq, and, ilike, count, desc, gte, lte } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { movimentacoes, categorias, tipoCategorias, usuarios } from "../db/schema.js";
 import { NotFoundError, BusinessRuleError, SystemGeneratedResourceError } from "../lib/errors.js";
+import { assertNotDemoAccount } from "../lib/demo-account.js";
 import { invalidateProjections } from "./projection-invalidation.js";
 
 export interface CreateTransactionInput {
@@ -93,6 +94,7 @@ function validateValor(valor: number): void {
 }
 
 export async function createTransaction(input: CreateTransactionInput, usuarioId: string) {
+  assertNotDemoAccount(input.contaId);
   validateValor(input.valor);
   validateRecorrencia(input);
   await validateCategoriaTipo(input.categoriaId, input.tipo);
@@ -164,6 +166,9 @@ export async function updateTransaction(id: string, input: UpdateTransactionInpu
     throw new NotFoundError("Transaction not found");
   }
 
+  assertNotDemoAccount(existing.contaId);
+  if (input.contaId !== undefined) assertNotDemoAccount(input.contaId);
+
   if (input.valor !== undefined) {
     validateValor(input.valor);
   }
@@ -226,6 +231,8 @@ export async function deleteTransaction(id: string) {
   if (existing.length === 0) {
     throw new NotFoundError("Transaction not found");
   }
+
+  assertNotDemoAccount(existing[0].contaId);
 
   if (existing[0].parcelaDividaId != null) {
     throw new SystemGeneratedResourceError("System-generated transactions cannot be deleted");

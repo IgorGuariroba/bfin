@@ -24,7 +24,7 @@ declare module "fastify" {
 }
 
 // /metrics tem esquema próprio (METRICS_TOKEN) aplicado em app.ts, por isso fica fora do auth-guard.
-const DEFAULT_PUBLIC_ROUTES = ["/health", "/health/live", "/health/ready", "/metrics"];
+const DEFAULT_PUBLIC_ROUTES = ["/health", "/health/live", "/health/ready", "/metrics", "/privacy", "/privacy/v1", "/openapi.json"];
 
 async function authGuardPlugin(
   app: FastifyInstance,

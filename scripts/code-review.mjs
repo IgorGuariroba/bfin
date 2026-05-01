@@ -1,5 +1,13 @@
 #!/usr/bin/env node
 import { execSync } from "node:child_process";
+import { Agent, setGlobalDispatcher } from "undici";
+
+setGlobalDispatcher(
+  new Agent({
+    headersTimeout: 10 * 60 * 1000,
+    bodyTimeout: 10 * 60 * 1000,
+  }),
+);
 
 const {
   ZAI_API_KEY,
@@ -41,6 +49,8 @@ const systemInstruction = `Você é um revisor de código sênior. Sempre respon
 
 Revise o diff do PR abaixo. Foque em problemas reais e acionáveis: bugs, falhas de segurança, regressões, vazamento de recursos, race conditions, contratos quebrados, edge cases não cobertos. Ignore questões de estilo a menos que prejudiquem clareza.
 
+Reporte APENAS achados de severidade HIGH ou CRITICAL. Descarte LOW e MEDIUM — não inclua no array de comentários.
+
 Retorne JSON estrito no formato:
 {
   "summary": "string — resumo geral do PR e qualidade",
@@ -48,13 +58,13 @@ Retorne JSON estrito no formato:
     {
       "path": "string — caminho do arquivo conforme o diff",
       "line": int — número da linha no arquivo modificado (lado RIGHT do diff),
-      "severity": "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
+      "severity": "HIGH" | "CRITICAL",
       "body": "string — descrição curta + sugestão de correção"
     }
   ]
 }
 
-Se não houver achados relevantes, retorne comments=[] e summary explicando que está tudo certo.
+Se não houver achados HIGH/CRITICAL, retorne comments=[] e summary explicando que está tudo certo.
 
 Limite a 10 comentários. Severidade só CRITICAL faz o check falhar.`;
 
@@ -62,22 +72,35 @@ const userPrompt = `# PR: ${prTitle}\n\n\`\`\`diff\n${diff}\n\`\`\``;
 
 console.log(`Calling ${ZAI_MODEL} at ${ZAI_BASE_URL} with diff (${diff.length} chars)...`);
 
-const llmRes = await fetch(`${ZAI_BASE_URL}/chat/completions`, {
-  method: "POST",
-  headers: {
-    authorization: `Bearer ${ZAI_API_KEY}`,
-    "content-type": "application/json",
-  },
-  body: JSON.stringify({
-    model: ZAI_MODEL,
-    messages: [
-      { role: "system", content: systemInstruction },
-      { role: "user", content: userPrompt },
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.2,
-  }),
-});
+async function callLLM(attempt = 1) {
+  try {
+    return await fetch(`${ZAI_BASE_URL}/chat/completions`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${ZAI_API_KEY}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: ZAI_MODEL,
+        messages: [
+          { role: "system", content: systemInstruction },
+          { role: "user", content: userPrompt },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.2,
+      }),
+      signal: AbortSignal.timeout(10 * 60 * 1000),
+    });
+  } catch (err) {
+    if (attempt >= 3) throw err;
+    const wait = 2 ** attempt * 1000;
+    console.error(`LLM call failed (attempt ${attempt}): ${err?.cause?.code ?? err?.message}. Retrying in ${wait}ms...`);
+    await new Promise((r) => setTimeout(r, wait));
+    return callLLM(attempt + 1);
+  }
+}
+
+const llmRes = await callLLM();
 
 if (!llmRes.ok) {
   console.error(`Z.AI API error ${llmRes.status}: ${await llmRes.text()}`);
@@ -107,7 +130,13 @@ console.log(`Model returned ${review.comments.length} comments. Summary: ${revie
 const sevEmoji = { LOW: "ℹ️", MEDIUM: "⚠️", HIGH: "🔴", CRITICAL: "🚨" };
 
 const inlineComments = review.comments
-  .filter((c) => c && typeof c.path === "string" && Number.isInteger(c.line))
+  .filter(
+    (c) =>
+      c &&
+      typeof c.path === "string" &&
+      Number.isInteger(c.line) &&
+      (c.severity === "HIGH" || c.severity === "CRITICAL"),
+  )
   .map((c) => ({
     path: c.path,
     line: c.line,
