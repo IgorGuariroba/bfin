@@ -95,10 +95,25 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     },
   });
 
+  const docsAdminOnly = config.nodeEnv === "production";
   void app.register(swaggerUi, {
     routePrefix: "/docs",
     staticCSP: true,
     transformStaticCSP: (header) => header,
+    uiHooks: docsAdminOnly
+      ? {
+          preHandler: async (request, reply) => {
+            if (!request.user || !request.user.isAdmin) {
+              return reply.status(403).send({
+                timestamp: new Date().toISOString(),
+                requestId: request.id,
+                message: "Admin access required",
+                code: "ADMIN_REQUIRED",
+              });
+            }
+          },
+        }
+      : undefined,
   });
 
   void app.register(helmet, { contentSecurityPolicy: false });
