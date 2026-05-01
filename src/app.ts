@@ -144,6 +144,8 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   }
 
   if (options.authGuardOptions) void app.register(authGuard, options.authGuardOptions);
+
+  app.get("/openapi.json", { schema: { hide: true } }, async () => app.swagger());
   if (options.mcpHttpOptions) void app.register(mcpHttp, options.mcpHttpOptions);
   void app.register(healthRoutes);
   void app.register(meRoutes);

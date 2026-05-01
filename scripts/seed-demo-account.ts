@@ -7,6 +7,7 @@ import {
   DEMO_NAME,
   DEMO_EMAIL,
   seedDemoData,
+  cleanupDemoData,
 } from "./helpers/demo-utils.js";
 
 async function ensureUser() {
@@ -36,6 +37,7 @@ async function main() {
   console.log("Seeding demo account...");
   const user = await ensureUser();
   await db.transaction(async (tx) => {
+    await cleanupDemoData(tx);
     await seedDemoData(tx, user.id);
   });
   console.log("Demo seed complete.");
