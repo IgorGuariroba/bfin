@@ -51,11 +51,14 @@ function main() {
   }
 
   // Screenshots
-  const screenshots = readdirSync(resolve("docs/branding/screenshots")).filter((f: string) =>
-    f.endsWith(".png")
-  );
-  if (screenshots.length < 3) {
-    errors.push(`Expected at least 3 screenshots, found ${screenshots.length}`);
+  const screenshotsDir = resolve("docs/branding/screenshots");
+  if (!existsSync(screenshotsDir)) {
+    errors.push(`Missing screenshots directory: ${screenshotsDir}`);
+  } else {
+    const screenshots = readdirSync(screenshotsDir).filter((f: string) => f.endsWith(".png"));
+    if (screenshots.length < 3) {
+      errors.push(`Expected at least 3 screenshots, found ${screenshots.length}`);
+    }
   }
 
   // Scripts
