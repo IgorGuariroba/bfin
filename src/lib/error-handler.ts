@@ -16,7 +16,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
       code = error.code;
       message = error.message;
     } else if (isValidationError(error)) {
-      statusCode = 400;
+      statusCode = 422;
       code = "VALIDATION_ERROR";
       message = error.message;
     } else if (hasStatusCode(error) && error.statusCode !== 500) {

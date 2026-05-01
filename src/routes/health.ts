@@ -12,7 +12,7 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
     {
       schema: {
         response: {
-          200: z.object({ status: z.literal("ok") }),
+          200: z.object({ status: z.string() }),
         },
       },
     },
@@ -28,13 +28,13 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
       schema: {
         response: {
           200: z.object({
-            status: z.literal("ready"),
+            status: z.string(),
             services: z.object({
-              database: z.literal("ok"),
-              mcp: z.enum(["enabled", "disabled"]),
+              database: z.string(),
+              mcp: z.string(),
             }),
           }),
-          503: z.object({ status: z.literal("not ready") }),
+          503: z.object({ status: z.string() }),
         },
       },
     },
