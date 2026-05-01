@@ -2,11 +2,14 @@ import { FastifyInstance } from "fastify";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { Marked } from "marked";
+import DOMPurify from "isomorphic-dompurify";
 
 const marked = new Marked({ gfm: true, breaks: false, async: false });
 
 const PRIVACY_MD_PATH = resolve(process.cwd(), "docs/privacy.md");
-const PRIVACY_BODY_HTML = marked.parse(readFileSync(PRIVACY_MD_PATH, "utf-8")) as string;
+const PRIVACY_BODY_HTML = DOMPurify.sanitize(
+  marked.parse(readFileSync(PRIVACY_MD_PATH, "utf-8")) as string
+);
 
 export async function privacyRoutes(app: FastifyInstance): Promise<void> {
   app.get("/privacy/v1", async (_req, reply) => {
