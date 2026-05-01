@@ -1,5 +1,13 @@
 #!/usr/bin/env node
 import { execSync } from "node:child_process";
+import { Agent, setGlobalDispatcher } from "undici";
+
+setGlobalDispatcher(
+  new Agent({
+    headersTimeout: 10 * 60 * 1000,
+    bodyTimeout: 10 * 60 * 1000,
+  }),
+);
 
 const {
   ZAI_API_KEY,
@@ -64,22 +72,35 @@ const userPrompt = `# PR: ${prTitle}\n\n\`\`\`diff\n${diff}\n\`\`\``;
 
 console.log(`Calling ${ZAI_MODEL} at ${ZAI_BASE_URL} with diff (${diff.length} chars)...`);
 
-const llmRes = await fetch(`${ZAI_BASE_URL}/chat/completions`, {
-  method: "POST",
-  headers: {
-    authorization: `Bearer ${ZAI_API_KEY}`,
-    "content-type": "application/json",
-  },
-  body: JSON.stringify({
-    model: ZAI_MODEL,
-    messages: [
-      { role: "system", content: systemInstruction },
-      { role: "user", content: userPrompt },
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.2,
-  }),
-});
+async function callLLM(attempt = 1) {
+  try {
+    return await fetch(`${ZAI_BASE_URL}/chat/completions`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${ZAI_API_KEY}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: ZAI_MODEL,
+        messages: [
+          { role: "system", content: systemInstruction },
+          { role: "user", content: userPrompt },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.2,
+      }),
+      signal: AbortSignal.timeout(10 * 60 * 1000),
+    });
+  } catch (err) {
+    if (attempt >= 3) throw err;
+    const wait = 2 ** attempt * 1000;
+    console.error(`LLM call failed (attempt ${attempt}): ${err?.cause?.code ?? err?.message}. Retrying in ${wait}ms...`);
+    await new Promise((r) => setTimeout(r, wait));
+    return callLLM(attempt + 1);
+  }
+}
+
+const llmRes = await callLLM();
 
 if (!llmRes.ok) {
   console.error(`Z.AI API error ${llmRes.status}: ${await llmRes.text()}`);
