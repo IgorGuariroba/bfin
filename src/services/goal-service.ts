@@ -7,6 +7,7 @@ import {
 } from "./projection-invalidation.js";
 import { eventBus } from "../lib/event-bus.js";
 import { monthKey } from "../lib/month.js";
+import { assertNotDemoAccount } from "../lib/demo-account.js";
 
 export interface UpsertMetaInput {
   contaId: string;
@@ -23,6 +24,7 @@ export interface UpsertMetaResult {
 }
 
 export async function upsertMeta(input: UpsertMetaInput): Promise<UpsertMetaResult> {
+  assertNotDemoAccount(input.contaId);
   const valor = input.porcentagemReserva.toFixed(2);
   const existing = await db
     .select({ id: meta.id })

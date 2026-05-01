@@ -8,6 +8,7 @@ import {
 } from "./projection-invalidation.js";
 import { eventBus } from "../lib/event-bus.js";
 import { monthKey } from "../lib/month.js";
+import { assertNotDemoAccount } from "../lib/demo-account.js";
 
 export interface CreateAccountInput {
   nome: string;
@@ -137,6 +138,7 @@ export async function findAccountById(contaId: string) {
 }
 
 export async function updateAccount(contaId: string, input: UpdateAccountInput) {
+  assertNotDemoAccount(contaId);
   const existing = await findAccountById(contaId);
   if (!existing) {
     throw new NotFoundError("Conta not found");
