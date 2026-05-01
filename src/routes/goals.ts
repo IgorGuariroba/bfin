@@ -1,8 +1,10 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
+import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { requireAccountRole } from "../plugins/account-authorization.js";
 import { upsertMeta } from "../services/goal-service.js";
-import { parseOrThrow, uuidSchema } from "../lib/validation.js";
+import { uuidSchema } from "../lib/validation.js";
+import { commonErrors } from "../lib/schemas.js";
 
 const metaBodySchema = z.object({
   contaId: uuidSchema,
@@ -22,12 +24,32 @@ const metaBodySchema = z.object({
     ),
 });
 
+const metaResponseSchema = z.object({
+  id: z.string().uuid(),
+  contaId: z.string().uuid(),
+  porcentagem_reserva: z.string(),
+  created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
+});
+
 export async function goalRoutes(app: FastifyInstance): Promise<void> {
-  app.post(
+  const typedApp = app.withTypeProvider<ZodTypeProvider>();
+
+  typedApp.post(
     "/metas",
-    { preHandler: [requireAccountRole({ minRole: "owner" })] },
+    {
+      preHandler: [requireAccountRole({ minRole: "owner" })],
+      schema: {
+        body: metaBodySchema,
+        response: {
+          200: metaResponseSchema,
+          201: metaResponseSchema,
+          ...commonErrors,
+        },
+      },
+    },
     async (request, reply) => {
-      const body = parseOrThrow(metaBodySchema, request.body, "body");
+      const body = request.body;
 
       const result = await upsertMeta({
         contaId: body.contaId,

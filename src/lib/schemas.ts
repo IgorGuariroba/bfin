@@ -12,3 +12,12 @@ export const ApiErrorSchema = z.object({
 });
 
 export type ApiError = z.infer<typeof ApiErrorSchema>;
+
+export const commonErrors = {
+  401: ApiErrorSchema,
+  403: ApiErrorSchema,
+  404: ApiErrorSchema,
+  409: ApiErrorSchema,
+  422: ApiErrorSchema,
+  500: ApiErrorSchema,
+};
