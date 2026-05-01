@@ -41,6 +41,8 @@ const systemInstruction = `Você é um revisor de código sênior. Sempre respon
 
 Revise o diff do PR abaixo. Foque em problemas reais e acionáveis: bugs, falhas de segurança, regressões, vazamento de recursos, race conditions, contratos quebrados, edge cases não cobertos. Ignore questões de estilo a menos que prejudiquem clareza.
 
+Reporte APENAS achados de severidade HIGH ou CRITICAL. Descarte LOW e MEDIUM — não inclua no array de comentários.
+
 Retorne JSON estrito no formato:
 {
   "summary": "string — resumo geral do PR e qualidade",
@@ -48,13 +50,13 @@ Retorne JSON estrito no formato:
     {
       "path": "string — caminho do arquivo conforme o diff",
       "line": int — número da linha no arquivo modificado (lado RIGHT do diff),
-      "severity": "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
+      "severity": "HIGH" | "CRITICAL",
       "body": "string — descrição curta + sugestão de correção"
     }
   ]
 }
 
-Se não houver achados relevantes, retorne comments=[] e summary explicando que está tudo certo.
+Se não houver achados HIGH/CRITICAL, retorne comments=[] e summary explicando que está tudo certo.
 
 Limite a 10 comentários. Severidade só CRITICAL faz o check falhar.`;
 
@@ -107,7 +109,13 @@ console.log(`Model returned ${review.comments.length} comments. Summary: ${revie
 const sevEmoji = { LOW: "ℹ️", MEDIUM: "⚠️", HIGH: "🔴", CRITICAL: "🚨" };
 
 const inlineComments = review.comments
-  .filter((c) => c && typeof c.path === "string" && Number.isInteger(c.line))
+  .filter(
+    (c) =>
+      c &&
+      typeof c.path === "string" &&
+      Number.isInteger(c.line) &&
+      (c.severity === "HIGH" || c.severity === "CRITICAL"),
+  )
   .map((c) => ({
     path: c.path,
     line: c.line,
