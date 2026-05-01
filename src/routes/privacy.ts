@@ -3,22 +3,47 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { Marked } from "marked";
 import DOMPurify from "isomorphic-dompurify";
+import { z } from "zod";
+import { ZodTypeProvider } from "fastify-type-provider-zod";
 
 const marked = new Marked({ gfm: true, breaks: false, async: false });
 
 const PRIVACY_MD_PATH = resolve(process.cwd(), "docs/privacy.md");
-const PRIVACY_BODY_HTML = DOMPurify.sanitize(
-  marked.parse(readFileSync(PRIVACY_MD_PATH, "utf-8")) as string
-);
 
 export async function privacyRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/privacy/v1", async (_req, reply) => {
-    return reply.redirect("/privacy");
-  });
+  const typedApp = app.withTypeProvider<ZodTypeProvider>();
 
-  app.get("/privacy", async (_req, reply) => {
-    const body = PRIVACY_BODY_HTML;
-    const html = `<!DOCTYPE html>
+  typedApp.get(
+    "/privacy/v1",
+    {
+      schema: {
+        description: "Redireciona para a versão atual da política de privacidade",
+        response: {
+          302: z.null(),
+        },
+      },
+    },
+    async (_req, reply) => {
+      return reply.redirect("/privacy");
+    }
+  );
+
+  typedApp.get(
+    "/privacy",
+    {
+      schema: {
+        description: "Serve a política de privacidade em formato HTML",
+        response: {
+          200: z.string().describe("HTML da política de privacidade"),
+          500: z.string(),
+        },
+      },
+    },
+    async (_req, reply) => {
+      try {
+        const content = readFileSync(PRIVACY_MD_PATH, "utf-8");
+        const body = DOMPurify.sanitize(marked.parse(content) as string);
+        const html = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -39,6 +64,11 @@ th{background:#f5f5f5}
 ${body}
 </body>
 </html>`;
-    return reply.type("text/html").send(html);
-  });
+        return reply.type("text/html").send(html);
+      } catch (err) {
+        app.log.error(err);
+        return reply.status(500).send("Privacy policy temporarily unavailable.");
+      }
+    }
+  );
 }

@@ -3,6 +3,7 @@ import helmet from "@fastify/helmet";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
 import metricsPlugin from "fastify-metrics";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 
@@ -92,6 +93,12 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
         },
       },
     },
+  });
+
+  void app.register(swaggerUi, {
+    routePrefix: "/docs",
+    staticCSP: true,
+    transformStaticCSP: (header) => header,
   });
 
   void app.register(helmet, { contentSecurityPolicy: false });
