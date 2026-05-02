@@ -11,7 +11,7 @@ import {
 } from "../services/debt-service.js";
 import { AppError, NotFoundError } from "../lib/errors.js";
 import { uuidSchema } from "../lib/validation.js";
-import { commonErrors } from "../lib/schemas.js";
+import { commonErrors, paginatedResponseSchema } from "../lib/schemas.js";
 
 const dividaParamsSchema = z.object({ dividaId: uuidSchema });
 const parcelaParamsSchema = z.object({ dividaId: uuidSchema, parcelaId: uuidSchema });
@@ -54,17 +54,7 @@ const debtListItemSchema = z.object({
   created_at: z.coerce.date(),
 });
 
-const paginatedDebtsResponseSchema = z.object({
-  data: z.array(debtListItemSchema),
-  pagination: z.object({
-    total: z.number(),
-    page: z.number(),
-    limit: z.number(),
-    total_pages: z.number(),
-    has_next: z.boolean(),
-    has_prev: z.boolean(),
-  }),
-});
+const paginatedDebtsResponseSchema = paginatedResponseSchema(debtListItemSchema);
 
 const payInstallmentResponseSchema = z.object({
   id: z.string().uuid(),

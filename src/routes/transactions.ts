@@ -11,7 +11,7 @@ import {
 } from "../services/transaction-service.js";
 import { AppError, NotFoundError } from "../lib/errors.js";
 import { uuidSchema } from "../lib/validation.js";
-import { commonErrors } from "../lib/schemas.js";
+import { commonErrors, paginatedResponseSchema } from "../lib/schemas.js";
 
 const movimentacaoParamsSchema = z.object({ movimentacaoId: uuidSchema });
 
@@ -32,17 +32,7 @@ const transactionDetailSchema = transactionListItemSchema.extend({
   contaId: z.string().uuid(),
 });
 
-const paginatedTransactionsResponseSchema = z.object({
-  data: z.array(transactionListItemSchema),
-  pagination: z.object({
-    total: z.number(),
-    page: z.number(),
-    limit: z.number(),
-    totalPages: z.number(),
-    hasNext: z.boolean(),
-    hasPrev: z.boolean(),
-  }),
-});
+const paginatedTransactionsResponseSchema = paginatedResponseSchema(transactionListItemSchema);
 
 function requireTransactionOwner(minRole: AccountRole) {
   return async (request: FastifyRequest, reply: FastifyReply) => {

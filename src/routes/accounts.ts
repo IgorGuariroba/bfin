@@ -11,7 +11,7 @@ import { calcularLimiteDiario } from "../services/daily-limit-service.js";
 import { calcularLimiteDiarioV2 } from "../services/daily-limit-v2-service.js";
 import { uuidSchema } from "../lib/validation.js";
 import { DAILY_LIMIT_V1_SUNSET } from "../lib/deprecation.js";
-import { commonErrors } from "../lib/schemas.js";
+import { commonErrors, paginatedResponseSchema } from "../lib/schemas.js";
 
 const contaParamsSchema = z.object({ contaId: uuidSchema });
 
@@ -35,17 +35,7 @@ const accountUpdateResponseSchema = z.object({
   createdAt: z.coerce.date(),
 });
 
-const paginatedAccountsResponseSchema = z.object({
-  data: z.array(accountResponseSchema),
-  pagination: z.object({
-    total: z.number(),
-    page: z.number(),
-    limit: z.number(),
-    totalPages: z.number(),
-    hasNext: z.boolean(),
-    hasPrev: z.boolean(),
-  }),
-});
+const paginatedAccountsResponseSchema = paginatedResponseSchema(accountResponseSchema);
 
 const limiteDiarioResponseSchema = z.object({
   contaId: z.string().uuid(),

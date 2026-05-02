@@ -320,8 +320,8 @@ describe("Debts CRUD", () => {
     const body = JSON.parse(res.payload);
     expect(body.data).toHaveLength(2);
     expect(body.pagination.total).toBe(3);
-    expect(body.pagination.total_pages).toBe(2);
-    expect(body.pagination.has_next).toBe(true);
+    expect(body.pagination.totalPages).toBe(2);
+    expect(body.pagination.hasNext).toBe(true);
   });
 
   it("filters debts by status=pendente", async () => {

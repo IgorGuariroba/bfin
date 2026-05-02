@@ -9,7 +9,7 @@ import {
   deleteCategory,
 } from "../services/category-service.js";
 import { uuidSchema } from "../lib/validation.js";
-import { commonErrors } from "../lib/schemas.js";
+import { commonErrors, paginatedResponseSchema } from "../lib/schemas.js";
 
 const categoriaParamsSchema = z.object({ categoriaId: uuidSchema });
 
@@ -20,17 +20,7 @@ const categoryResponseSchema = z.object({
   createdAt: z.coerce.date(),
 });
 
-const paginatedCategoriesResponseSchema = z.object({
-  data: z.array(categoryResponseSchema),
-  meta: z.object({
-    total: z.number(),
-    page: z.number(),
-    limit: z.number(),
-    totalPages: z.number(),
-    hasNext: z.boolean(),
-    hasPrev: z.boolean(),
-  }),
-});
+const paginatedCategoriesResponseSchema = paginatedResponseSchema(categoryResponseSchema);
 
 export async function categoryRoutes(app: FastifyInstance): Promise<void> {
   const typedApp = app.withTypeProvider<ZodTypeProvider>();

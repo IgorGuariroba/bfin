@@ -40,9 +40,9 @@ export interface PaginatedDebts {
     total: number;
     page: number;
     limit: number;
-    total_pages: number;
-    has_next: boolean;
-    has_prev: boolean;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
   };
 }
 
@@ -274,9 +274,9 @@ export async function findDebtsByAccount(filters: DebtFilters): Promise<Paginate
       total,
       page,
       limit,
-      total_pages: totalPages,
-      has_next: page < totalPages,
-      has_prev: page > 1,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1,
     },
   };
 }

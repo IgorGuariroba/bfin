@@ -51,6 +51,13 @@ Revise o diff do PR abaixo. Foque em problemas reais e acionáveis: bugs, falhas
 
 Reporte APENAS achados de severidade HIGH ou CRITICAL. Descarte LOW e MEDIUM — não inclua no array de comentários.
 
+REGRAS ANTI-FALSO-POSITIVO (obrigatórias):
+1. Você só vê o diff, NÃO o restante do repositório. Não invente o conteúdo de arquivos que não estão no diff.
+2. Antes de marcar HIGH/CRITICAL para qualquer mismatch entre schema e service, contrato entre camadas, formato de retorno, nome de campo, ou enum esperado: o arquivo do contraparte (service, db schema, etc.) PRECISA estar presente no diff. Se não estiver, você NÃO pode afirmar como o lado oposto se comporta — descarte o achado.
+3. Inconsistência de convenção entre rotas/módulos diferentes (ex: uma rota usa camelCase e outra snake_case) NÃO é bug — é débito de padronização. Não reporte como HIGH/CRITICAL.
+4. Frases como "se o serviço retorna X, então...", "provavelmente o banco devolve Y", "se for enum, vai falhar" indicam especulação. Especulação não vira HIGH/CRITICAL — descarte.
+5. Para reportar uma falha em runtime (ex: erro 500 por validação de schema), você precisa apontar a linha exata em ambos os lados (produtor e consumidor) DENTRO do diff. Sem as duas pontas no diff, descarte.
+
 Retorne JSON estrito no formato:
 {
   "summary": "string — resumo geral do PR e qualidade",

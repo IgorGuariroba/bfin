@@ -21,3 +21,25 @@ export const commonErrors = {
   422: ApiErrorSchema,
   500: ApiErrorSchema,
 };
+
+/**
+ * Schema único de paginação. Todas listagens paginadas devem usar este schema
+ * sob a chave `pagination` (camelCase) — nunca `meta` nem snake_case.
+ */
+export const paginationSchema = z.object({
+  total: z.number(),
+  page: z.number(),
+  limit: z.number(),
+  totalPages: z.number(),
+  hasNext: z.boolean(),
+  hasPrev: z.boolean(),
+});
+
+export type Pagination = z.infer<typeof paginationSchema>;
+
+export function paginatedResponseSchema<T extends z.ZodTypeAny>(item: T) {
+  return z.object({
+    data: z.array(item),
+    pagination: paginationSchema,
+  });
+}
