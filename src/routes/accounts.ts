@@ -25,14 +25,14 @@ const accountResponseSchema = z.object({
   nome: z.string(),
   saldoInicial: z.string(),
   papel: z.string(),
-  createdAt: z.date(),
+  createdAt: z.coerce.date(),
 });
 
 const accountUpdateResponseSchema = z.object({
   id: z.string().uuid(),
   nome: z.string(),
   saldoInicial: z.string(),
-  createdAt: z.date(),
+  createdAt: z.coerce.date(),
 });
 
 const paginatedAccountsResponseSchema = z.object({

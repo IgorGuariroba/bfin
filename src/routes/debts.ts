@@ -9,7 +9,7 @@ import {
   deleteDebt,
   confirmInstallmentPayment,
 } from "../services/debt-service.js";
-import { NotFoundError } from "../lib/errors.js";
+import { AppError, NotFoundError } from "../lib/errors.js";
 import { uuidSchema } from "../lib/validation.js";
 import { commonErrors } from "../lib/schemas.js";
 
@@ -20,9 +20,9 @@ const parcelaSchema = z.object({
   id: z.string().uuid(),
   numero_parcela: z.number(),
   valor: z.string(),
-  data_vencimento: z.date(),
-  data_pagamento: z.date().nullable(),
-  created_at: z.date(),
+  data_vencimento: z.coerce.date(),
+  data_pagamento: z.coerce.date().nullable(),
+  created_at: z.coerce.date(),
 });
 
 const debtDetailResponseSchema = z.object({
@@ -33,10 +33,10 @@ const debtDetailResponseSchema = z.object({
   valor_total: z.string(),
   total_parcelas: z.number(),
   valor_parcela: z.string(),
-  data_inicio: z.date(),
+  data_inicio: z.coerce.date(),
   parcelas: z.array(parcelaSchema),
-  created_at: z.date(),
-  updated_at: z.date(),
+  created_at: z.coerce.date(),
+  updated_at: z.coerce.date(),
 });
 
 const debtListItemSchema = z.object({
@@ -47,11 +47,11 @@ const debtListItemSchema = z.object({
   valor_total: z.string(),
   total_parcelas: z.number(),
   valor_parcela: z.string(),
-  data_inicio: z.date(),
+  data_inicio: z.coerce.date(),
   total_parcelas_count: z.number(),
   parcelas_pagas: z.number(),
   parcelas_pendentes: z.number(),
-  created_at: z.date(),
+  created_at: z.coerce.date(),
 });
 
 const paginatedDebtsResponseSchema = z.object({
@@ -70,13 +70,13 @@ const payInstallmentResponseSchema = z.object({
   id: z.string().uuid(),
   numero_parcela: z.number(),
   valor: z.string(),
-  data_vencimento: z.date(),
-  data_pagamento: z.date().nullable(),
+  data_vencimento: z.coerce.date(),
+  data_pagamento: z.coerce.date().nullable(),
   movimentacao_gerada: z.object({
     id: z.string().uuid(),
     tipo: z.literal("despesa"),
     valor: z.string(),
-    data: z.date(),
+    data: z.coerce.date(),
     parcela_divida_id: z.string().uuid().nullable(),
   }),
 });
@@ -131,7 +131,7 @@ export async function debtRoutes(app: FastifyInstance): Promise<void> {
         user.id
       );
       if (!divida) {
-        throw new NotFoundError("Debt not found after creation");
+        throw new AppError("Failed to create debt", 500, "INTERNAL_ERROR");
       }
 
       return reply.status(201).send(divida);

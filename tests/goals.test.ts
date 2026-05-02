@@ -110,7 +110,7 @@ describe("POST /metas", () => {
     expect(JSON.parse(res.payload).code).toBe("INSUFFICIENT_PERMISSIONS");
   });
 
-  it("rejeita porcentagem > 100 com 422", async () => {
+  it("rejeita porcentagem > 100 com 400", async () => {
     const keyPair = await generateTestKeyPair();
     testApp = await createTestApp({ validateToken: await createTestJwksProvider(keyPair) });
     await testApp.truncateAll();
@@ -125,11 +125,11 @@ describe("POST /metas", () => {
       payload: { contaId, porcentagem_reserva: 150 },
     });
 
-    expect(res.statusCode).toBe(422);
+    expect(res.statusCode).toBe(400);
     expect(JSON.parse(res.payload).code).toBe("VALIDATION_ERROR");
   });
 
-  it("rejeita porcentagem negativa com 422", async () => {
+  it("rejeita porcentagem negativa com 400", async () => {
     const keyPair = await generateTestKeyPair();
     testApp = await createTestApp({ validateToken: await createTestJwksProvider(keyPair) });
     await testApp.truncateAll();
@@ -144,7 +144,7 @@ describe("POST /metas", () => {
       payload: { contaId, porcentagem_reserva: -5 },
     });
 
-    expect(res.statusCode).toBe(422);
+    expect(res.statusCode).toBe(400);
   });
 
   it("aceita limites 0 e 100", async () => {

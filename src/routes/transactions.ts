@@ -9,7 +9,7 @@ import {
   deleteTransaction,
   findTransactionsByAccount,
 } from "../services/transaction-service.js";
-import { NotFoundError } from "../lib/errors.js";
+import { AppError, NotFoundError } from "../lib/errors.js";
 import { uuidSchema } from "../lib/validation.js";
 import { commonErrors } from "../lib/schemas.js";
 
@@ -21,11 +21,11 @@ const transactionListItemSchema = z.object({
   categoria: z.object({ id: z.string().uuid(), nome: z.string() }),
   descricao: z.string().nullable(),
   valor: z.string(),
-  data: z.date(),
+  data: z.coerce.date(),
   recorrente: z.boolean(),
-  dataFim: z.date().nullable(),
+  dataFim: z.coerce.date().nullable(),
   usuario: z.object({ id: z.string().uuid(), nome: z.string() }),
-  createdAt: z.date(),
+  createdAt: z.coerce.date(),
 });
 
 const transactionDetailSchema = transactionListItemSchema.extend({
@@ -98,7 +98,7 @@ export async function transactionRoutes(app: FastifyInstance): Promise<void> {
         user.id
       );
       if (!transaction) {
-        throw new NotFoundError("Transaction not found after creation");
+        throw new AppError("Failed to create transaction", 500, "INTERNAL_ERROR");
       }
 
       return reply.status(201).send(transaction);
@@ -189,7 +189,7 @@ export async function transactionRoutes(app: FastifyInstance): Promise<void> {
         dataFim: body.data_fim !== undefined ? (body.data_fim ? new Date(body.data_fim) : null) : undefined,
       });
       if (!transaction) {
-        throw new NotFoundError("Transaction not found after update");
+        throw new AppError("Failed to update transaction", 500, "INTERNAL_ERROR");
       }
 
       return reply.status(200).send(transaction);

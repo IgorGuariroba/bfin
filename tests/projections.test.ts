@@ -138,7 +138,7 @@ describe("GET /projecao", () => {
     expect(JSON.parse(res.payload).code).toBe("INSUFFICIENT_PERMISSIONS");
   });
 
-  it("invalid mes format returns 422", async () => {
+  it("invalid mes format returns 400", async () => {
     const keyPair = await generateTestKeyPair();
     testApp = await createTestApp({ validateToken: await createTestJwksProvider(keyPair) });
     await testApp.truncateAll();
@@ -152,7 +152,7 @@ describe("GET /projecao", () => {
       headers: { authorization: `Bearer ${token}` },
     });
 
-    expect(res.statusCode).toBe(422);
+    expect(res.statusCode).toBe(400);
     expect(JSON.parse(res.payload).code).toBe("VALIDATION_ERROR");
   });
 

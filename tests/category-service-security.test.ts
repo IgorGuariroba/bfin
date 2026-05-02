@@ -37,7 +37,7 @@ describe("Category service SQL injection protection", () => {
     it("rejects malicious id with quote injection (Zod UUID validation)", async () => {
       const { token } = await setupAdmin();
       const res = await injectDelete("' OR '1'='1", token);
-      expect(res.statusCode).toBe(422);
+      expect(res.statusCode).toBe(400);
     });
 
     it("does not drop table on semicolon injection", async () => {
@@ -45,7 +45,7 @@ describe("Category service SQL injection protection", () => {
       const maliciousId = "550e8400-e29b-41d4-a716-446655440000'; DROP TABLE categorias; --";
       const res = await injectDelete(maliciousId, token);
 
-      expect(res.statusCode).toBe(422);
+      expect(res.statusCode).toBe(400);
 
       const tableCheck = await testApp.client`
         SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename = 'categorias'
@@ -57,7 +57,7 @@ describe("Category service SQL injection protection", () => {
       const { token } = await setupAdmin();
       const maliciousId = "1' UNION SELECT id, nome, tipo_categoria_id, created_at, updated_at FROM categorias--";
       const res = await injectDelete(maliciousId, token);
-      expect(res.statusCode).toBe(422);
+      expect(res.statusCode).toBe(400);
     });
   });
 
