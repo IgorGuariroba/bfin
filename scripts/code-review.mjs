@@ -72,9 +72,15 @@ const userPrompt = `# PR: ${prTitle}\n\n\`\`\`diff\n${diff}\n\`\`\``;
 
 console.log(`Calling ${ZAI_MODEL} at ${ZAI_BASE_URL} with diff (${diff.length} chars)...`);
 
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled rejection:", reason?.cause?.code ?? reason?.message ?? reason);
+  process.exit(1);
+});
+
 async function callLLM(attempt = 1) {
+  const maxAttempts = 5;
   try {
-    return await fetch(`${ZAI_BASE_URL}/chat/completions`, {
+    const res = await fetch(`${ZAI_BASE_URL}/chat/completions`, {
       method: "POST",
       headers: {
         authorization: `Bearer ${ZAI_API_KEY}`,
@@ -91,28 +97,30 @@ async function callLLM(attempt = 1) {
       }),
       signal: AbortSignal.timeout(10 * 60 * 1000),
     });
+
+    if (res.status >= 500 || res.status === 429) {
+      const errBody = await res.text().catch(() => "");
+      throw new Error(`Z.AI HTTP ${res.status}: ${errBody.slice(0, 500)}`);
+    }
+    if (!res.ok) {
+      console.error(`Z.AI API error ${res.status}: ${await res.text()}`);
+      process.exit(1);
+    }
+
+    const json = await res.json();
+    const text = json?.choices?.[0]?.message?.content;
+    if (!text) throw new Error(`Empty Z.AI response: ${JSON.stringify(json).slice(0, 500)}`);
+    return text;
   } catch (err) {
-    if (attempt >= 3) throw err;
+    if (attempt >= maxAttempts) throw err;
     const wait = 2 ** attempt * 1000;
-    console.error(`LLM call failed (attempt ${attempt}): ${err?.cause?.code ?? err?.message}. Retrying in ${wait}ms...`);
+    console.error(`LLM call failed (attempt ${attempt}/${maxAttempts}): ${err?.cause?.code ?? err?.message}. Retrying in ${wait}ms...`);
     await new Promise((r) => setTimeout(r, wait));
     return callLLM(attempt + 1);
   }
 }
 
-const llmRes = await callLLM();
-
-if (!llmRes.ok) {
-  console.error(`Z.AI API error ${llmRes.status}: ${await llmRes.text()}`);
-  process.exit(1);
-}
-
-const llmJson = await llmRes.json();
-const text = llmJson?.choices?.[0]?.message?.content;
-if (!text) {
-  console.error("Empty Z.AI response", JSON.stringify(llmJson));
-  process.exit(1);
-}
+const text = await callLLM();
 
 let review;
 try {
