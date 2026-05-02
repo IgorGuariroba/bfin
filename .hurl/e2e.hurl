@@ -1,3 +1,11 @@
+# Hurl E2E collection for the bfin API.
+# Requires a valid Auth0 access token with the API audience.
+# Obtain a token via Auth0 client-credentials or machine-to-machine flow:
+#   curl -X POST https://<tenant>.auth0.com/oauth/token \
+#     -H "Content-Type: application/json" \
+#     -d '{"grant_type":"client_credentials","client_id":"...","client_secret":"...","audience":"https://api.bfincont.com.br"}'
+# Set the token in the Hurl variable {{token}}.
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 GET http://127.0.0.1:3000/health/live

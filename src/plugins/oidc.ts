@@ -7,6 +7,8 @@ export interface OidcClaims {
   given_name?: string;
   family_name?: string;
   email?: string;
+  email_verified?: boolean;
+  aud?: string | string[];
 }
 
 export type TokenValidator = (token: string) => Promise<OidcClaims>;
@@ -21,12 +23,18 @@ export async function initOidc(): Promise<TokenValidator> {
   return async (token: string): Promise<OidcClaims> => {
     try {
       const payload = await verifier.verify(token);
+      const ns = "https://bfincont.com.br/";
+      const nsEmail = payload[`${ns}email`] as string | undefined;
+      const nsEmailVerified = payload[`${ns}email_verified`] as boolean | undefined;
+      const nsName = payload[`${ns}name`] as string | undefined;
       return {
         sub: String(payload.sub),
-        name: payload.name as string | undefined,
+        name: (payload.name as string | undefined) ?? nsName,
         given_name: payload.given_name as string | undefined,
         family_name: payload.family_name as string | undefined,
-        email: payload.email as string | undefined,
+        email: (payload.email as string | undefined) ?? nsEmail,
+        email_verified: (payload.email_verified as boolean | undefined) ?? nsEmailVerified,
+        aud: payload.aud as string | string[] | undefined,
       };
     } catch (err) {
       if (err instanceof JwtValidationError) {

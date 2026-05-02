@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import fp from "fastify-plugin";
 import { TokenValidator, TokenValidationError } from "./oidc.js";
 import { findOrCreateUser, UserCreationError } from "../services/user-service.js";
+import { config } from "../config.js";
 import { errors as joseErrors } from "jose";
 
 export interface AuthUser {
@@ -71,6 +72,21 @@ async function authGuardPlugin(
 
     try {
       const claims = await validateToken(token);
+      const expectedAudience = config.oidcAudience;
+      if (expectedAudience) {
+        const aud = claims.aud;
+        const matches = Array.isArray(aud)
+          ? aud.includes(expectedAudience)
+          : aud === expectedAudience;
+        if (!matches) {
+          return reply.status(401).send({
+            timestamp: new Date().toISOString(),
+            requestId: request.id,
+            message: "Token invalid",
+            code: "TOKEN_INVALID",
+          });
+        }
+      }
       const user = await findOrCreateUser(claims);
       request.user = user;
     } catch (err) {
@@ -108,12 +124,12 @@ async function authGuardPlugin(
           code: "TOKEN_INVALID",
         });
       }
-      if (err instanceof UserCreationError && err.code === "CLAIMS_INSUFFICIENT") {
+      if (err instanceof UserCreationError && (err.code === "CLAIMS_INSUFFICIENT" || err.code === "EMAIL_NOT_VERIFIED")) {
         return reply.status(401).send({
           timestamp: new Date().toISOString(),
           requestId: request.id,
           message: err.message,
-          code: "CLAIMS_INSUFFICIENT",
+          code: err.code,
         });
       }
       throw err;
