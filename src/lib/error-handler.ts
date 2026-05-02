@@ -1,12 +1,6 @@
 import { FastifyInstance, FastifyError } from "fastify";
 import { AppError } from "./errors.js";
-
-interface ErrorResponse {
-  timestamp: string;
-  requestId: string;
-  message: string;
-  code: string;
-}
+import { ApiError } from "./schemas.js";
 
 export function registerErrorHandler(app: FastifyInstance): void {
   app.setErrorHandler((error, request, reply) => {
@@ -35,7 +29,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
       request.log.error(error);
     }
 
-    const response: ErrorResponse = {
+    const response: ApiError = {
       timestamp,
       requestId,
       message,

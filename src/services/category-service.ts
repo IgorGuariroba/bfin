@@ -27,7 +27,7 @@ export interface PaginatedCategories {
     tipo: string;
     createdAt: Date;
   }>;
-  meta: {
+  pagination: {
     total: number;
     page: number;
     limit: number;
@@ -158,7 +158,7 @@ export async function findAllCategories(filters: CategoryFilters): Promise<Pagin
 
   return {
     data,
-    meta: {
+    pagination: {
       total,
       page,
       limit,

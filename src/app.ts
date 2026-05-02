@@ -5,7 +5,11 @@ import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import metricsPlugin from "fastify-metrics";
-import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
+import {
+  serializerCompiler,
+  validatorCompiler,
+  jsonSchemaTransform,
+} from "fastify-type-provider-zod";
 
 type MetricsPluginOptions = { endpoint?: string };
 const metrics = metricsPlugin as unknown as FastifyPluginCallback<MetricsPluginOptions>;
@@ -82,38 +86,18 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
         schemas: {
           ApiError: {
             type: "object",
-            required: ["code", "message", "timestamp", "requestId"],
             properties: {
               code: { type: "string", description: "Código de erro legível por máquina" },
               message: { type: "string", description: "Descrição do erro" },
-              timestamp: { type: "string", format: "date-time" },
-              requestId: { type: "string" },
+              timestamp: { type: "string", format: "date-time", description: "Timestamp ISO do erro" },
+              requestId: { type: "string", description: "ID único da requisição para rastreabilidade" },
             },
+            required: ["code", "message", "timestamp", "requestId"],
           },
         },
       },
     },
-  });
-
-  const docsAdminOnly = config.nodeEnv === "production";
-  void app.register(swaggerUi, {
-    routePrefix: "/docs",
-    staticCSP: true,
-    transformStaticCSP: (header) => header,
-    uiHooks: docsAdminOnly
-      ? {
-          preHandler: async (request, reply) => {
-            if (!request.user || !request.user.isAdmin) {
-              return reply.status(403).send({
-                timestamp: new Date().toISOString(),
-                requestId: request.id,
-                message: "Admin access required",
-                code: "ADMIN_REQUIRED",
-              });
-            }
-          },
-        }
-      : undefined,
+    transform: jsonSchemaTransform,
   });
 
   void app.register(helmet, { contentSecurityPolicy: false });
@@ -144,6 +128,27 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   }
 
   if (options.authGuardOptions) void app.register(authGuard, options.authGuardOptions);
+
+  const docsAdminOnly = config.nodeEnv === "production";
+  void app.register(swaggerUi, {
+    routePrefix: "/docs",
+    staticCSP: true,
+    transformStaticCSP: (header) => header,
+    uiHooks: docsAdminOnly
+      ? {
+          preHandler: async (request, reply) => {
+            if (!request.user || !request.user.isAdmin) {
+              return reply.status(403).send({
+                timestamp: new Date().toISOString(),
+                requestId: request.id,
+                message: "Admin access required",
+                code: "ADMIN_REQUIRED",
+              });
+            }
+          },
+        }
+      : undefined,
+  });
 
   app.get("/openapi.json", { schema: { hide: true } }, async () => app.swagger());
   if (options.mcpHttpOptions) void app.register(mcpHttp, options.mcpHttpOptions);

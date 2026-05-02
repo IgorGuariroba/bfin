@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
+import { commonErrors } from "../lib/schemas.js";
 
 export async function meRoutes(app: FastifyInstance): Promise<void> {
   app.withTypeProvider<ZodTypeProvider>().get(
@@ -14,6 +15,7 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
             email: z.string().email(),
             isAdmin: z.boolean(),
           }),
+          ...commonErrors,
         },
       },
     },

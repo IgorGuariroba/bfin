@@ -152,7 +152,7 @@ describe("Categories CRUD", () => {
     const body = JSON.parse(res.payload);
     expect(Array.isArray(body.data)).toBe(true);
     expect(body.data.length).toBeGreaterThanOrEqual(1);
-    expect(body.meta).toBeDefined();
+    expect(body.pagination).toBeDefined();
   });
 
   it("filters categories by tipo", async () => {

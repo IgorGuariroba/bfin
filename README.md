@@ -12,6 +12,13 @@ docker compose up -d --build
 
 The API will be available at `http://127.0.0.1:3000`.
 
+## API Documentation
+
+The API exposes an auto-generated OpenAPI 3.x spec and interactive documentation:
+
+- **`GET /openapi.json`** — Public OpenAPI specification (no authentication required). Use this with `openapi-typescript` to generate TypeScript types for client code.
+- **`GET /docs`** — Swagger UI interactive documentation. Accessible without authentication in development and test environments. In production, requires an authenticated admin user (Bearer token with `isAdmin=true`).
+
 ## Production Deploy
 
 See [docs/deploy.md](docs/deploy.md) for environment variables, production compose usage, migration behavior, and smoke tests.

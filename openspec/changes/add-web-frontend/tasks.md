@@ -3,11 +3,11 @@
 - [x] 1.1 Adicionar deps `@fastify/swagger`, `@fastify/swagger-ui`, `fastify-type-provider-zod` em `package.json`
 - [x] 1.2 Registrar `serializerCompiler` + `validatorCompiler` Zod no `src/app.ts`
 - [x] 1.3 Registrar `@fastify/swagger` com info, servers e componente `ApiError` reutilizável
-- [ ] 1.4 Registrar `@fastify/swagger-ui` em `/docs`; gate por `NODE_ENV === 'production'` exigindo bearer admin
-- [ ] 1.5 Migrar rotas de `src/routes/*` (accounts, account-members, categories, transactions, debts, goals, projections, me, daily-limit, privacy, health) para usar type provider Zod com schemas `body`/`querystring`/`params`/`response`
-- [ ] 1.6 Anotar respostas `4xx`/`5xx` com `$ref` para `ApiError` em todas as rotas
-- [ ] 1.7 Verificar `/openapi.json` gerado contra rotas existentes via teste (snapshot ou contagem de paths)
-- [ ] 1.8 Atualizar README com instruções de acesso a `/openapi.json` e `/docs`
+- [x] 1.4 Registrar `@fastify/swagger-ui` em `/docs`; gate por `NODE_ENV === 'production'` exigindo bearer admin
+- [x] 1.5 Migrar rotas de `src/routes/*` (accounts, account-members, categories, transactions, debts, goals, projections, me, daily-limit, privacy, health) para usar type provider Zod com schemas `body`/`querystring`/`params`/`response`
+- [x] 1.6 Anotar respostas `4xx`/`5xx` com `$ref` para `ApiError` em todas as rotas
+- [x] 1.7 Verificar `/openapi.json` gerado contra rotas existentes via teste (snapshot ou contagem de paths)
+- [x] 1.8 Atualizar README com instruções de acesso a `/openapi.json` e `/docs`
 
 ## 2. Backend — Migração OIDC para Auth0
 

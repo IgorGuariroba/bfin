@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
+import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { requireAccountRole } from "../plugins/account-authorization.js";
 import {
   createDebt,
@@ -8,28 +9,71 @@ import {
   deleteDebt,
   confirmInstallmentPayment,
 } from "../services/debt-service.js";
-import { NotFoundError } from "../lib/errors.js";
-import { parseOrThrow, uuidSchema } from "../lib/validation.js";
+import { AppError, NotFoundError } from "../lib/errors.js";
+import { uuidSchema } from "../lib/validation.js";
+import { commonErrors, paginatedResponseSchema } from "../lib/schemas.js";
 
 const dividaParamsSchema = z.object({ dividaId: uuidSchema });
 const parcelaParamsSchema = z.object({ dividaId: uuidSchema, parcelaId: uuidSchema });
-const listQuerySchema = z.object({
-  contaId: uuidSchema,
-  status: z.enum(["pendente", "quitada"]).optional(),
+
+const parcelaSchema = z.object({
+  id: z.string().uuid(),
+  numero_parcela: z.number(),
+  valor: z.string(),
+  data_vencimento: z.coerce.date(),
+  data_pagamento: z.coerce.date().nullable(),
+  created_at: z.coerce.date(),
 });
-const createBodySchema = z.object({
-  contaId: uuidSchema,
-  categoriaId: uuidSchema,
+
+const debtDetailResponseSchema = z.object({
+  id: z.string().uuid(),
+  conta_id: z.string().uuid(),
+  categoria: z.object({ id: z.string().uuid(), nome: z.string() }),
   descricao: z.string(),
-  valorTotal: z.number(),
-  totalParcelas: z.number().int(),
-  dataInicio: z.string(),
+  valor_total: z.string(),
+  total_parcelas: z.number(),
+  valor_parcela: z.string(),
+  data_inicio: z.coerce.date(),
+  parcelas: z.array(parcelaSchema),
+  created_at: z.coerce.date(),
+  updated_at: z.coerce.date(),
 });
-const payBodySchema = z.object({ dataPagamento: z.string() });
+
+const debtListItemSchema = z.object({
+  id: z.string().uuid(),
+  conta_id: z.string().uuid(),
+  categoria: z.object({ id: z.string().uuid(), nome: z.string() }),
+  descricao: z.string(),
+  valor_total: z.string(),
+  total_parcelas: z.number(),
+  valor_parcela: z.string(),
+  data_inicio: z.coerce.date(),
+  total_parcelas_count: z.number(),
+  parcelas_pagas: z.number(),
+  parcelas_pendentes: z.number(),
+  created_at: z.coerce.date(),
+});
+
+const paginatedDebtsResponseSchema = paginatedResponseSchema(debtListItemSchema);
+
+const payInstallmentResponseSchema = z.object({
+  id: z.string().uuid(),
+  numero_parcela: z.number(),
+  valor: z.string(),
+  data_vencimento: z.coerce.date(),
+  data_pagamento: z.coerce.date().nullable(),
+  movimentacao_gerada: z.object({
+    id: z.string().uuid(),
+    tipo: z.literal("despesa"),
+    valor: z.string(),
+    data: z.coerce.date(),
+    parcela_divida_id: z.string().uuid().nullable(),
+  }),
+});
 
 function requireDebtOwner(minRole: "owner" | "viewer") {
   return async (request: FastifyRequest, reply: FastifyReply) => {
-    const params = parseOrThrow(dividaParamsSchema, request.params, "params");
+    const params = dividaParamsSchema.parse(request.params);
     const divida = await findDebtById(params.dividaId);
     if (!divida) {
       throw new NotFoundError("Debt not found");
@@ -40,12 +84,30 @@ function requireDebtOwner(minRole: "owner" | "viewer") {
 }
 
 export async function debtRoutes(app: FastifyInstance): Promise<void> {
-  app.post(
+  const typedApp = app.withTypeProvider<ZodTypeProvider>();
+
+  typedApp.post(
     "/dividas",
-    { preHandler: [requireAccountRole({ minRole: "owner" })] },
+    {
+      preHandler: [requireAccountRole({ minRole: "owner" })],
+      schema: {
+        body: z.object({
+          contaId: uuidSchema,
+          categoriaId: uuidSchema,
+          descricao: z.string().min(1),
+          valorTotal: z.number(),
+          totalParcelas: z.number().int(),
+          dataInicio: z.string(),
+        }),
+        response: {
+          201: debtDetailResponseSchema,
+          ...commonErrors,
+        },
+      },
+    },
     async (request, reply) => {
       const user = request.user!;
-      const body = parseOrThrow(createBodySchema, request.body, "body");
+      const body = request.body;
 
       const divida = await createDebt(
         {
@@ -58,12 +120,15 @@ export async function debtRoutes(app: FastifyInstance): Promise<void> {
         },
         user.id
       );
+      if (!divida) {
+        throw new AppError("Failed to create debt", 500, "INTERNAL_ERROR");
+      }
 
       return reply.status(201).send(divida);
     }
   );
 
-  app.get(
+  typedApp.get(
     "/dividas",
     {
       onRequest: [
@@ -75,46 +140,71 @@ export async function debtRoutes(app: FastifyInstance): Promise<void> {
           },
         }),
       ],
+      schema: {
+        querystring: z.object({
+          contaId: uuidSchema,
+          status: z.enum(["pendente", "quitada"]).optional(),
+          page: z.coerce.number().optional(),
+          limit: z.coerce.number().optional(),
+        }),
+        response: {
+          200: paginatedDebtsResponseSchema,
+          ...commonErrors,
+        },
+      },
     },
     async (request, reply) => {
-      const rawQuery = request.query as Record<string, string | undefined>;
-      const validated = parseOrThrow(listQuerySchema, {
-        contaId: rawQuery.contaId,
-        status: rawQuery.status,
-      }, "query");
+      const query = request.query;
 
       const result = await findDebtsByAccount({
-        contaId: validated.contaId,
-        status: validated.status,
-        page: rawQuery.page ? parseInt(rawQuery.page, 10) : undefined,
-        limit: rawQuery.limit ? parseInt(rawQuery.limit, 10) : undefined,
+        contaId: query.contaId,
+        status: query.status,
+        page: query.page,
+        limit: query.limit,
       });
 
       return reply.status(200).send(result);
     }
   );
 
-  app.delete(
+  typedApp.delete(
     "/dividas/:dividaId",
-    { preHandler: [requireDebtOwner("owner")] },
+    {
+      preHandler: [requireDebtOwner("owner")],
+      schema: {
+        params: dividaParamsSchema,
+        response: {
+          200: z.object({ ok: z.boolean() }),
+          ...commonErrors,
+        },
+      },
+    },
     async (request, reply) => {
-      const { dividaId } = parseOrThrow(dividaParamsSchema, request.params, "params");
+      const { dividaId } = request.params;
       await deleteDebt(dividaId);
       return reply.status(200).send({ ok: true });
     }
   );
 
-  app.patch(
+  typedApp.patch(
     "/dividas/:dividaId/parcelas/:parcelaId/pagamento",
-    { preHandler: [requireDebtOwner("owner")] },
+    {
+      preHandler: [requireDebtOwner("owner")],
+      schema: {
+        params: parcelaParamsSchema,
+        body: z.object({
+          dataPagamento: z.string(),
+        }),
+        response: {
+          200: payInstallmentResponseSchema,
+          ...commonErrors,
+        },
+      },
+    },
     async (request, reply) => {
-      const { dividaId, parcelaId } = parseOrThrow(
-        parcelaParamsSchema,
-        request.params,
-        "params"
-      );
+      const { dividaId, parcelaId } = request.params;
       const user = request.user!;
-      const body = parseOrThrow(payBodySchema, request.body, "body");
+      const body = request.body;
 
       const result = await confirmInstallmentPayment(
         dividaId,

@@ -1,8 +1,10 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
+import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { requireAccountRole } from "../plugins/account-authorization.js";
 import { resolveProjecao, loadMeta } from "../services/projection-engine/index.js";
-import { parseOrThrow, uuidSchema } from "../lib/validation.js";
+import { uuidSchema } from "../lib/validation.js";
+import { commonErrors } from "../lib/schemas.js";
 
 const projectionQuerySchema = z.object({
   contaId: uuidSchema,
@@ -11,11 +13,23 @@ const projectionQuerySchema = z.object({
   }),
 });
 
+const projectionResponseSchema = z.object({
+  contaId: z.string().uuid(),
+  mes: z.string(),
+  status: z.string(),
+  recalculado_em: z.string().datetime(),
+  meta_reserva: z.object({ porcentagem_reserva: z.string() }).nullable(),
+  projecao: z.array(z.any()),
+  resumo: z.any(),
+});
+
 export async function projectionRoutes(app: FastifyInstance): Promise<void> {
-  app.get(
+  const typedApp = app.withTypeProvider<ZodTypeProvider>();
+
+  typedApp.get(
     "/projecao",
     {
-      onRequest: [
+      preHandler: [
         requireAccountRole({
           minRole: "viewer",
           extractContaId: (req: FastifyRequest) => {
@@ -24,13 +38,16 @@ export async function projectionRoutes(app: FastifyInstance): Promise<void> {
           },
         }),
       ],
+      schema: {
+        querystring: projectionQuerySchema,
+        response: {
+          200: projectionResponseSchema,
+          ...commonErrors,
+        },
+      },
     },
     async (request, reply) => {
-      const query = parseOrThrow(
-        projectionQuerySchema,
-        request.query,
-        "query"
-      );
+      const query = request.query;
 
       const resultado = await resolveProjecao({
         contaId: query.contaId,

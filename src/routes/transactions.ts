@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
+import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { requireAccountRole, AccountRole } from "../plugins/account-authorization.js";
 import {
   createTransaction,
@@ -8,39 +9,34 @@ import {
   deleteTransaction,
   findTransactionsByAccount,
 } from "../services/transaction-service.js";
-import { NotFoundError } from "../lib/errors.js";
-import { parseOrThrow, uuidSchema } from "../lib/validation.js";
+import { AppError, NotFoundError } from "../lib/errors.js";
+import { uuidSchema } from "../lib/validation.js";
+import { commonErrors, paginatedResponseSchema } from "../lib/schemas.js";
 
 const movimentacaoParamsSchema = z.object({ movimentacaoId: uuidSchema });
-const listQuerySchema = z.object({ contaId: uuidSchema, categoriaId: uuidSchema.optional() });
-const createBodySchema = z.object({
-  contaId: uuidSchema,
-  tipo: z.enum(["receita", "despesa"]),
-  categoriaId: uuidSchema,
-  descricao: z.string().optional(),
-  valor: z.number(),
-  data: z.string(),
-  recorrente: z.boolean().optional(),
-  data_fim: z.string().nullable().optional(),
+
+const transactionListItemSchema = z.object({
+  id: z.string().uuid(),
+  tipo: z.string(),
+  categoria: z.object({ id: z.string().uuid(), nome: z.string() }),
+  descricao: z.string().nullable(),
+  valor: z.string(),
+  data: z.coerce.date(),
+  recorrente: z.boolean(),
+  dataFim: z.coerce.date().nullable(),
+  usuario: z.object({ id: z.string().uuid(), nome: z.string() }),
+  createdAt: z.coerce.date(),
 });
-const updateBodySchema = z.object({
-  contaId: uuidSchema.optional(),
-  tipo: z.enum(["receita", "despesa"]).optional(),
-  categoriaId: uuidSchema.optional(),
-  descricao: z.string().nullable().optional(),
-  valor: z.number().optional(),
-  data: z.string().optional(),
-  recorrente: z.boolean().optional(),
-  data_fim: z.string().nullable().optional(),
+
+const transactionDetailSchema = transactionListItemSchema.extend({
+  contaId: z.string().uuid(),
 });
+
+const paginatedTransactionsResponseSchema = paginatedResponseSchema(transactionListItemSchema);
 
 function requireTransactionOwner(minRole: AccountRole) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
-    const { movimentacaoId } = parseOrThrow(
-      movimentacaoParamsSchema,
-      request.params,
-      "params"
-    );
+    const { movimentacaoId } = movimentacaoParamsSchema.parse(request.params);
     const tx = await findTransactionById(movimentacaoId);
     if (!tx) {
       throw new NotFoundError("Transaction not found");
@@ -51,12 +47,32 @@ function requireTransactionOwner(minRole: AccountRole) {
 }
 
 export async function transactionRoutes(app: FastifyInstance): Promise<void> {
-  app.post(
+  const typedApp = app.withTypeProvider<ZodTypeProvider>();
+
+  typedApp.post(
     "/movimentacoes",
-    { preHandler: [requireAccountRole({ minRole: "owner" })] },
+    {
+      preHandler: [requireAccountRole({ minRole: "owner" })],
+      schema: {
+        body: z.object({
+          contaId: uuidSchema,
+          tipo: z.enum(["receita", "despesa"]),
+          categoriaId: uuidSchema,
+          descricao: z.string().optional(),
+          valor: z.number(),
+          data: z.string(),
+          recorrente: z.boolean().optional(),
+          data_fim: z.string().nullable().optional(),
+        }),
+        response: {
+          201: transactionDetailSchema,
+          ...commonErrors,
+        },
+      },
+    },
     async (request, reply) => {
       const user = request.user!;
-      const body = parseOrThrow(createBodySchema, request.body, "body");
+      const body = request.body;
 
       const transaction = await createTransaction(
         {
@@ -71,12 +87,15 @@ export async function transactionRoutes(app: FastifyInstance): Promise<void> {
         },
         user.id
       );
+      if (!transaction) {
+        throw new AppError("Failed to create transaction", 500, "INTERNAL_ERROR");
+      }
 
       return reply.status(201).send(transaction);
     }
   );
 
-  app.get(
+  typedApp.get(
     "/movimentacoes",
     {
       onRequest: [
@@ -88,39 +107,66 @@ export async function transactionRoutes(app: FastifyInstance): Promise<void> {
           },
         }),
       ],
+      schema: {
+        querystring: z.object({
+          contaId: uuidSchema,
+          categoriaId: uuidSchema.optional(),
+          data_inicio: z.string().optional(),
+          data_fim: z.string().optional(),
+          tipo: z.enum(["receita", "despesa"]).optional(),
+          busca: z.string().optional(),
+          page: z.coerce.number().optional(),
+          limit: z.coerce.number().optional(),
+        }),
+        response: {
+          200: paginatedTransactionsResponseSchema,
+          ...commonErrors,
+        },
+      },
     },
     async (request, reply) => {
-      const rawQuery = request.query as Record<string, string | undefined>;
-      const validated = parseOrThrow(listQuerySchema, {
-        contaId: rawQuery.contaId,
-        categoriaId: rawQuery.categoriaId,
-      }, "query");
+      const query = request.query;
 
       const result = await findTransactionsByAccount({
-        contaId: validated.contaId,
-        dataInicio: rawQuery.data_inicio ? new Date(rawQuery.data_inicio) : undefined,
-        dataFim: rawQuery.data_fim ? new Date(rawQuery.data_fim) : undefined,
-        tipo: rawQuery.tipo as "receita" | "despesa" | undefined,
-        categoriaId: validated.categoriaId,
-        busca: rawQuery.busca,
-        page: rawQuery.page ? parseInt(rawQuery.page, 10) : undefined,
-        limit: rawQuery.limit ? parseInt(rawQuery.limit, 10) : undefined,
+        contaId: query.contaId,
+        dataInicio: query.data_inicio ? new Date(query.data_inicio) : undefined,
+        dataFim: query.data_fim ? new Date(query.data_fim) : undefined,
+        tipo: query.tipo,
+        categoriaId: query.categoriaId,
+        busca: query.busca,
+        page: query.page,
+        limit: query.limit,
       });
 
       return reply.status(200).send(result);
     }
   );
 
-  app.put(
+  typedApp.put(
     "/movimentacoes/:movimentacaoId",
-    { preHandler: [requireTransactionOwner("owner")] },
+    {
+      preHandler: [requireTransactionOwner("owner")],
+      schema: {
+        params: movimentacaoParamsSchema,
+        body: z.object({
+          contaId: uuidSchema.optional(),
+          tipo: z.enum(["receita", "despesa"]).optional(),
+          categoriaId: uuidSchema.optional(),
+          descricao: z.string().nullable().optional(),
+          valor: z.number().optional(),
+          data: z.string().optional(),
+          recorrente: z.boolean().optional(),
+          data_fim: z.string().nullable().optional(),
+        }),
+        response: {
+          200: transactionDetailSchema,
+          ...commonErrors,
+        },
+      },
+    },
     async (request, reply) => {
-      const { movimentacaoId } = parseOrThrow(
-        movimentacaoParamsSchema,
-        request.params,
-        "params"
-      );
-      const body = parseOrThrow(updateBodySchema, request.body, "body");
+      const { movimentacaoId } = request.params;
+      const body = request.body;
 
       const transaction = await updateTransaction(movimentacaoId, {
         contaId: body.contaId,
@@ -132,20 +178,28 @@ export async function transactionRoutes(app: FastifyInstance): Promise<void> {
         recorrente: body.recorrente,
         dataFim: body.data_fim !== undefined ? (body.data_fim ? new Date(body.data_fim) : null) : undefined,
       });
+      if (!transaction) {
+        throw new AppError("Failed to update transaction", 500, "INTERNAL_ERROR");
+      }
 
       return reply.status(200).send(transaction);
     }
   );
 
-  app.delete(
+  typedApp.delete(
     "/movimentacoes/:movimentacaoId",
-    { preHandler: [requireTransactionOwner("owner")] },
+    {
+      preHandler: [requireTransactionOwner("owner")],
+      schema: {
+        params: movimentacaoParamsSchema,
+        response: {
+          200: z.object({ ok: z.boolean() }),
+          ...commonErrors,
+        },
+      },
+    },
     async (request, reply) => {
-      const { movimentacaoId } = parseOrThrow(
-        movimentacaoParamsSchema,
-        request.params,
-        "params"
-      );
+      const { movimentacaoId } = request.params;
       await deleteTransaction(movimentacaoId);
       return reply.status(200).send({ ok: true });
     }
