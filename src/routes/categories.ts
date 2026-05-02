@@ -17,7 +17,7 @@ const categoryResponseSchema = z.object({
   id: z.string().uuid(),
   nome: z.string(),
   tipo: z.string(),
-  createdAt: z.date(),
+  createdAt: z.coerce.date(),
 });
 
 const paginatedCategoriesResponseSchema = z.object({
