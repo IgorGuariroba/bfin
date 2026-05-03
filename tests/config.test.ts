@@ -3,7 +3,7 @@ import { ConfigError, loadConfig, loadHttpMcpConfig } from "../src/config.js";
 
 describe("loadConfig", () => {
   it("throws ConfigError when DATABASE_URL is missing", () => {
-    expect(() => loadConfig({})).toThrow(ConfigError);
+    expect(() => loadConfig({ OIDC_AUDIENCE: "" })).toThrow(ConfigError);
     try {
       loadConfig({});
     } catch (err) {
@@ -13,11 +13,11 @@ describe("loadConfig", () => {
   });
 
   it("throws ConfigError when DATABASE_URL is empty", () => {
-    expect(() => loadConfig({ DATABASE_URL: "" })).toThrow(/DATABASE_URL cannot be empty/);
+    expect(() => loadConfig({ DATABASE_URL: "", OIDC_AUDIENCE: "aud" })).toThrow(/DATABASE_URL cannot be empty/);
   });
 
   it("applies default values for optional envs", () => {
-    const cfg = loadConfig({ DATABASE_URL: "postgres://fake", OIDC_ISSUER_URL: "https://test" });
+    const cfg = loadConfig({ DATABASE_URL: "postgres://fake", OIDC_ISSUER_URL: "https://test", OIDC_AUDIENCE: "aud" });
     expect(cfg.port).toBe(3000);
     expect(cfg.nodeEnv).toBe("development");
     expect(cfg.logLevel).toBe("info");
@@ -29,6 +29,7 @@ describe("loadConfig", () => {
     const cfg = loadConfig({
       DATABASE_URL: "postgres://fake",
       OIDC_ISSUER_URL: "https://test",
+      OIDC_AUDIENCE: "aud",
       PORT: "8080",
       RATE_LIMIT_MAX: "50",
     });
@@ -66,19 +67,19 @@ describe("loadConfig", () => {
     const cfg = loadConfig({
       DATABASE_URL: "postgres://fake",
       OIDC_ISSUER_URL: "https://test",
+      OIDC_AUDIENCE: "aud",
       CORS_ORIGIN: "",
       METRICS_TOKEN: "",
-      OIDC_AUDIENCE: "",
     });
     expect(cfg.corsOrigin).toBeUndefined();
     expect(cfg.metricsToken).toBeUndefined();
-    expect(cfg.oidcAudience).toBeUndefined();
   });
 
   it("parses ADMIN_EMAILS into a lowercase set", () => {
     const cfg = loadConfig({
       DATABASE_URL: "postgres://fake",
       OIDC_ISSUER_URL: "https://test",
+      OIDC_AUDIENCE: "aud",
       ADMIN_EMAILS: "Admin@Example.com, other@test.com",
     });
     expect(cfg.adminEmails.has("admin@example.com")).toBe(true);
@@ -90,6 +91,7 @@ describe("loadConfig", () => {
     const cfg = loadConfig({
       DATABASE_URL: "postgres://fake",
       OIDC_ISSUER_URL: "https://test",
+      OIDC_AUDIENCE: "aud",
     });
     expect(cfg.adminEmails.size).toBe(0);
   });
@@ -99,6 +101,7 @@ describe("loadConfig", () => {
       loadConfig({
         DATABASE_URL: "postgres://fake",
         OIDC_ISSUER_URL: "https://test",
+        OIDC_AUDIENCE: "aud",
         NODE_ENV: "production",
       })
     ).toThrow(/DEMO_ACCOUNT_ID is required/);
@@ -108,6 +111,7 @@ describe("loadConfig", () => {
     const cfg = loadConfig({
       DATABASE_URL: "postgres://fake",
       OIDC_ISSUER_URL: "https://test",
+      OIDC_AUDIENCE: "aud",
     });
     expect(cfg.demoAccountId).toBeUndefined();
   });

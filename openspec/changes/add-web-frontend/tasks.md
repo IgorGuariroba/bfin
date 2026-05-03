@@ -11,16 +11,16 @@
 
 ## 2. Backend — Migração OIDC para Auth0
 
-- [ ] 2.1 Criar API identifier no tenant Auth0 (audience) e documentar valor em README/secrets
-- [ ] 2.2 Tornar `OIDC_AUDIENCE` obrigatória em `src/config.ts` (Zod schema falha se ausente)
-- [ ] 2.3 Atualizar `src/plugins/auth-guard.ts` para validar claim `aud` contém `OIDC_AUDIENCE`; retornar `TOKEN_INVALID` caso contrário
-- [ ] 2.4 Atualizar `src/services/user-service.ts` `findOrCreateUser` para: (a) lookup por `id_provedor`, (b) fallback lookup por `email` exigindo `email_verified === true`, (c) re-link atualizando `id_provedor`, (d) erro `EMAIL_NOT_VERIFIED` se claim ausente/false
-- [ ] 2.5 Atualizar `.env.example` com `OIDC_ISSUER_URL` Auth0 e `OIDC_AUDIENCE`
-- [ ] 2.6 Atualizar `.hurl/e2e.hurl` para usar token Auth0 (machine-to-machine ou client credentials para teste); ajustar `npm run test:hurl` se necessário
-- [ ] 2.7 Atualizar fixtures vitest para tokens Auth0; rodar `npm run test`
-- [ ] 2.8 Comunicar cutover via release notes; planejar janela de manutenção
-- [ ] 2.9 Rotacionar envs em staging, smoke test com `gcloud auth` substituído por Auth0 CLI/curl
-- [ ] 2.10 Promover para produção; monitorar logs auth por 24h
+- [x] 2.1 Criar API identifier no tenant Auth0 (audience) e documentar valor em README/secrets
+- [x] 2.2 Tornar `OIDC_AUDIENCE` obrigatória em `src/config.ts` (Zod schema falha se ausente)
+- [x] 2.3 Atualizar `src/plugins/auth-guard.ts` para validar claim `aud` contém `OIDC_AUDIENCE`; retornar `TOKEN_INVALID` caso contrário
+- [x] 2.4 Atualizar `src/services/user-service.ts` `findOrCreateUser` para: (a) lookup por `id_provedor`, (b) fallback lookup por `email` exigindo `email_verified === true`, (c) re-link atualizando `id_provedor`, (d) erro `EMAIL_NOT_VERIFIED` se claim ausente/false
+- [x] 2.5 Atualizar `.env.example` com `OIDC_ISSUER_URL` Auth0 e `OIDC_AUDIENCE`
+- [x] 2.6 Atualizar `.hurl/e2e.hurl` para usar token Auth0 (machine-to-machine ou client credentials para teste); ajustar `npm run test:hurl` se necessário
+- [x] 2.7 Atualizar fixtures vitest para tokens Auth0; rodar `npm run test`
+- [x] 2.8 Comunicar cutover via release notes; planejar janela de manutenção
+- [x] 2.9 Rotacionar envs em staging, smoke test com `gcloud auth` substituído por Auth0 CLI/curl
+- [x] 2.10 Promover para produção; monitorar logs auth por 24h
 
 ## 3. Backend — Infra & rate limit
 

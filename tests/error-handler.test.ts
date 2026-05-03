@@ -21,6 +21,8 @@ beforeAll(async () => {
         sub: "test-user",
         email: "test@example.com",
         name: "Test User",
+        email_verified: true,
+        aud: "https://api.bfincont.com.br",
       }),
     },
     (app) => {

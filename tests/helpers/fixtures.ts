@@ -17,18 +17,26 @@ export interface AuthedTestApp {
   ): Promise<string>;
 }
 
+const TEST_AUDIENCE = "https://api.bfincont.com.br";
+
 export async function setupAuthedApp(
   registerRoutes?: (app: FastifyInstance) => void
 ): Promise<AuthedTestApp> {
   const keyPair = await generateTestKeyPair();
-  const validateToken = await createTestJwksProvider(keyPair);
+  const validateToken = await createTestJwksProvider(keyPair, TEST_AUDIENCE);
   const testApp = await createTestApp({ validateToken }, registerRoutes);
   await testApp.truncateAll();
   return {
     testApp,
     keyPair,
     signToken: (idProvedor, email, name) =>
-      signTestToken(keyPair, { sub: idProvedor, email, name: name ?? idProvedor }),
+      signTestToken(keyPair, {
+        sub: idProvedor,
+        email,
+        name: name ?? idProvedor,
+        email_verified: true,
+        aud: TEST_AUDIENCE,
+      }),
   };
 }
 

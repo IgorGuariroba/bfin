@@ -15,7 +15,7 @@ const configSchema = z.object({
   METRICS_TOKEN: z.preprocess((val) => (val === "" ? undefined : val), z.string().optional()),
   ADMIN_EMAILS: z.preprocess((val) => (val === "" ? undefined : val), z.string().optional()),
   OIDC_ISSUER_URL: z.string().min(1, "OIDC_ISSUER_URL cannot be empty"),
-  OIDC_AUDIENCE: z.preprocess((val) => (val === "" ? undefined : val), z.string().optional()),
+  OIDC_AUDIENCE: z.string().min(1, "OIDC_AUDIENCE cannot be empty"),
   OIDC_ALLOW_INSECURE: z.enum(["true", "false"]).default("false"),
   DEMO_ACCOUNT_ID: z.preprocess(
     (val) => (val === "" ? undefined : val),
@@ -46,7 +46,7 @@ export type Config = {
   metricsToken: string | undefined;
   adminEmails: ReadonlySet<string>;
   oidcIssuerUrl: string;
-  oidcAudience: string | undefined;
+  oidcAudience: string;
   oidcAllowInsecure: boolean;
   demoAccountId: string | undefined;
 };

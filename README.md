@@ -19,6 +19,17 @@ The API exposes an auto-generated OpenAPI 3.x spec and interactive documentation
 - **`GET /openapi.json`** — Public OpenAPI specification (no authentication required). Use this with `openapi-typescript` to generate TypeScript types for client code.
 - **`GET /docs`** — Swagger UI interactive documentation. Accessible without authentication in development and test environments. In production, requires an authenticated admin user (Bearer token with `isAdmin=true`).
 
+## Authentication
+
+The API uses **Auth0** as the OIDC provider. Set these environment variables:
+
+| Variable | Description |
+|---|---|
+| `OIDC_ISSUER_URL` | Auth0 tenant domain (e.g. `https://bfin.us.auth0.com`) |
+| `OIDC_AUDIENCE` | API identifier created in Auth0 (e.g. `https://api.bfincont.com.br`) |
+
+Tokens must include the `aud` claim matching `OIDC_AUDIENCE`. The `email_verified` claim is required for account re-linking during the Google → Auth0 cutover.
+
 ## Production Deploy
 
 See [docs/deploy.md](docs/deploy.md) for environment variables, production compose usage, migration behavior, and smoke tests.
