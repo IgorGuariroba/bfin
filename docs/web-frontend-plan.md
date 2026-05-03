@@ -1,5 +1,15 @@
 # Plano de implementação — Interface web (Next.js)
 
+> **Status: implementado.** Este documento foi o plano original que originou a change OpenSpec [`add-web-frontend`](../openspec/changes/add-web-frontend/) (proposal, design, specs, tasks). Após a conclusão de todas as fases, a change será movida para `openspec/changes/archive/<YYYY-MM-DD>-add-web-frontend/`.
+>
+> **Estado atual**:
+> - API: OpenAPI (`/openapi.json` + `/docs`) + cutover OIDC para Auth0 concluídos.
+> - Frontend: repositório [`bfin-web`](https://github.com/<owner>/bfin-web) em produção em <https://app.bfincont.com.br>.
+> - Detalhes operacionais do frontend: [`bfin-web/README.md`](https://github.com/<owner>/bfin-web/blob/master/README.md).
+> - Migração OIDC: [`docs/oidc-migration.md`](./oidc-migration.md).
+>
+> Este arquivo é mantido como referência histórica das decisões iniciais. Para o estado atual da implementação consulte a change `add-web-frontend` (ou seu archive) e o README do `bfin-web`.
+
 Documento de planejamento para criação de frontend web que consome a API Fastify atual do bfin.
 
 ## Contexto da API atual

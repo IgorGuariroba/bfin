@@ -59,29 +59,29 @@
 
 ## 7. Frontend — Dashboard
 
-- [ ] 7.1 Widget daily limit consumindo `GET /contas/<id>/limite-diario`
-- [ ] 7.2 Gráfico Recharts de projeções consumindo `GET /contas/<id>/projecoes`
-- [ ] 7.3 Resumo mensal por categoria (cartões/lista)
+- [x] 7.1 Widget daily limit consumindo `GET /contas/<id>/limite-diario`
+- [x] 7.2 Gráfico Recharts de projeções consumindo `GET /contas/<id>/projecoes`
+- [x] 7.3 Resumo mensal por categoria (cartões/lista)
 
 ## 8. Frontend — Polish
 
-- [ ] 8.1 Skeletons em todas listas; error boundaries por feature
-- [ ] 8.2 Toaster (sonner) integrado a mutations
-- [ ] 8.3 Empty states em todas listas vazias
-- [ ] 8.4 Responsividade mobile validada nas rotas principais
-- [ ] 8.5 Auditoria a11y básica (axe DevTools)
+- [x] 8.1 Skeletons em todas listas; error boundaries por feature
+- [x] 8.2 Toaster (sonner) integrado a mutations
+- [x] 8.3 Empty states em todas listas vazias
+- [x] 8.4 Responsividade mobile validada nas rotas principais
+- [x] 8.5 Auditoria a11y básica (axe DevTools)
 
 ## 9. Frontend — Deploy
 
-- [ ] 9.1 Dockerfile multi-stage para Next.js standalone
-- [ ] 9.2 Pipeline GHCR push em master (paridade com `bfin`)
-- [ ] 9.3 Caddy: adicionar `app.bfincont.com.br` apontando para container Next na VPS
-- [ ] 9.4 Configurar envs de produção (Auth0, `BFIN_API_URL`)
-- [ ] 9.5 Smoke test E2E Playwright contra staging
-- [ ] 9.6 Promover para prod, validar TLS e fluxos críticos
+- [x] 9.1 Dockerfile multi-stage para Next.js standalone
+- [x] 9.2 Pipeline GHCR push em master (paridade com `bfin`)
+- [x] 9.3 Caddy: adicionar `app.bfincont.com.br` apontando para container Next na VPS
+- [x] 9.4 Configurar envs de produção (Auth0, `BFIN_API_URL`)
+- [x] 9.5 Smoke test E2E Playwright contra staging
+- [x] 9.6 Promover para prod, validar TLS e fluxos críticos
 
 ## 10. Documentação
 
-- [ ] 10.1 README de `bfin-web` com setup, envs, scripts, deploy
-- [ ] 10.2 Atualizar `docs/web-frontend-plan.md` apontando para change archived após conclusão
-- [ ] 10.3 Documentar em `docs/` migração OIDC (cutover, rollback)
+- [x] 10.1 README de `bfin-web` com setup, envs, scripts, deploy
+- [x] 10.2 Atualizar `docs/web-frontend-plan.md` apontando para change archived após conclusão
+- [x] 10.3 Documentar em `docs/` migração OIDC (cutover, rollback)
