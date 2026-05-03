@@ -23,6 +23,31 @@ export interface UpsertMetaResult {
   wasCreated: boolean;
 }
 
+export interface MetaResult {
+  id: string;
+  contaId: string;
+  porcentagem_reserva: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export async function getMetaByContaId(contaId: string): Promise<MetaResult | null> {
+  const rows = await db
+    .select()
+    .from(meta)
+    .where(eq(meta.contaId, contaId))
+    .limit(1);
+  if (rows.length === 0) return null;
+  const row = rows[0];
+  return {
+    id: row.id,
+    contaId: row.contaId,
+    porcentagem_reserva: row.porcentagemReserva,
+    created_at: row.createdAt,
+    updated_at: row.updatedAt,
+  };
+}
+
 export async function upsertMeta(input: UpsertMetaInput): Promise<UpsertMetaResult> {
   assertNotDemoAccount(input.contaId);
   const valor = input.porcentagemReserva.toFixed(2);

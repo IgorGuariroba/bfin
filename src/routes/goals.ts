@@ -2,9 +2,14 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { requireAccountRole } from "../plugins/account-authorization.js";
-import { upsertMeta } from "../services/goal-service.js";
+import { getMetaByContaId, upsertMeta } from "../services/goal-service.js";
 import { uuidSchema } from "../lib/validation.js";
 import { commonErrors } from "../lib/schemas.js";
+import { NotFoundError } from "../lib/errors.js";
+
+const metaQuerySchema = z.object({
+  contaId: uuidSchema,
+});
 
 const metaBodySchema = z.object({
   contaId: uuidSchema,
@@ -34,6 +39,39 @@ const metaResponseSchema = z.object({
 
 export async function goalRoutes(app: FastifyInstance): Promise<void> {
   const typedApp = app.withTypeProvider<ZodTypeProvider>();
+
+  typedApp.get(
+    "/metas",
+    {
+      preHandler: [
+        requireAccountRole({
+          minRole: "viewer",
+          extractContaId: (request) => (request.query as { contaId?: string }).contaId,
+        }),
+      ],
+      schema: {
+        querystring: metaQuerySchema,
+        response: {
+          200: metaResponseSchema,
+          ...commonErrors,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { contaId } = request.query;
+      const result = await getMetaByContaId(contaId);
+      if (!result) {
+        throw new NotFoundError("Meta não encontrada");
+      }
+      return reply.status(200).send({
+        id: result.id,
+        contaId: result.contaId,
+        porcentagem_reserva: result.porcentagem_reserva,
+        created_at: result.created_at.toISOString(),
+        updated_at: result.updated_at.toISOString(),
+      });
+    }
+  );
 
   typedApp.post(
     "/metas",
