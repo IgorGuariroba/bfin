@@ -99,6 +99,30 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  web:
+    image: ghcr.io/igorguariroba/bfin-web:${IMAGE_TAG:-latest}
+    user: node
+    env_file: /opt/bfin/.env
+    environment:
+      - NODE_ENV=production
+    mem_limit: 512m
+    cpus: 1.0
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - backend
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   caddy:
     image: caddy:2.8-alpine
     ports:

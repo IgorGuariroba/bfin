@@ -30,58 +30,58 @@
 
 ## 4. Frontend — Setup repo bfin-web
 
-- [ ] 4.1 Criar repositório `bfin-web` (GitHub), `pnpm init`, scaffold `create-next-app@latest` Next.js 15 App Router TS strict
-- [ ] 4.2 Configurar Tailwind v4, shadcn/ui init
-- [ ] 4.3 Adicionar deps: `@auth0/nextjs-auth0` v4, `@tanstack/react-query` v5, `zustand`, `react-hook-form`, `zod`, `openapi-fetch`, `openapi-typescript`, `@tanstack/react-table` v8, `recharts`, `date-fns`, `react-day-picker`
-- [ ] 4.4 Configurar ESLint + Prettier + TS strict + path aliases
-- [ ] 4.5 Adicionar Vitest + Testing Library + Playwright config
-- [ ] 4.6 Criar script `pnpm gen:api` que baixa `/openapi.json` (env `BFIN_API_URL`) e gera `lib/api-types.ts` via `openapi-typescript`
-- [ ] 4.7 GitHub Actions: typecheck, lint, build, `pnpm gen:api` em CI
+- [x] 4.1 Criar repositório `bfin-web` (GitHub), `pnpm init`, scaffold `create-next-app@latest` Next.js 15 App Router TS strict
+- [x] 4.2 Configurar Tailwind v4, shadcn/ui init
+- [x] 4.3 Adicionar deps: `@auth0/nextjs-auth0` v4, `@tanstack/react-query` v5, `zustand`, `react-hook-form`, `zod`, `openapi-fetch`, `openapi-typescript`, `@tanstack/react-table` v8, `recharts`, `date-fns`, `react-day-picker`
+- [x] 4.4 Configurar ESLint + Prettier + TS strict + path aliases
+- [x] 4.5 Adicionar Vitest + Testing Library + Playwright config
+- [x] 4.6 Criar script `pnpm gen:api` que baixa `/openapi.json` (env `BFIN_API_URL`) e gera `lib/api-types.ts` via `openapi-typescript`
+- [x] 4.7 GitHub Actions: typecheck, lint, build, `pnpm gen:api` em CI
 
 ## 5. Frontend — Auth + layout
 
-- [ ] 5.1 Configurar `@auth0/nextjs-auth0` v4 (envs `AUTH0_*`), montar handler `app/api/auth/[...auth0]/route.ts`
-- [ ] 5.2 `middleware.ts` protege `(app)/*` redirecionando não autenticados para login
-- [ ] 5.3 Implementar route handler proxy `app/api/bfin/[...path]/route.ts` que recupera `accessToken` via `getAccessToken()` e encaminha para `BFIN_API_URL`
-- [ ] 5.4 `lib/api-client.ts` configura `openapi-fetch` apontando para `/api/bfin`
-- [ ] 5.5 Layout autenticado: sidebar, topbar, AccountSwitcher carrega `GET /accounts` e `GET /me`
-- [ ] 5.6 Zustand store de conta ativa persistido (cookie); invalida queries ao trocar
-- [ ] 5.7 Logout endpoint funcional
+- [x] 5.1 Configurar `@auth0/nextjs-auth0` v4 (envs `AUTH0_*`), montar handler `app/api/auth/[...auth0]/route.ts`
+- [x] 5.2 `middleware.ts` protege `(app)/*` redirecionando não autenticados para login
+- [x] 5.3 Implementar route handler proxy `app/api/bfin/[...path]/route.ts` que recupera `accessToken` via `getAccessToken()` e encaminha para `BFIN_API_URL`
+- [x] 5.4 `lib/api-client.ts` configura `openapi-fetch` apontando para `/api/bfin`
+- [x] 5.5 Layout autenticado: sidebar, topbar, AccountSwitcher carrega `GET /accounts` e `GET /me`
+- [x] 5.6 Zustand store de conta ativa persistido (cookie); invalida queries ao trocar
+- [x] 5.7 Logout endpoint funcional
 
 ## 6. Frontend — CRUDs
 
-- [ ] 6.1 Accounts: list, create, members add/list (`features/accounts/`)
-- [ ] 6.2 Categories: list, create
-- [ ] 6.3 Transactions: list paginado com filtros (data, categoria, tipo), create, edit, delete
-- [ ] 6.4 Debts: list, create, pagar parcela
-- [ ] 6.5 Goals: list, create, update
-- [ ] 6.6 Forms usam react-hook-form + zod com schemas derivados de `lib/api-types.ts`
+- [x] 6.1 Accounts: list, create, members add/list (`features/accounts/`)
+- [x] 6.2 Categories: list, create
+- [x] 6.3 Transactions: list paginado com filtros (data, categoria, tipo), create, edit, delete
+- [x] 6.4 Debts: list, create, pagar parcela
+- [x] 6.5 Goals: list, create, update
+- [x] 6.6 Forms usam react-hook-form + zod com schemas derivados de `lib/api-types.ts`
 
 ## 7. Frontend — Dashboard
 
-- [ ] 7.1 Widget daily limit consumindo `GET /contas/<id>/limite-diario`
-- [ ] 7.2 Gráfico Recharts de projeções consumindo `GET /contas/<id>/projecoes`
-- [ ] 7.3 Resumo mensal por categoria (cartões/lista)
+- [x] 7.1 Widget daily limit consumindo `GET /contas/<id>/limite-diario`
+- [x] 7.2 Gráfico Recharts de projeções consumindo `GET /contas/<id>/projecoes`
+- [x] 7.3 Resumo mensal por categoria (cartões/lista)
 
 ## 8. Frontend — Polish
 
-- [ ] 8.1 Skeletons em todas listas; error boundaries por feature
-- [ ] 8.2 Toaster (sonner) integrado a mutations
-- [ ] 8.3 Empty states em todas listas vazias
-- [ ] 8.4 Responsividade mobile validada nas rotas principais
-- [ ] 8.5 Auditoria a11y básica (axe DevTools)
+- [x] 8.1 Skeletons em todas listas; error boundaries por feature
+- [x] 8.2 Toaster (sonner) integrado a mutations
+- [x] 8.3 Empty states em todas listas vazias
+- [x] 8.4 Responsividade mobile validada nas rotas principais
+- [x] 8.5 Auditoria a11y básica (axe DevTools)
 
 ## 9. Frontend — Deploy
 
-- [ ] 9.1 Dockerfile multi-stage para Next.js standalone
-- [ ] 9.2 Pipeline GHCR push em master (paridade com `bfin`)
-- [ ] 9.3 Caddy: adicionar `app.bfincont.com.br` apontando para container Next na VPS
-- [ ] 9.4 Configurar envs de produção (Auth0, `BFIN_API_URL`)
-- [ ] 9.5 Smoke test E2E Playwright contra staging
-- [ ] 9.6 Promover para prod, validar TLS e fluxos críticos
+- [x] 9.1 Dockerfile multi-stage para Next.js standalone
+- [x] 9.2 Pipeline GHCR push em master (paridade com `bfin`)
+- [x] 9.3 Caddy: adicionar `app.bfincont.com.br` apontando para container Next na VPS
+- [x] 9.4 Configurar envs de produção (Auth0, `BFIN_API_URL`)
+- [x] 9.5 Smoke test E2E Playwright contra staging
+- [x] 9.6 Promover para prod, validar TLS e fluxos críticos
 
 ## 10. Documentação
 
-- [ ] 10.1 README de `bfin-web` com setup, envs, scripts, deploy
-- [ ] 10.2 Atualizar `docs/web-frontend-plan.md` apontando para change archived após conclusão
-- [ ] 10.3 Documentar em `docs/` migração OIDC (cutover, rollback)
+- [x] 10.1 README de `bfin-web` com setup, envs, scripts, deploy
+- [x] 10.2 Atualizar `docs/web-frontend-plan.md` apontando para change archived após conclusão
+- [x] 10.3 Documentar em `docs/` migração OIDC (cutover, rollback)

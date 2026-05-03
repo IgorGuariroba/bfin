@@ -172,6 +172,85 @@ describe("POST /metas", () => {
     expect(r100.statusCode).toBe(200);
   });
 
+  describe("GET /metas", () => {
+    it("retorna meta existente com 200", async () => {
+      const keyPair = await generateTestKeyPair();
+      testApp = await createTestApp({ validateToken: await createTestJwksProvider(keyPair) });
+      await testApp.truncateAll();
+      const userId = await createUser(testApp, "meta-g1", "meta-g1@example.com");
+      const contaId = await createAccount(testApp, userId, "Conta MG1");
+      const token = await tokenFor(keyPair, "meta-g1");
+
+      await testApp.app.inject({
+        method: "POST",
+        url: "/metas",
+        headers: { authorization: `Bearer ${token}` },
+        payload: { contaId, porcentagem_reserva: 15 },
+      });
+
+      const res = await testApp.app.inject({
+        method: "GET",
+        url: `/metas?contaId=${contaId}`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.payload);
+      expect(body.contaId).toBe(contaId);
+      expect(body.porcentagem_reserva).toBe("15.00");
+    });
+
+    it("retorna 404 quando meta não existe", async () => {
+      const keyPair = await generateTestKeyPair();
+      testApp = await createTestApp({ validateToken: await createTestJwksProvider(keyPair) });
+      await testApp.truncateAll();
+      const userId = await createUser(testApp, "meta-g2", "meta-g2@example.com");
+      const contaId = await createAccount(testApp, userId, "Conta MG2");
+      const token = await tokenFor(keyPair, "meta-g2");
+
+      const res = await testApp.app.inject({
+        method: "GET",
+        url: `/metas?contaId=${contaId}`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(res.statusCode).toBe(404);
+      expect(JSON.parse(res.payload).code).toBe("RESOURCE_NOT_FOUND");
+    });
+
+    it("viewer pode ler meta com 200", async () => {
+      const keyPair = await generateTestKeyPair();
+      testApp = await createTestApp({ validateToken: await createTestJwksProvider(keyPair) });
+      await testApp.truncateAll();
+      const ownerId = await createUser(testApp, "meta-g3-o", "meta-g3-o@example.com");
+      const viewerId = await createUser(testApp, "meta-g3-v", "meta-g3-v@example.com");
+      const contaId = await createAccount(testApp, ownerId, "Conta MG3");
+      await testApp.client`
+        INSERT INTO conta_usuarios (conta_id, usuario_id, papel)
+        VALUES (${contaId}, ${viewerId}, 'viewer')
+      `;
+      const ownerToken = await tokenFor(keyPair, "meta-g3-o");
+      const viewerToken = await tokenFor(keyPair, "meta-g3-v");
+
+      await testApp.app.inject({
+        method: "POST",
+        url: "/metas",
+        headers: { authorization: `Bearer ${ownerToken}` },
+        payload: { contaId, porcentagem_reserva: 10 },
+      });
+
+      const res = await testApp.app.inject({
+        method: "GET",
+        url: `/metas?contaId=${contaId}`,
+        headers: { authorization: `Bearer ${viewerToken}` },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.payload);
+      expect(body.porcentagem_reserva).toBe("10.00");
+    });
+  });
+
   it("POST /metas invalida projeções existentes da conta", async () => {
     const keyPair = await generateTestKeyPair();
     testApp = await createTestApp({ validateToken: await createTestJwksProvider(keyPair) });
