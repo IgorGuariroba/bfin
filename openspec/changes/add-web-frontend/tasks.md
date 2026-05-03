@@ -24,9 +24,9 @@
 
 ## 3. Backend — Infra & rate limit
 
-- [ ] 3.1 Revisar `RATE_LIMIT_MAX` em `src/config.ts` considerando proxy Next multiplicar requests
-- [ ] 3.2 Adicionar `app.bfincont.com.br` em `CORS_ORIGIN` apenas se necessário (proxy server-side normalmente dispensa)
-- [ ] 3.3 Auditar segurança após mudanças em config/env (rodar skill de auditoria conforme CLAUDE.md)
+- [x] 3.1 Revisar `RATE_LIMIT_MAX` em `src/config.ts` considerando proxy Next multiplicar requests
+- [x] 3.2 Adicionar `app.bfincont.com.br` em `CORS_ORIGIN` apenas se necessário (proxy server-side normalmente dispensa)
+- [x] 3.3 Auditar segurança após mudanças em config/env (rodar skill de auditoria conforme CLAUDE.md)
 
 ## 4. Frontend — Setup repo bfin-web
 
