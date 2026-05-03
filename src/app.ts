@@ -57,6 +57,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     bodyLimit: 1_048_576,
     connectionTimeout: 10_000,
     keepAliveTimeout: 5_000,
+    trustProxy: config.nodeEnv === "production",
     genReqId(req) {
       const existing = req.headers["x-request-id"];
       if (existing) {

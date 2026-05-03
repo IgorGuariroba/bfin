@@ -5,7 +5,7 @@ const configSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   CORS_ORIGIN: z.preprocess((val) => (val === "" ? undefined : val), z.string().optional()),
-  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
   RATE_LIMIT_WINDOW: z.coerce.number().int().positive().default(60_000),
   MIGRATE_ON_BOOT: z.enum(["true", "false"]).default("false"),
   LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).default("info"),
@@ -27,6 +27,13 @@ const configSchema = z.object({
       code: "custom",
       path: ["DEMO_ACCOUNT_ID"],
       message: "DEMO_ACCOUNT_ID is required when NODE_ENV=production",
+    });
+  }
+  if (data.NODE_ENV === "production" && data.OIDC_ALLOW_INSECURE === "true") {
+    ctx.addIssue({
+      code: "custom",
+      path: ["OIDC_ALLOW_INSECURE"],
+      message: "OIDC_ALLOW_INSECURE cannot be true when NODE_ENV=production",
     });
   }
 });

@@ -44,7 +44,6 @@ describe("loadConfig", () => {
       CORS_ORIGIN: "https://app.example.com",
       METRICS_TOKEN: "secret",
       OIDC_AUDIENCE: "aud",
-      OIDC_ALLOW_INSECURE: "true",
       MIGRATE_ON_BOOT: "true",
       NODE_ENV: "production",
       DB_POOL_MAX: "20",
@@ -55,12 +54,25 @@ describe("loadConfig", () => {
     expect(cfg.corsOrigin).toBe("https://app.example.com");
     expect(cfg.metricsToken).toBe("secret");
     expect(cfg.oidcAudience).toBe("aud");
-    expect(cfg.oidcAllowInsecure).toBe(true);
+    expect(cfg.oidcAllowInsecure).toBe(false);
     expect(cfg.migrateOnBoot).toBe(true);
     expect(cfg.nodeEnv).toBe("production");
     expect(cfg.dbPoolMax).toBe(20);
     expect(cfg.dbPoolIdleTimeout).toBe(60);
     expect(cfg.dbPoolConnectTimeout).toBe(5);
+  });
+
+  it("rejects OIDC_ALLOW_INSECURE in production", () => {
+    expect(() =>
+      loadConfig({
+        DATABASE_URL: "postgres://fake",
+        OIDC_ISSUER_URL: "https://test",
+        OIDC_AUDIENCE: "aud",
+        NODE_ENV: "production",
+        OIDC_ALLOW_INSECURE: "true",
+        DEMO_ACCOUNT_ID: "11111111-1111-4111-8111-111111111111",
+      })
+    ).toThrow(/OIDC_ALLOW_INSECURE cannot be true when NODE_ENV=production/);
   });
 
   it("treats empty optional strings as undefined", () => {

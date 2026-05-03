@@ -6,7 +6,7 @@
 #   NODE_ENV        - should be "production"
 #   PORT            - application port (default 3000)
 #   CORS_ORIGIN     - optional, CORS allowed origin
-#   RATE_LIMIT_MAX  - optional, max requests per window (default 100)
+#   RATE_LIMIT_MAX  - optional, max requests per window (default 300)
 #   RATE_LIMIT_WINDOW - optional, rate limit window in ms (default 60000)
 #   MIGRATE_ON_BOOT - optional, "true" to run migrations on startup (default false)
 #   LOG_LEVEL       - optional, pino log level (default info)
