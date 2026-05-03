@@ -30,13 +30,13 @@
 
 ## 4. Frontend — Setup repo bfin-web
 
-- [ ] 4.1 Criar repositório `bfin-web` (GitHub), `pnpm init`, scaffold `create-next-app@latest` Next.js 15 App Router TS strict
-- [ ] 4.2 Configurar Tailwind v4, shadcn/ui init
-- [ ] 4.3 Adicionar deps: `@auth0/nextjs-auth0` v4, `@tanstack/react-query` v5, `zustand`, `react-hook-form`, `zod`, `openapi-fetch`, `openapi-typescript`, `@tanstack/react-table` v8, `recharts`, `date-fns`, `react-day-picker`
-- [ ] 4.4 Configurar ESLint + Prettier + TS strict + path aliases
-- [ ] 4.5 Adicionar Vitest + Testing Library + Playwright config
-- [ ] 4.6 Criar script `pnpm gen:api` que baixa `/openapi.json` (env `BFIN_API_URL`) e gera `lib/api-types.ts` via `openapi-typescript`
-- [ ] 4.7 GitHub Actions: typecheck, lint, build, `pnpm gen:api` em CI
+- [x] 4.1 Criar repositório `bfin-web` (GitHub), `pnpm init`, scaffold `create-next-app@latest` Next.js 15 App Router TS strict
+- [x] 4.2 Configurar Tailwind v4, shadcn/ui init
+- [x] 4.3 Adicionar deps: `@auth0/nextjs-auth0` v4, `@tanstack/react-query` v5, `zustand`, `react-hook-form`, `zod`, `openapi-fetch`, `openapi-typescript`, `@tanstack/react-table` v8, `recharts`, `date-fns`, `react-day-picker`
+- [x] 4.4 Configurar ESLint + Prettier + TS strict + path aliases
+- [x] 4.5 Adicionar Vitest + Testing Library + Playwright config
+- [x] 4.6 Criar script `pnpm gen:api` que baixa `/openapi.json` (env `BFIN_API_URL`) e gera `lib/api-types.ts` via `openapi-typescript`
+- [x] 4.7 GitHub Actions: typecheck, lint, build, `pnpm gen:api` em CI
 
 ## 5. Frontend — Auth + layout
 
