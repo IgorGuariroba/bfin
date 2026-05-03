@@ -50,12 +50,12 @@
 
 ## 6. Frontend — CRUDs
 
-- [ ] 6.1 Accounts: list, create, members add/list (`features/accounts/`)
-- [ ] 6.2 Categories: list, create
-- [ ] 6.3 Transactions: list paginado com filtros (data, categoria, tipo), create, edit, delete
-- [ ] 6.4 Debts: list, create, pagar parcela
-- [ ] 6.5 Goals: list, create, update
-- [ ] 6.6 Forms usam react-hook-form + zod com schemas derivados de `lib/api-types.ts`
+- [x] 6.1 Accounts: list, create, members add/list (`features/accounts/`)
+- [x] 6.2 Categories: list, create
+- [x] 6.3 Transactions: list paginado com filtros (data, categoria, tipo), create, edit, delete
+- [x] 6.4 Debts: list, create, pagar parcela
+- [x] 6.5 Goals: list, create, update
+- [x] 6.6 Forms usam react-hook-form + zod com schemas derivados de `lib/api-types.ts`
 
 ## 7. Frontend — Dashboard
 
