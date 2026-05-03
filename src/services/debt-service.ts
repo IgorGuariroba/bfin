@@ -52,11 +52,11 @@ export interface ConfirmPaymentInput {
 
 function addMonths(date: Date, months: number): Date {
   const result = new Date(date);
-  const targetMonth = result.getMonth() + months;
-  result.setMonth(targetMonth);
+  const targetMonth = result.getUTCMonth() + months;
+  result.setUTCMonth(targetMonth);
   const expectedMonth = ((targetMonth % 12) + 12) % 12;
-  if (result.getMonth() !== expectedMonth) {
-    result.setDate(0);
+  if (result.getUTCMonth() !== expectedMonth) {
+    result.setUTCDate(0);
   }
   return result;
 }
